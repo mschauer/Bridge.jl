@@ -1,0 +1,2 @@
+# Bridge.jl
+Diffusion bridges
