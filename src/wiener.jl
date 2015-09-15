@@ -1,8 +1,8 @@
 type Wiener{T}  <: CTPro{T}
 end
 type WienerBridge{T}  <: CTPro{T}
-    t::Float64
-    v::T
+    t::Float64  # end time
+    v::T        # end point
 end
 
 function sample{T}(tt, P::Wiener{T})
@@ -122,6 +122,8 @@ function sample!{T}(W::CTPath{T}, P::WienerBridge{T}, y1 = W.yy[1])
     
     CTPath{T}(W.tt, yy)
 end
+
+## drift and dispersion coefficients
 
 function b{T}(s, x, P::Wiener{T})
     zero(T)
