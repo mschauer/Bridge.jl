@@ -26,9 +26,9 @@ s2 = var(qu)
 
 type Diff
 end
-import Bridge: b, sigma
+import Bridge: b, σ
 Bridge.b(t,x, _::Diff) = -5x
-Bridge.sigma(t, x, _::Diff) = 1.
+Bridge.σ(t, x, _::Diff) = 1.
 
 
 X = [euler(0., brown1(0.,1.,1000), WienerBridge(2., 1.)).yy[end] for i in 1:1000]

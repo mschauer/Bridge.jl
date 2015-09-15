@@ -25,7 +25,7 @@ function sample!{d,T}(W::CTPath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1])
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
         for j = 1:sz
-            yy[sz*(i-1) + j] = yy[sz*(i-2) + j] + rootdt*randn()
+            yy[sz*(i-1) + j] = yy[sz*(i-2) + j] + rootdt*randn(T)
         end
     end
     CTPath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
@@ -36,7 +36,7 @@ function sample!{T}(W::CTPath{T}, P::Wiener{T}, y1 = W.yy[1])
     yy = W.yy
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
-        yy[i] = yy[i-1] + rootdt*randn()
+        yy[i] = yy[i-1] + rootdt*randn(T)
     end
     CTPath{T}(W.tt, yy)
 end
@@ -65,14 +65,14 @@ function sample!{d,T}(W::CTPath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W.yy[
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
         for j = 1:sz
-            wtotal[j] += yy[sz*(i-1) + j] = rootdt*randn()
+            wtotal[j] += yy[sz*(i-1) + j] = rootdt*randn(T)
         end
     end
 
     # noise between tt[end] and P.t
     rootdt = sqrt(P.t-W.tt[end])
     for j = 1:sz
-            wtotal[j] += rootdt*randn() + (yy[j] - v[j])
+            wtotal[j] += rootdt*randn(T) + (yy[j] - v[j])
     end
 
     # cumsum
@@ -100,12 +100,12 @@ function sample!{T}(W::CTPath{T}, P::WienerBridge{T}, y1 = W.yy[1])
     wtotal = zero(T)
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
-        wtotal  += yy[i] = rootdt*randn()
+        wtotal  += yy[i] = rootdt*randn(T)
     end
 
     # noise between tt[end] and P.t
     rootdt = sqrt(P.t-W.tt[end])
-    wtotal += rootdt*randn() 
+    wtotal += rootdt*randn(T) 
     
     # normalize
     wtotal += (yy[1] - v)
@@ -129,16 +129,21 @@ function b{T}(s, x, P::Wiener{T})
     zero(T)
 end
 
-function sigma(s, x, P::Wiener)
+function σ(s, x, P::Wiener)
     I
 end
+
+# transition density
+transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
+
+
 
 
 function b(s, x, P::WienerBridge)
     (P.v-x)/(P.t-s)
 end
 
-function sigma(s, x, P::WienerBridge)
+function σ(s, x, P::WienerBridge)
     I
 end
 

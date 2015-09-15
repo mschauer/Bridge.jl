@@ -1,3 +1,30 @@
+lp(s, x, t, y, P) = logpdf(transitionprob(s,x,t,P),y)
+
+function llikelihood(X::CTPath, P::CTPro)
+    ll = 0.
+    for i in 2:length(X.tt)
+        ll += lp(X.tt[i-1], X.yy[i-1], X.tt[i], X.yy[i], P)
+    end
+    ll
+end
+
+
+function sample{T}(tt, P::CTPro{T}, x1=zero(T))
+    tt = collect(tt)
+    yy = zeros(T,length(tt))
+    
+    yy[1] = x = x1
+    for i in 2:length(tt)
+        x = rand(transitionprob(tt[i-1], x, tt[i], P))
+        yy[i] = x
+    end
+    CTPath{T}(tt, yy)
+end
+
+
+
+
+
 """
 quvar(X)
              
@@ -39,3 +66,9 @@ function ito{T}(X::CTPath, W::CTPath{T})
         end
         CTPath{T}(X.tt,yy) 
 end
+
+
+
+
+
+ 
