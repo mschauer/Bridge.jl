@@ -136,7 +136,8 @@ end
 # transition density
 transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
 
-
+transitionprob{N}(s, x, t, P::Wiener{Vec{N,Float64}}) = MvNormal(Vector(x),(t-s))
+lp{N}(s, x, t, y, P::Wiener{Vec{N,Float64}}) = logpdf(transitionprob(s, x, t, P), Vector(y))
 
 
 function b(s, x, P::WienerBridge)

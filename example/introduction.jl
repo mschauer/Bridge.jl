@@ -1,4 +1,4 @@
-using Winston, Bridge, Distributions
+using Winston, Bridge, Distributions, FixedSizeArrays
 
 #
 t = 2. 
@@ -81,4 +81,9 @@ X = euler(0.1, sample(0:0.07:10, Wiener{Float64}()), OrnsteinUhlenbeck(20., 1.))
 X2 =  sample(0:0.07:10, OrnsteinUhlenbeck(20., 1.), 0.1)
 plot(X.tt, 1+X.yy)
 oplot(X2.tt, X2.yy)
+
+# sample vector Brownian motion
+W2 = sample(0:0.1:10, Wiener{Vec{4,Float64}}())
+llikelihood(W2,Wiener{Vec{4,Float64}}())
+
 
