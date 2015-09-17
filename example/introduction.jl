@@ -54,10 +54,10 @@ immutable OrnsteinUhlenbeck  <: CTPro{Float64}
 end
 
 # define drift and sigma of OrnsteinUhlenbeck
-import Bridge: b, σ, transitionprob
+import Bridge: b, σ, a, transitionprob
 Bridge.b(t,x, P::OrnsteinUhlenbeck) = -P.β*x
 Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
-
+Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 # simulate OrnsteinUhlenbeck using Euler scheme
 W = sample(0:0.01:10, Wiener{Float64}()) 
@@ -85,5 +85,39 @@ oplot(X2.tt, X2.yy)
 # sample vector Brownian motion
 W2 = sample(0:0.1:10, Wiener{Vec{4,Float64}}())
 llikelihood(W2,Wiener{Vec{4,Float64}}())
+
+P = BridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 1., 1.)
+X = euler(0.1, sample(0:0.01:1, Wiener{Float64}()),P)
+
+P2 = PBridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 2., 2., 0., 1., 0.3, 1.)
+Y = euler(0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
+plot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3))
+
+for i in 1:100
+    Y = euler(0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
+    oplot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3), linewidth=0.2)
+end
+oplot()
+
+
+# Define a diffusion process
+immutable VOrnsteinUhlenbeck{d}  <: CTPro{Vec{d,Float64}}
+    β # drift parameter (also known as inverse relaxation time)
+    σ # diffusion parameter
+    function VOrnsteinUhlenbeck(β, σ)
+           new(β, σ)
+    end
+end
+
+# define drift and sigma of VOrnsteinUhlenbeck
+ 
+Bridge.b(t, x, P::VOrnsteinUhlenbeck) = -P.β*x
+Bridge.σ(t, x, P::VOrnsteinUhlenbeck) = P.σ*I
+Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
+
+# Simulate
+X = euler(Vec(0., 0.), sample(0.:0.003:10., Wiener{Vec{2,Float64}}()),VOrnsteinUhlenbeck{2}(3., 1.)) 
+yy = Bridge.mat(X.yy)
+plot(yy[1,:], yy[2,:], xrange=(-2, 2), yrange=(-2,2),  linewidth=0.5)
 
 
