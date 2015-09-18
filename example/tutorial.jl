@@ -13,7 +13,7 @@ typeof(P)
 #prints Bridge.Wiener{Float64}
 
 super(typeof(P))
-#prints Bridge.CTPro{Float64}
+#prints Bridge.ContinuousTimeProcess{Float64}
 
  
 
@@ -43,7 +43,7 @@ oplot(B.tt, B.yy, "r")
 
 
 # Define a diffusion process
-immutable OrnsteinUhlenbeck  <: CTPro{Float64}
+immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
@@ -101,7 +101,7 @@ oplot()
 
 
 # Define a diffusion process
-immutable VOrnsteinUhlenbeck{d}  <: CTPro{Vec{d,Float64}}
+immutable VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{Vec{d,Float64}}
     β # drift parameter (also known as inverse relaxation time)
     σ # diffusion parameter
     function VOrnsteinUhlenbeck(β, σ)

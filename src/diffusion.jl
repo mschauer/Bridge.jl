@@ -1,6 +1,6 @@
 lp(s, x, t, y, P) = logpdf(transitionprob(s,x,t,P),y)
 
-function llikelihood(X::CTPath, P::CTPro)
+function llikelihood(X::SamplePath, P::ContinuousTimeProcess)
     ll = 0.
     for i in 2:length(X.tt)
         ll += lp(X.tt[i-1], X.yy[i-1], X.tt[i], X.yy[i], P)
@@ -9,7 +9,7 @@ function llikelihood(X::CTPath, P::CTPro)
 end
 
 
-function sample{T}(tt, P::CTPro{T}, x1=zero(T))
+function sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T))
     tt = collect(tt)
     yy = zeros(T,length(tt))
     
@@ -18,7 +18,7 @@ function sample{T}(tt, P::CTPro{T}, x1=zero(T))
         x = rand(transitionprob(tt[i-1], x, tt[i], P))
         yy[i] = x
     end
-    CTPath{T}(tt, yy)
+    SamplePath{T}(tt, yy)
 end
 
 
@@ -30,7 +30,7 @@ quvar(X)
              
     Computes quadratic variation of ``X``.
 """
-function quvar(X::CTPath)
+function quvar(X::SamplePath)
         sum(diff(X.yy).^2)
 end
 
@@ -42,11 +42,11 @@ bracket(X,Y)
   
      Computes quadratic variation process of ``x`` (of ``x`` and ``y``).
 """     
-function bracket(X::CTPath)
+function bracket(X::SamplePath)
         cumsum0(diff(X.yy).^2)
 end
 
-function bracket(X::CTPath,Y::CTPath)
+function bracket(X::SamplePath,Y::SamplePath)
         cumsum0(diff(X.yy).*diff(X.yy))
 end
 
@@ -55,7 +55,7 @@ ito(Y, X)
 
     Integrate a valued stochastic process with respect to a stochastic differential.
 """
-function ito{T}(X::CTPath, W::CTPath{T})
+function ito{T}(X::SamplePath, W::SamplePath{T})
         assert(X.tt[1] == W.tt[1])
         n = length(X)
         yy = similar(W.yy, n)
@@ -64,7 +64,7 @@ function ito{T}(X::CTPath, W::CTPath{T})
                 assert(X.tt[i] == W.tt[i])
                 yy[i] = yy[i-1] + X.yy[i-1]*(W.yy[i]-W.yy[i-1])
         end
-        CTPath{T}(X.tt,yy) 
+        SamplePath{T}(X.tt,yy) 
 end
 
 

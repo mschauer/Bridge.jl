@@ -1,37 +1,37 @@
 using Winston, Bridge, Distributions, FixedSizeArrays
 
 import Winston: plot, oplot
-function plot(Y::CTPath{Vec{2,Float64}}, args...; keyargs...) 
+function plot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
     yy = Bridge.mat(Y.yy)
     plot(yy[1,:], yy[2,:], args...; keyargs...)
 end    
-function plot(Y::CTPath{Vec{1,Float64}}, args...; keyargs...) 
+function plot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
     yy = Bridge.mat(Y.yy)
     plot(Y.tt, yy[1,:], args...; keyargs...)
 end    
-function plot(Y::CTPath{Float64}, args...; keyargs...) 
+function plot(Y::SamplePath{Float64}, args...; keyargs...) 
     plot(Y.tt, Y.yy, args...; keyargs...)
 end    
 
-function oplot(Y::CTPath{Vec{1,Float64}}, args...; keyargs...) 
+function oplot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
     yy = Bridge.mat(Y.yy)
     oplot(Y.tt, yy[1,:], args...; keyargs...)
 end   
-function oplot(Y::CTPath{Vec{2,Float64}}, args...; keyargs...) 
+function oplot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
     yy = Bridge.mat(Y.yy)
     oplot(yy[1,:], yy[2,:], args...; keyargs...)
 end    
-function oplot(Y::CTPath{Float64}, args...; keyargs...) 
+function oplot(Y::SamplePath{Float64}, args...; keyargs...) 
     oplot(Y.tt, Y.yy, args...; keyargs...)
 end    
 
 
-function oplot2(Y::CTPath{Vec{2,Float64}}, a1, a2; keyargs...) 
+function oplot2(Y::SamplePath{Vec{2,Float64}}, a1, a2; keyargs...) 
     yy = Bridge.mat(Y.yy)
     oplot(Y.tt, yy[1,:], a1; keyargs...)
     oplot(Y.tt, yy[2,:], a2; keyargs...)
 end    
-function plot2(Y::CTPath{Vec{2,Float64}}, a1, a2; keyargs...) 
+function plot2(Y::SamplePath{Vec{2,Float64}}, a1, a2; keyargs...) 
     yy = Bridge.mat(Y.yy)
     plot(Y.tt,  yy[1,:], a1; keyargs...)
     oplot(Y.tt, yy[2,:], a2; keyargs...)
@@ -45,7 +45,7 @@ srand(10)
  
 
 
-immutable FitzHughNagumo  <: CTPro{Vec{2,Float64}}
+immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
     α::Float64
     β::Float64 
     γ1::Float64
@@ -79,7 +79,7 @@ assert(endof(Yfil) == n+1)
 si = 0.5 # observation error 
 
 L = Mat(((1.,),(0.,)))
-Yobs = CTPath{Vec{1,Float64}}(Yfil.tt, [L*Yfil.yy[i] .+ si*randn(Vec{1,Float64}) for i in 1:length(Yfil.yy)])
+Yobs = SamplePath{Vec{1,Float64}}(Yfil.tt, [L*Yfil.yy[i] .+ si*randn(Vec{1,Float64}) for i in 1:length(Yfil.yy)])
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
@@ -106,7 +106,7 @@ Y2 = euler(Vec(0., 1.), sample(tt, Wiener{Vec{2,Float64}}()), P);
 
 iter = 0
 tt2 = [collect(tt[m*(i-1)+1:m*(i+1)+1]) for i in 1:n-1]
-BB = CTPath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
+BB = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 i = 1
 
 # reserve some space
@@ -127,7 +127,7 @@ while true
 
             v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
             Pprop = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,  si^2*I, P.a)
-            B2 = euler!(CTPath(tt2[i], yy), Pprop.v0, sample!(CTPath(tt2[i],ww), Wiener{Vec{2,Float64}}()),Pprop)
+            B2 = euler!(SamplePath(tt2[i], yy), Pprop.v0, sample!(SamplePath(tt2[i],ww), Wiener{Vec{2,Float64}}()),Pprop)
             
             llold = llikelihood([BB[i]; BB[i+1][2:end]], Pprop)
             llnew = llikelihood(B2, Pprop)

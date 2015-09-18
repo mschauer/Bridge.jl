@@ -1,5 +1,5 @@
 module Bridge
-export CTPro, CTPath, Wiener, WienerBridge, sample, sample!, .., euler,euler!, quvar, ito, bracket, lp, llikelihood,transitionprob
+export ContinuousTimeProcess, SamplePath, Wiener, WienerBridge, sample, sample!, .., euler,euler!, quvar, ito, bracket, lp, llikelihood,transitionprob
 export BridgeProp, PBridgeProp
 using Distributions
 import Distributions: sample, sample!

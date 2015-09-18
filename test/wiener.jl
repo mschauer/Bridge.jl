@@ -5,9 +5,9 @@ srand(8)
 
 @test begin # functions callable
     sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}())
-    sample!(CTPath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)), Wiener{Vec{2,Float64}}())
+    sample!(SamplePath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)), Wiener{Vec{2,Float64}}())
     sample(linspace(0,1,100),  WienerBridge{Vec{2,Float64}}(1., Vec(2.,-2.)))
-    sample!(CTPath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)),  WienerBridge{Vec{2,Float64}}(1., Vec(2.,-2.)))
+    sample!(SamplePath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)),  WienerBridge{Vec{2,Float64}}(1., Vec(2.,-2.)))
     euler!(sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}()), Vec(1.1,1.), sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}()), Wiener{Vec{2,Float64}}())
 
     sample(linspace(0,1,100),  Wiener{Float64}())

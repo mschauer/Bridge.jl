@@ -19,7 +19,7 @@ function intcspline(s, t1, t2, p1, p2, m1, m2)
 end
 intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2) - intcspline(s, t1, t2, p1, p2, m1, m2)
 
-type BridgeProp{T} <: CTPro{T}
+type BridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     p0; p1; m0; m1 #beta(t0), beta(t2), beta'(t0), beta'(t2)
@@ -28,13 +28,13 @@ type BridgeProp{T} <: CTPro{T}
     a
     Γ
 
-    BridgeProp(Target::CTPro{T}, t0, v0, t1, v1, a, p0, p1, m0, m1) = new(Target, 
+    BridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, p0, p1, m0, m1) = new(Target, 
         t0, v0, t1, v1, 
         p0, p1, m0, m1,
         a, inv(a))
 
 end
-BridgeProp{T}(Target::CTPro{T}, t0, v0, t1, v1, a, p0 = zero(T), p1 = p0, m0 = zero(T), m1 = zero(T)) = BridgeProp{T}(Target, t0, v0, t1, v1, a, p0, p1, m0, m1)
+BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, p0 = zero(T), p1 = p0, m0 = zero(T), m1 = zero(T)) = BridgeProp{T}(Target, t0, v0, t1, v1, a, p0, p1, m0, m1)
 
 h(t,x, P::BridgeProp) = P.v1 - x - intcspline(t, P.t1, P.t0, P.t1, P.p0, P.p1, P.m0, P.m1)
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*P.Γ*h(t, x, P::BridgeProp)/(P.t1 -t)
@@ -42,7 +42,7 @@ b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*P.Γ*h(t, x, P::B
 a(t, x, P::BridgeProp) = a(t, x, P.Target)
 
 
-type PBridgeProp{T} <: CTPro{T}
+type PBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1; t2; v2
     L; Lt; Σ
@@ -51,13 +51,13 @@ type PBridgeProp{T} <: CTPro{T}
     a
     Γ
 
-    PBridgeProp(Target::CTPro{T}, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0, p2, m0 , m2) = new(Target, 
+    PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0, p2, m0 , m2) = new(Target, 
         t0, v0, t1, v1, t2, v2, 
         L, L', Σ,
         p0, p2, m0, m2,
         a, inv(a))
 end
-PBridgeProp{T}(Target::CTPro{T}, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0 = zero(T), p2 = p0, m0 = zero(T), m2 = zero(T)) = PBridgeProp{T}(Target, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0, p2, m0 , m2)
+PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0 = zero(T), p2 = p0, m0 = zero(T), m2 = zero(T)) = PBridgeProp{T}(Target, t0, v0, t1, v1, t2, v2,  L, Σ, a, p0, p2, m0 , m2)
         
 h1(t,x, P::PBridgeProp) = P.v1 - x - intcspline(t, P.t1, P.t0, P.t2, P.p0, P.p2, P.m0, P.m2)
 h2(t,x, P::PBridgeProp) = P.v2 - x - intcspline(t, P.t2, P.t0, P.t2, P.p0, P.p2, P.m0, P.m2)
@@ -87,13 +87,13 @@ btilde(t, x, P::PBridgeProp) = cspline(t, P.t0, P.t2, P.p0, P.p2, P.m0, P.m2)
 a(t, x, P::PBridgeProp) = a(t, x, P.Target)
 
 
-#function girsanov{T}(Y::CTPath{T}, P1, P2)
+#function girsanov{T}(Y::SamplePath{T}, P1, P2)
 #    for i in 1:length(Y.tt)
 #
 #end
 
 
-function llikelihood{T}(Xcirc::CTPath{T}, Pt::PBridgeProp{T})
+function llikelihood{T}(Xcirc::SamplePath{T}, Pt::PBridgeProp{T})
     tt = Xcirc.tt
     xx = Xcirc.yy
 

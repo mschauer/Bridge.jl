@@ -1,29 +1,29 @@
 import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof
-abstract CTPro{T} 
+abstract ContinuousTimeProcess{T} 
 
-immutable CTPath{T}
+immutable SamplePath{T}
     tt :: Vector{Float64}
     yy :: Vector{T}
-    CTPath(tt, yy) = new(tt, yy)
+    SamplePath(tt, yy) = new(tt, yy)
 end
-CTPath{T}(tt, yy::Vector{T}) = CTPath{T}(tt, yy)
-copy{T}(X::CTPath{T}) = CTPath{T}(copy(X.tt), copy(X.yy))
-length(X::CTPath) = length(X.tt)
-getindex(V::CTPath, I::AbstractArray) = CTPath(V.tt[I], V.yy[I])
-getindex(V::CTPath, i::Integer) = (V.tt[i], V.yy[i])
-vcat{T}(Ys::CTPath{T}...) = CTPath{T}(vcat(map(Y->Y.tt, Ys)...),vcat(map(Y->Y.yy, Ys)...))
+SamplePath{T}(tt, yy::Vector{T}) = SamplePath{T}(tt, yy)
+copy{T}(X::SamplePath{T}) = SamplePath{T}(copy(X.tt), copy(X.yy))
+length(X::SamplePath) = length(X.tt)
+getindex(V::SamplePath, I::AbstractArray) = SamplePath(V.tt[I], V.yy[I])
+getindex(V::SamplePath, i::Integer) = (V.tt[i], V.yy[i])
+vcat{T}(Ys::SamplePath{T}...) = SamplePath{T}(vcat(map(Y->Y.tt, Ys)...),vcat(map(Y->Y.yy, Ys)...))
 
 
-start(Y::CTPath) = 1
-next(Y::CTPath, state) = Y[state], state+1
-done(V::CTPath, state) = state>endof(V)
-endof(V::CTPath) = endof(V.tt)
+start(Y::SamplePath) = 1
+next(Y::SamplePath, state) = Y[state], state+1
+done(V::SamplePath, state) = state>endof(V)
+endof(V::SamplePath) = endof(V.tt)
 
-function setindex!(V::CTPath,y, I)
+function setindex!(V::SamplePath,y, I)
     V.tt[I],V.yy[I] = y
 end
 
-function setv!(X::CTPath, v)
+function setv!(X::SamplePath, v)
     X.yy[end] = v
     X
 end
@@ -31,7 +31,7 @@ end
 
 #
 
-mat{d,T}(X::CTPath{Vec{d,T}}) = reshape(reinterpret(T,X.yy), d, length(X.yy))
+mat{d,T}(X::SamplePath{Vec{d,T}}) = reshape(reinterpret(T,X.yy), d, length(X.yy))
 mat{d,T}(yy::Vector{Vec{d,T}}) = reshape(reinterpret(T,yy), d, length(yy))
 
 unmat{T}(A::Matrix{T}) = reinterpret(Vec{size(A,1),T},A[:])

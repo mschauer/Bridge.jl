@@ -1,6 +1,6 @@
-type Wiener{T}  <: CTPro{T}
+type Wiener{T}  <: ContinuousTimeProcess{T}
 end
-type WienerBridge{T}  <: CTPro{T}
+type WienerBridge{T}  <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
 end
@@ -8,17 +8,17 @@ end
 function sample{T}(tt, P::Wiener{T})
     tt = collect(tt)
     yy = zeros(T,length(tt))
-    sample!(CTPath{T}(tt, yy), P)
+    sample!(SamplePath{T}(tt, yy), P)
 end
 
 function sample{T}(tt, P::Wiener{T},y1)
     tt = collect(tt)
     yy = zeros(T,length(tt))
-    sample!(CTPath{T}(tt, yy), P, y1)
+    sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
 
-function sample!{d,T}(W::CTPath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1])
+function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1])
     sz = d
     W.yy[1] = y1
     yy = mat(W.yy) 
@@ -28,32 +28,32 @@ function sample!{d,T}(W::CTPath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1])
             yy[sz*(i-1) + j] = yy[sz*(i-2) + j] + rootdt*randn(T)
         end
     end
-    CTPath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
+    SamplePath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
 end
 
-function sample!{T}(W::CTPath{T}, P::Wiener{T}, y1 = W.yy[1])
+function sample!{T}(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1])
     W.yy[1] = y1
     yy = W.yy
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
         yy[i] = yy[i-1] + rootdt*randn(T)
     end
-    CTPath{T}(W.tt, yy)
+    SamplePath{T}(W.tt, yy)
 end
 
 function sample{T}(tt, P::WienerBridge{T})
     tt = collect(tt)
     yy = zeros(T,length(tt))
-    sample!(CTPath{T}(tt, yy), P)
+    sample!(SamplePath{T}(tt, yy), P)
 end
 
 function sample{T}(tt, P::WienerBridge{T},y1)
     tt = collect(tt)
     yy = zeros(T,length(tt))
-    sample!(CTPath{T}(tt, yy), P, y1)
+    sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
-function sample!{d,T}(W::CTPath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W.yy[1])
+function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W.yy[1])
     
     TT = P.t - W.tt[1]
     sz = d
@@ -87,10 +87,10 @@ function sample!{d,T}(W::CTPath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W.yy[
     end
        
     
-    CTPath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
+    SamplePath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
 end
 
-function sample!{T}(W::CTPath{T}, P::WienerBridge{T}, y1 = W.yy[1])
+function sample!{T}(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1])
     
     TT = P.t - W.tt[1]
     W.yy[1] = y1
@@ -120,7 +120,7 @@ function sample!{T}(W::CTPath{T}, P::WienerBridge{T}, y1 = W.yy[1])
     end
        
     
-    CTPath{T}(W.tt, yy)
+    SamplePath{T}(W.tt, yy)
 end
 
 ## drift and dispersion coefficients

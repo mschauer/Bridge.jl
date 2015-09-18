@@ -1,6 +1,6 @@
 euler(u, W, P) = euler!(copy(W), u, W, P)
 
-function euler!{T}(Y, u, W::CTPath{T}, P)
+function euler!{T}(Y, u, W::SamplePath{T}, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -17,5 +17,5 @@ function euler!{T}(Y, u, W::CTPath{T}, P)
         y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N] = y
-    CTPath{T}(tt, yy)
+    SamplePath{T}(tt, yy)
 end
