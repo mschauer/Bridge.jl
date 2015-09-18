@@ -132,6 +132,17 @@ end
 function σ(s, x, P::Wiener)
     I
 end
+function a(s, x, P::Wiener)
+    I
+end
+function Γ(s, x, P::Wiener)
+    I
+end
+
+
+
+
+
 
 # transition density
 transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
@@ -148,4 +159,9 @@ function σ(s, x, P::WienerBridge)
     I
 end
 
-
+function a(s, x, P::WienerBridge)
+    I
+end
+function Γ(s, x, P::WienerBridge)
+    I
+end

@@ -1,4 +1,4 @@
-import Base: *, +, -, ctranspose, zero 
+import Base: *, +, -, ctranspose, zero,dot
 *(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ*A
 *(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A*J.λ
 +{m, n, T}(A::Mat{m,n, T}, J::Base.LinAlg.UniformScaling) = A + J.λ*eye(Mat{m,n,T})
@@ -7,26 +7,10 @@ import Base: *, +, -, ctranspose, zero
 -{m, n, T}(J::Base.LinAlg.UniformScaling, A::Mat{m,n, T}) = J.λ*eye(Mat{m,n,T}) - A
 
 zero{T, NDim, SIZE}(_::FixedSizeArrays.FixedArray{T,NDim,SIZE}) = zero(typeof(_))
-#dot{N,T}(a::T, b::FixedSizeArrays.Vec{N,T}) = a'*b
 
-#=
-@generated function *{T, T2, R, C}(a::Mat{R, C, T}, b::Vec{C,T2})
-   expr = [:(dot(row(a, $i), b.(1))) for i=1:R]
-   return quote 
-       $(Expr(:boundscheck, false))
-       Vec($(expr...))
-   end
-end
-@generated function *{T, M, N, R}(a::Mat{M, N, T}, b::Mat{N, R, T})
-   expr = Expr(:tuple, [Expr(:tuple, [:(dot(row(a, $i), column(b,$j))) for i in 1:M]...) for j in 1:R]...)
-   return quote 
-       $(Expr(:boundscheck, false))
-       Mat($(expr))
-   end
-end
-=#
+dot(J::Base.LinAlg.UniformScaling{Float64}, b::Float64) = J.λ*b
 
-ctranspose(v::Vec) =  Mat((v._,))'
+
 
 function cumsum0(dx::Vector)
         n = length(dx) + 1

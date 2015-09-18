@@ -68,7 +68,18 @@ function ito{T}(X::SamplePath, W::SamplePath{T})
 end
 
 
+function girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
+    tt = X.tt
+    xx = X.yy
 
-
-
- 
+    som::Float64 = 0.
+    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
+      s = tt[i]
+      x = xx[i]
+      B = Bridge.b(s,x, P)
+      Bt = Bridge.b(s,x, Pt)
+      DeltaBG = (B-Bt)*Bridge.Γ(s, x, P)
+      som += dot(DeltaBG, xx[i+1]-xx[i]) - 0.5*(dot(DeltaBG, B + Bt)) * (tt[i+1]-tt[i])
+    end
+    som
+end
