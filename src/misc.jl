@@ -22,7 +22,8 @@ function cumsum0(dx::Vector)
         x
 end
 
-import Base.Random: randn
+import Base: randn, rand
+
 
 randn(::Type{Float64}) = randn()
 randn{T}(::Type{Complex{T}}) = Complex(randn(T), randn(T))
