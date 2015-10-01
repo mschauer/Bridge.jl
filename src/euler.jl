@@ -19,3 +19,24 @@ function euler!{T}(Y, u, W::SamplePath{T}, P)
     yy[.., N] = y
     SamplePath{T}(tt, yy)
 end
+
+innovations(Y, P) = innovations!(copy(Y), Y, P)
+function innovations!{T}(W, Y::SamplePath{T}, P)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    yy = Y.yy
+    tt = W.tt
+    ww = W.yy
+    tt[:] = Y.tt
+
+    w = zero(ww[.., 1])
+
+    for i in 1:N-1
+        ww[.., i] = w
+        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+    end
+    ww[.., N] = w
+    SamplePath{T}(tt, ww)
+end

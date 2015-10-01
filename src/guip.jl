@@ -7,15 +7,14 @@ function cspline(s, t1, t2, p1, p2, m1, m2)
     z[1]*p1 + z[2]*p2 + z[3]*d*m1 + z[4]*d*m2
 end
 function intcspline(s, t1, t2, p1, p2, m1, m2)
-    d = t2-t1
-    t = (s-t1)/(t2-t1)
-    t2 = t*t
-    t3 = t2*t
-    t4 = t2*t2
-    #z = @fsa([2. -3. 0. 1.; -2. 3. 0. 0.; 1. -2. 1. 0.; 1. -1. 0. 0.])* @fsa([t4/4, t3/3, t2/2, t])
-    #z[1]*p1 + z[2]*p2 + z[3]*d*m1 + z[4]*d*m2
-    t4, t3, t2 = t4/4, t3/3, t2/2
-    p2*(3.*t3-2.*t4)+d*m1*(+1.*t2-2.*t3+1.*t4)+d*m2*(-1.* t3+1.*t4)+ p1*(1.*t1-3.*t3+2.*t4)
+        d = t2-t1
+        t = (s-t1)/(t2-t1)
+        t2 = t*t
+        t3 = t2*t
+        t4 = t2*t2
+        t4, t3, t2 = t4/4, t3/3, t2/2
+        z = @fsa([2. -3. 0. 1.; -2. 3. 0. 0.; 1. -2. 1. 0.; 1. -1. 0. 0.])* @fsa([t4, t3, t2, t])
+        (z[1]*p1 + z[2]*p2 + z[3]*d*m1 + z[4]*d*m2)*d
 end
 intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2) - intcspline(s, t1, t2, p1, p2, m1, m2)
 
@@ -40,7 +39,10 @@ h(t,x, P::BridgeProp) = P.v1 - x - intcspline(t, P.t1, P.t0, P.t1, P.p0, P.p1, P
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*P.Γ*h(t, x, P::BridgeProp)/(P.t1 -t)
 σ(t, x, P::BridgeProp) = σ(t, x, P.Target)
 a(t, x, P::BridgeProp) = a(t, x, P.Target)
-
+btilde(t, x, P::BridgeProp) = cspline(t, P.t0, P.t1, P.p0, P.p1, P.m0, P.m1) 
+function r(t, x, P::BridgeProp) 
+    P.Γ*h(t, x, P)/(P.t1 -t)
+end
 
 type PBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
@@ -80,9 +82,8 @@ function r(t, x, P::PBridgeProp)
     end
 end
 
+
 btilde(t, x, P::PBridgeProp) = cspline(t, P.t0, P.t2, P.p0, P.p2, P.m0, P.m2) 
-
-
 σ(t, x, P::PBridgeProp) = σ(t, x, P.Target)
 a(t, x, P::PBridgeProp) = a(t, x, P.Target)
 
@@ -93,7 +94,7 @@ a(t, x, P::PBridgeProp) = a(t, x, P.Target)
 #end
 
 
-function llikelihood{T}(Xcirc::SamplePath{T}, Pt::PBridgeProp{T})
+function llikelihood{T}(Xcirc::SamplePath{T}, Pt::Union{BridgeProp{T},PBridgeProp{T}})
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -106,6 +107,13 @@ function llikelihood{T}(Xcirc::SamplePath{T}, Pt::PBridgeProp{T})
     som
 end
 
+#ptilde{T}(s, x, t, P::BridgeProp{T}) = Normal(x + intcspline(s,t, P.t1, P.t0, P.t1, P.p0, P.p1, P.m0, P.m1), (t -s)*P.a)
+function ptilde{T}(P::BridgeProp{T}) 
+    S = chol((P.t1 -P.t0)*P.a, Val{:L})
+    delta = P.v1 - (P.v0 + intcspline(P.t0, P.t1, P.t0, P.t1, P.p0, P.p1, P.m0, P.m1))
+    d = length(P.v1)
+     -((norm(S\delta))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
+end
 
 
 

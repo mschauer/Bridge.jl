@@ -1,6 +1,6 @@
 module Bridge
 export ContinuousTimeProcess, SamplePath, Wiener, WienerBridge, sample, sample!, .., euler,euler!, quvar, ito, bracket, lp, llikelihood,transitionprob, girsanov, LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess
-export BridgeProp, PBridgeProp
+export BridgeProp, PBridgeProp, innovations, innovations!, ptilde
 
 
 using Distributions
