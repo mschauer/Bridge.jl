@@ -1,4 +1,4 @@
-using Winston, Bridge, Distributions, FixedSizeArrays
+using Winston, Bridge, Distributions, FixedSizeArrays, ConjugatePriors
 
 import Winston: plot, oplot
 function plot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
@@ -65,6 +65,10 @@ Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
 Bridge.a(t, x, P::FitzHughNagumo) = P.a
 Bridge.Γ(t, x, P::FitzHughNagumo) = inv(P.a)
 
+
+
+
+
 #σ = 0.2I
 #α = 1/3
 #β = 0.08*0.7
@@ -75,20 +79,21 @@ Bridge.Γ(t, x, P::FitzHughNagumo) = inv(P.a)
 #estparam=[true,true, true, true, false, false]
 #Ptrue = FitzHughNagumo(σ,α,β,γ1,γ2,ϵ,s)
 
-β, γ, ϵ, s,  = 0.6, 1.5, 10., 0.5 
-σ1 = 0.5
-#β, γ, ϵ, s = 1.4, 1.5, 0.1, 0.5
-function param(β, γ, ϵ, s, σ1)
-#    σ,α,β,γ1,γ2,ϵ,s = 
-#    Mat(((σ1, 0.), (0.,σ2))), 1/ϵ, β, γ, 1., 1/ϵ, 1/ϵ
-    σ1*I, ϵ, β, γ, 1., ϵ, s*ϵ
+function param(θ, σ)
+    β, γ, ϵ, s = θ
+    σ1 = σ[1]
+#   σ,    α, β, γ1,γ2, ϵ,  s 
+    σ1*I, ϵ, β, γ, 1., ϵ, s*ϵ #  Mat(((σ1, 0.), (0.,σ2)))
 end
-thetab = [β, γ, ϵ, s]
-thetabtrue=copy(thetab)
-estthetab = [1., 1., 5., 1.]
-thetaσ = [σ1]
-thetaσtrue = copy(thetaσ)
-Ptrue = FitzHughNagumo(param(thetab ..., thetaσ... )...)
+θ =  [[0.6, 1.4][1], 1.5, 10., 0.5] # [β, γ, ϵ, s]
+θtrue=copy(θ)
+scaleθ = 0.1*[0., 1., 5., 1.]
+σ = [0.5] #[σ1]
+scaleσ = [0.03]
+σtrue = copy(σ)
+Ptrue = FitzHughNagumo(param(θ, σ)...)
+si = sitrue = 0.2 # observation error 
+
 
 
 n = 200 # number of segments
@@ -96,18 +101,18 @@ m = 50 # number of euler steps per segments
 TT = 20.
 dt = TT/n/m
 tt = linspace(0., TT, n*m+1)
+tttrue = linspace(0., TT, n*10*m+1)
 ttf = tt[1:m:end]
 
-Y = euler(Vec(0., 1.), sample(tt, Wiener{Vec{2,Float64}}()), Ptrue); 
+Y = euler(Vec(0., 1.), sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
 
 
-Yfil = Y[1:m:end] #subsample
+Yfil = Y[1:10m:end] #subsample
 Ytrue = copy(Yfil)
 assert(endof(Yfil) == n+1)
-si = 0.5 # observation error 
 
 L = Mat(((1.,),(0.,)))
-Yobs = SamplePath{Vec{1,Float64}}(Yfil.tt, [L*Yfil.yy[i] .+ si*randn(Vec{1,Float64}) for i in 1:length(Yfil.yy)])
+Yobs = SamplePath{Vec{1,Float64}}(Yfil.tt, [L*Yfil.yy[i] + si*randn(Vec{1,Float64}) for i in 1:length(Yfil.yy)])
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
@@ -122,38 +127,46 @@ if false
 
     v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
     P° = PBridgeProp(Ptrue, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,si^2*I, Ptrue.a)
-    B = euler(P°.v0, sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{Vec{2,Float64}}()),P°)
+    B = eulerb(sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{Vec{2,Float64}}()),P°)
     plot(B; r...)
     oplot(Yfil[i:i+2],"ro:"; r...)
     oplot([Yobs.yy[i+1][1],Yobs.yy[i+1][1]],[-2, 2], ":"; r...)
     oplot(Y[1:2m+1], "b"; r...)
 end
 
-#Y2 = euler(Y.yy[1], sample(tt, Wiener{Vec{2,Float64}}()), Ptrue); 
-#Y2 = SamplePath(Y.tt, copy(Y.yy) .+ Vec(0., 0.1))
-Y2 = SamplePath{Vec{2,Float64}}(tt, zeros(Vec{2,Float64}, length(tt)))
+# Y2 = SamplePath(Y.tt, copy(Y.yy[1:10:end]) .+ Vec(0., 0.1)) #initialize with truth
+Y2 = SamplePath{Vec{2,Float64}}(tt, zeros(Vec{2,Float64}, length(tt))) #initialize path with zeros
 
 iter = 0
 tt2 = [collect(tt[m*(i-1)+1:m*(i+1)+1]) for i in 1:n-1]
 BB = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 BBnew = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 
-thetaσ = [0.7]
-thetab = 0.0 + 0.0*rand(length(thetab))
+# arbitrary starting values
+si = 0.3
+σ = [0.7]
+θ = 0.0 + 0.0*rand(length(θ))
 
-P = FitzHughNagumo(param(thetab..., thetaσ...)...)
+
+for i in 1:length(θ) # start with truth for parameters not to be estimated
+    if scaleθ[i] == 0
+        θ[i] = θtrue[i]
+    end
+end    
+
+P = FitzHughNagumo(param(θ, σ)...)
 
 
 if false
     for i in 1:n # reparametrization
         v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
         P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
-        BB[i] = euler(P°.v0, sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
+        BB[i] = eulerb(sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
         Yfil.yy[i+1] = BB[i].yy[m+1]
     end
 end
-        plot2(Y, "r","r" ; yrange=(-3,3),linewidth=0.5)
-        display(oplot2(Y2, "b", "b"; yrange=(-3,3), linewidth=0.7))
+plot2(Y, "r","r" ; yrange=(-3,3),linewidth=0.5)
+display(oplot2(Y2, "b", "b"; yrange=(-3,3), linewidth=0.7))
         
 i = 1
 
@@ -161,11 +174,17 @@ i = 1
 ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i+1)+1))
 yy = copy(ww)
 
+# Prior
+piσ²(s2) = pdf(InverseGamma(5/2,5/2), s2[1])
 
-lq(x) = Bridge.logpdfnormal(x, si^2*I)
+lq(x, si) = Bridge.logpdfnormal(x, si^2*I)
+PiError = InverseGamma(5/2,5/2)
+
+open("log.txt", "w") do f; println(f, 0, " ", join(round([θtrue ; σtrue; sitrue],3)," ")) end
+
 
 while true
-    P = FitzHughNagumo(param(thetab..., thetaσ...)...)
+    P = FitzHughNagumo(param(θ, σ)...)
     iter += 1
  
 
@@ -174,10 +193,10 @@ while true
 
             v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
             P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,  si^2*I, P.a)
-            B2 = euler!(SamplePath(tt2[i], yy), P°.v0, sample!(SamplePath(tt2[i],ww), Wiener{Vec{2,Float64}}()),P°)
+            B2 = eulerb!(SamplePath(tt2[i], yy), sample!(SamplePath(tt2[i],ww), Wiener{Vec{2,Float64}}()),P°)
             
-            llold = llikelihood([BB[i]; BB[i+1][2:end]], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1])
-            llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1])
+            llold = llikelihood([BB[i]; BB[i+1][2:end]], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1], si)
+            llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1], si)
             #println("$i->$(i+2) ($llnew - $llold) ")
             if rand() < exp(llnew - llold) 
                 Yfil.yy[i+1] = B2.yy[m+1]
@@ -192,8 +211,8 @@ while true
             P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
             B2 = euler(P°.v0, sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
             
-            llold = llikelihood(BB[i], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1])
-            llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1])
+            llold = llikelihood(BB[i], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1], si)
+            llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1], si)
             #println("$i->$(i+1) ($llnew - $llold) ")
     
             if rand() < exp(llnew - llold)
@@ -201,51 +220,72 @@ while true
                 BB[i] = B2
             end
     end
-    
-# update parameter (except sigma)
 
-if iter % 1 == 0
-    BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
-    thetab° = thetab + 0.1*(2rand(length(thetab)) .- 1).*estthetab
-    Pb = FitzHughNagumo(param(thetab..., thetaσ...)...)
-    Pb° = FitzHughNagumo(param(thetab°..., thetaσ...)...)
-    ll = girsanov(BBall, Pb°, Pb)
-#    println(ll)
+# update error variance
+    if size(L,1) == 1 # one dimensional
+        residual = Yobs.yy - map(x->L*x,Yfil.yy)
+        si = sqrt(rand(ConjugatePriors.posterior_canon(PiError,suffstats(Distributions.NormalKnownMu(0.), Bridge.mat(residual)))))
+    else
+        error("todo: multivariate observations")
+    end    
     
-    if rand()<exp(ll)  #iter > 200 
-        thetab = thetab°
-    end
-end
-# update sigma
-if iter % 1 == 0
-    thetaσ° = thetaσ .* exp(0.03(2rand(length(thetaσ)) .- 1))
-    
-    Pσ = FitzHughNagumo(param(thetab..., thetaσ...)...)
-    Pσ° = FitzHughNagumo(param(thetab..., thetaσ°...)...)
-    ll = 0.
-    for i in 1:n # reparametrization
-        P° = BridgeProp(Pσ, Yfil[i]..., Yfil[i+1]..., Pσ.a)
-        P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a)
-        Z = innovations(BB[i], P°)
+# update theta
 
-        BBnew[i] = euler(P°°.v0, Z, P°°)
-        ll += ptilde(P°°) - ptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
-#        println(ptilde(P°°), " - ", ptilde(P°))
-#        println(llikelihood(BBnew[i], P°°), " - ",  llikelihood(BB[i], P°))
-    end
-    if rand() < exp(ll)
-        thetaσ = thetaσ°
-        for i in 1:n
-            BB[i] = BBnew[i]
+    if iter % 1 == 0
+        BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
+        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
+        Pθ = FitzHughNagumo(param(θ, σ)...)
+        Pθ° = FitzHughNagumo(param(θ°, σ)...)
+        ll = girsanov(BBall, Pθ°, Pθ)
+    #    println(ll)
+        
+        if rand()<exp(ll)  #iter > 200 
+            θ = θ°
         end
-    end                    
-end     
-    println(iter, " ", round([thetab./thetabtrue; thetaσ./thetaσtrue],3))
+    end
+
+    # update sigma (and theta)
+    if iter % 1 == 0
+        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
+        Pσ = FitzHughNagumo(param(θ, σ)...)
+        Pσ° = FitzHughNagumo(param(θ°, σ°)...)
+        ll = 0.
+        for i in 1:n # reparametrization
+            P° = BridgeProp(Pσ, Yfil[i]..., Yfil[i+1]..., Pσ.a)
+            P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a)
+            Z = innovations(BB[i], P°)
+
+            BBnew[i] = eulerb(Z, P°°)
+            ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
+    #        println(lptilde(P°°), " - ", ptilde(lP°))
+    #        println(llikelihood(BBnew[i], P°°), " - ",  llikelihood(BB[i], P°))
+        end
+        #print(ll)
+        # f(σ²) = log σ²
+        # f'(σ²) = 1/σ²
+        # 2 log σ° = 2 log σ + Z, Z ~ N(0,v)
+        # q(σ°²|σ²) = 1/(σ°² sqrt(2piv)) exp(-1/2v |log(σ°²) - log(σ²)|^2)
+        # q(σ²|σ°²) / q(σ°²|σ²) = σ°²/σ²
+        
+        if rand() < exp(ll) * (piσ²(σ°.^2)/piσ²(σ.^2)) * (prod(σ°.^2)/prod(σ.^2))
+            σ = σ°
+            θ = θ°
+            for i in 1:n
+                BB[i] = BBnew[i]
+            end
+        end                    
+    end     
+    open("log.txt", "a") do f; println(f, iter, " ", join(round([θ ; σ; si],3)," ")) end
+    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue],3),"\t"))
       
     if iter % 10 == 0
+        xr = (5,7)
         BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
-        plot2(Y, "r","r" ; yrange=(-3,3),linewidth=0.5)
-        display(oplot2(BBall, "b", "b"; yrange=(-3,3), linewidth=0.7))
+        plot2(Y, "r","r" ; xrange=xr, yrange=(-3,3),linewidth=0.5)
+        oplot2(Yfil, "o","o"; xrange=xr, yrange=(-3,3),linewidth=0.1)
+        oplot(Yobs, "ro"; xrange=xr, yrange=(-3,3),linewidth=0.1) 
+        display(oplot2(BBall, "b", "b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
     end
     #if iter > 1000 break end
 end

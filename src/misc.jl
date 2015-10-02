@@ -1,10 +1,11 @@
-import Base: *, +, -, /, ctranspose, zero, dot, chol
+import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace
 *(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ*A
 *(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A*J.λ
-/(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ/A
 /(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A/J.λ
-chol(J::Base.LinAlg.UniformScaling, _) = chol(J.λ)*I
+\(J::Base.LinAlg.UniformScaling,v::FixedSizeArrays.FixedVector) = v/J.λ
 
+chol(J::Base.LinAlg.UniformScaling, ::Type{Val{:U}}) = sqrt(J.λ)*I
+chol(J::Base.LinAlg.UniformScaling, ::Type{Val{:L}}) = sqrt(J.λ)*I
 
 +{m, n, T}(A::Mat{m,n, T}, J::Base.LinAlg.UniformScaling) = A + J.λ*eye(Mat{m,n,T})
 +{m, n, T}(J::Base.LinAlg.UniformScaling, A::Mat{m,n, T}) = J.λ*eye(Mat{m,n,T}) + A
@@ -58,3 +59,10 @@ function logpdfnormal(x, A)
      -((norm(S\x))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
 end
 
+function trace{m,T}(A::Mat{m,m,T}) 
+    t = zero(T)
+    for i in 1:m
+        t += A[i,i]
+    end
+    t
+end    
