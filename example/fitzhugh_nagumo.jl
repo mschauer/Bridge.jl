@@ -26,12 +26,12 @@ function oplot(Y::SamplePath{Float64}, args...; keyargs...)
 end    
 
 
-function oplot2(Y::SamplePath{Vec{2,Float64}}, a1, a2; keyargs...) 
+function oplot2(Y::SamplePath{Vec{2,Float64}},  a1="r", a2="b";  keyargs...) 
     yy = Bridge.mat(Y.yy)
     oplot(Y.tt, yy[1,:], a1; keyargs...)
     oplot(Y.tt, yy[2,:], a2; keyargs...)
 end    
-function plot2(Y::SamplePath{Vec{2,Float64}}, a1, a2; keyargs...) 
+function plot2(Y::SamplePath{Vec{2,Float64}}, a1="r", a2="b"; keyargs...) 
     yy = Bridge.mat(Y.yy)
     plot(Y.tt,  yy[1,:], a1; keyargs...)
     oplot(Y.tt, yy[2,:], a2; keyargs...)
@@ -57,7 +57,7 @@ immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
 #    σ::FixedSizeArrays.Mat{2,2,Float64}
 #    a::FixedSizeArrays.Mat{2,2,Float64}
 
-    FitzHughNagumo(σ = 0.5I, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ')
+    FitzHughNagumo(σ = 0.5I, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ') #'
 end
  
 Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
@@ -87,32 +87,32 @@ function param(θ, σ)
 end
 θ =  [[0.6, 1.4][1], 1.5, 10., 0.5] # [β, γ, ϵ, s]
 θtrue=copy(θ)
-scaleθ = 0.1*[0., 1., 5., 1.]
+scaleθ = 0.08*[0., 1., 5., 1.]
 σ = [0.5] #[σ1]
-scaleσ = [0.03]
+scaleσ = [0.01]
 σtrue = copy(σ)
 Ptrue = FitzHughNagumo(param(θ, σ)...)
 si = sitrue = 0.2 # observation error 
 
 
 
-n = 200 # number of segments
+n = 150 # number of segments
 m = 50 # number of euler steps per segments
-TT = 20.
+TT = 30.
 dt = TT/n/m
 tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*10*m+1)
 ttf = tt[1:m:end]
 
-Y = euler(Vec(0., 1.), sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
+uu = Vec(0., 1.)
+Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
 
 
-Yfil = Y[1:10m:end] #subsample
-Ytrue = copy(Yfil)
-assert(endof(Yfil) == n+1)
+Ytrue = Y[1:10m:end] #subsample
+assert(endof(Ytrue) == n+1)
 
 L = Mat(((1.,),(0.,)))
-Yobs = SamplePath{Vec{1,Float64}}(Yfil.tt, [L*Yfil.yy[i] + si*randn(Vec{1,Float64}) for i in 1:length(Yfil.yy)])
+Yobs = SamplePath{Vec{1,Float64}}(Ytrue.tt, [L*Ytrue.yy[i] + si*randn(Vec{1,Float64}) for i in 1:length(Ytrue.yy)])
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
@@ -126,16 +126,18 @@ if false
     i = 1
 
     v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
-    P° = PBridgeProp(Ptrue, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,si^2*I, Ptrue.a)
+    P° = PBridgeProp(Ptrue, Ytrue[i]..., Yobs.tt[i+1], v, Ytrue[i+2]..., L,si^2*I, Ptrue.a)
     B = eulerb(sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{Vec{2,Float64}}()),P°)
     plot(B; r...)
-    oplot(Yfil[i:i+2],"ro:"; r...)
+    oplot(Ytrue[i:i+2],"ro:"; r...)
     oplot([Yobs.yy[i+1][1],Yobs.yy[i+1][1]],[-2, 2], ":"; r...)
     oplot(Y[1:2m+1], "b"; r...)
 end
 
-# Y2 = SamplePath(Y.tt, copy(Y.yy[1:10:end]) .+ Vec(0., 0.1)) #initialize with truth
-Y2 = SamplePath{Vec{2,Float64}}(tt, zeros(Vec{2,Float64}, length(tt))) #initialize path with zeros
+#Y2 = SamplePath(tt, copy(Y.yy[1:10:end])) #initialize with truth
+Y2 = SamplePath{Vec{2,Float64}}(tt, zeros(Vec{2,Float64}, length(tt))+uu) #initialize path with constant
+Yfil = Y2[1:m:end] 
+
 
 iter = 0
 tt2 = [collect(tt[m*(i-1)+1:m*(i+1)+1]) for i in 1:n-1]
@@ -160,9 +162,9 @@ P = FitzHughNagumo(param(θ, σ)...)
 if false
     for i in 1:n # reparametrization
         v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
-        P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
+        P° = PBridgeProp(P, Ytrue[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
         BB[i] = eulerb(sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
-        Yfil.yy[i+1] = BB[i].yy[m+1]
+        Ytrue.yy[i+1] = BB[i].yy[m+1]
     end
 end
 plot2(Y, "r","r" ; yrange=(-3,3),linewidth=0.5)
@@ -175,30 +177,35 @@ ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i+1)+1))
 yy = copy(ww)
 
 # Prior
-piσ²(s2) = pdf(InverseGamma(5/2,5/2), s2[1])
+piσ²(s2) = pdf(InverseGamma(1/100,1/100), s2[1])
+#piσ²(s2) = 1.#(max(0,(5000-10000s2[1])))^2
 
 lq(x, si) = Bridge.logpdfnormal(x, si^2*I)
-PiError = InverseGamma(5/2,5/2)
+PiError = InverseGamma(1/100,1/100)
 
 open("log.txt", "w") do f; println(f, 0, " ", join(round([θtrue ; σtrue; sitrue],3)," ")) end
 
+bacc = 0
 
 while true
     P = FitzHughNagumo(param(θ, σ)...)
     iter += 1
- 
+
 
     for j = 1:2
-        for i in j:2:n-1
 
+        for i in j:2:n-1
             v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
-            P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,  si^2*I, P.a)
+            cs = Bridge.CSpline(Yobs.tt[i], Yobs.tt[i+2], 0.7Bridge.b( Yfil[i]..., P),  0.7Bridge.b( Yfil[i+2]..., P))
+            
+            P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,  si^2*I, P.a, cs)
             B2 = eulerb!(SamplePath(tt2[i], yy), sample!(SamplePath(tt2[i],ww), Wiener{Vec{2,Float64}}()),P°)
             
             llold = llikelihood([BB[i]; BB[i+1][2:end]], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1], si)
             llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1], si)
-            #println("$i->$(i+2) ($llnew - $llold) ")
+         #   println("$i->$(i+2) ($llnew - $llold) ")
             if rand() < exp(llnew - llold) 
+                bacc += 1
                 Yfil.yy[i+1] = B2.yy[m+1]
                 BB[i] = B2[1:m+1]
                 BB[i+1] = B2[m+1:end]
@@ -247,13 +254,15 @@ while true
     # update sigma (and theta)
     if iter % 1 == 0
         σ° = σ .* exp(scaleσ .* randn(length(σ))) 
-        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
+        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = FitzHughNagumo(param(θ, σ)...)
         Pσ° = FitzHughNagumo(param(θ°, σ°)...)
         ll = 0.
         for i in 1:n # reparametrization
-            P° = BridgeProp(Pσ, Yfil[i]..., Yfil[i+1]..., Pσ.a)
-            P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a)
+            cs = Bridge.CSpline(Yobs.tt[i], Yobs.tt[i+1], Bridge.b( Yfil[i]..., P),  Bridge.b( Yfil[i+1]..., P))
+           
+            P° = BridgeProp(Pσ, Yfil[i]..., Yfil[i+1]..., Pσ.a, cs)
+            P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a, cs)
             Z = innovations(BB[i], P°)
 
             BBnew[i] = eulerb(Z, P°°)
@@ -263,7 +272,7 @@ while true
         end
         #print(ll)
         # f(σ²) = log σ²
-        # f'(σ²) = 1/σ²
+        # df(σ²) = 1/σ²
         # 2 log σ° = 2 log σ + Z, Z ~ N(0,v)
         # q(σ°²|σ²) = 1/(σ°² sqrt(2piv)) exp(-1/2v |log(σ°²) - log(σ²)|^2)
         # q(σ²|σ°²) / q(σ°²|σ²) = σ°²/σ²
@@ -277,7 +286,7 @@ while true
         end                    
     end     
     open("log.txt", "a") do f; println(f, iter, " ", join(round([θ ; σ; si],3)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue],3),"\t"))
+    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue; sqrt(σ[1]^2*TT/n + si[1])/sqrt(σtrue[1]^2*TT/n + sitrue[1]); 100bacc/iter/n  ],3),"\t"))
       
     if iter % 10 == 0
         xr = (5,7)
