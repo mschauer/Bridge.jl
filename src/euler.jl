@@ -62,7 +62,7 @@ function innovations!{T}(W, Y::SamplePath{T}, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
     end
     ww[.., N] = w
     SamplePath{T}(tt, ww)

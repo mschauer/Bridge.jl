@@ -1,4 +1,4 @@
-import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace
+import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace, logdet
 *(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ*A
 *(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A*J.λ
 /(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A/J.λ
@@ -16,6 +16,8 @@ chol(z::Float64, ::Type{Val{:L}}) = sqrt(z)
 zero{T, NDim, SIZE}(_::FixedSizeArrays.FixedArray{T,NDim,SIZE}) = zero(typeof(_))
 
 dot(J::Base.LinAlg.UniformScaling{Float64}, b::Float64) = J.λ*b
+dot(b::Float64, J::Base.LinAlg.UniformScaling{Float64}) = J.λ*b
+\{m,n,T}(mat::Mat{m,n,T}, v::Vec{n, T}) = inv(mat)*v
 
 
 function cumsum0(dx::Vector)
@@ -52,6 +54,8 @@ function chol{T}(m::Mat{2,2,T},::Type{Val{:R}})
             m[2,1]*inv(l11) chol(m[2,2] - (m[2,1]*inv(m[1,1])*m[1,2]), Val{:L})]
 end
 
+logdet(m::FixedSizeArrays.Mat) = log(det(m))
+logdet(x::Real) = log(x)
 
 function sumlogdiag{m,T}(A::Mat{m,m,T}, d=m) 
     t = zero(T)

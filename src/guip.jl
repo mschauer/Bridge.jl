@@ -70,6 +70,8 @@ h(t,x, P::BridgeProp) = P.v1 - x -  integrate(P.cs, t,  P.t1)
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P) 
 σ(t, x, P::BridgeProp) = σ(t, x, P.Target)
 a(t, x, P::BridgeProp) = a(t, x, P.Target)
+Γ(t, x, P::BridgeProp) = Γ(t, x, P.Target)
+
 btilde(t, x, P::BridgeProp) = P.cs(t)
 atilde(t, x, P::BridgeProp) = P.a
 function r(t, x, P::BridgeProp) 
@@ -204,5 +206,53 @@ function lptilde{T}(P::BridgeProp{T})
     logpdfnormal(P.v1 - (P.v0 + integrate(P.cs, P.t0, P.t1)), (P.t1 -P.t0)*P.a)
 end
 
+
+
+################################################################
+
+
+type DHBridgeProp{T} <: ContinuousTimeProcess{T}
+    Target
+    t0; v0::T; t1; v1::T
+
+    DHBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) = new(Target, 
+        t0, v0, t1, v1)
+
+end
+DHBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) = DHBridgeProp{T}(Target, t0, v0, t1, v1)
+
+b(t, x, P::DHBridgeProp) = (P.v1 - x )/(P.t1 - t)
+σ(t, x, P::DHBridgeProp) = σ(t, x, P.Target)
+a(t, x, P::DHBridgeProp) = a(t, x, P.Target)
+Γ(t, x, P::DHBridgeProp) = Γ(t, x, P.Target)
+
+function llikelihood{T}(Xcirc::SamplePath{T}, P::DHBridgeProp{T})
+    tt = Xcirc.tt
+    xx = Xcirc.yy
+
+    som::Float64 = 0.
+    N = length(tt)
+    for i in 1:N-1 #skip last value, summing over n-1 elements
+        s = tt[i]
+        sh = tt[i+1]
+        x = xx[i]
+        xh = xx[i+1] 
+        m = b(s,x,P.Target)
+        G = Γ(s,x,P.Target)
+        Gh = Γ(sh,xh,P.Target)
+        
+        som += dot(m,G*(xh - x - 0.5*m*(sh-s))) # girsanov(Xcirc, P.Target, Wiener{Float64}())
+        if i < N-1 
+            y = xh - P.v1
+            som -= 0.5*dot(y, (Gh-G)*y)/(P.t1 - tt[i+1])
+        end
+    end
+    som
+end
+
+function lptilde{T}(P::DHBridgeProp{T}) 
+    dv = P.v1-P.v0
+    -length(P.v1)/2*log(2pi*(P.t1-P.t0)) -0.5*logdet(a(P.t1,P.v1,P)) - (0.5/(P.t1-P.t0))*dot(dv, Γ(P.t0,P.v0,P)*dv)
+end
 
 

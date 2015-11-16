@@ -78,8 +78,8 @@ function girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::Continuo
       x = xx[i]
       B = Bridge.b(s,x, P)
       Bt = Bridge.b(s,x, Pt)
-      DeltaBG = (B-Bt)*Bridge.Γ(s, x, P)
-      som += dot(DeltaBG, xx[i+1]-xx[i]) - 0.5*(dot(DeltaBG, B + Bt)) * (tt[i+1]-tt[i])
+      DeltaBG = Bridge.Γ(s, x, P)*(B-Bt)
+      som += dot(DeltaBG, xx[i+1]-xx[i] - 0.5(B + Bt) * (tt[i+1]-tt[i]))
     end
     som
 end
