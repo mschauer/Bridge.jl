@@ -62,26 +62,38 @@ immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
 
     FitzHughNagumo(σ, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ') #'
 end
-#phi(t, x, P::FitzHughNagumo) = Mat((-x[1]^3, 0.), (x[1]-x[2], 0.), (1.,0.), (0., x[1]), (0., -x[2]), (0., 1.))
-phi(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
+
+
+#Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+#phi234(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
+function param(θ, σ)
+    β, γ, ϵ, s = θ
+    σ1, σ2 = σ
+#   σ,    α, β, γ1,γ2, ϵ,  s 
+    diag2(σ1,σ2), ϵ, β, γ, 1., ϵ, s  # α == ϵ
+end
  
-Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3 + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+phi1234(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (-x[1]^3 + x[1]-x[2], 0.),  (1.,0.) ) #β, γ, ϵ, s
+intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
 Bridge.a(t, x, P::FitzHughNagumo) = P.a
 Bridge.Γ(t, x, P::FitzHughNagumo) = inv(P.a)
 
 
-function conjugateb(YY, th, xi, P)
+function conjugateb(YY, th, xi, P, phif, intc)
         n = length(th)
         G = zeros(n,n)
         mu = zeros(th)
         for Y in YY
             for i in 1:length(Y)-1
-                phii = phi(Y[i]..., P)
-                Gphii = Bridge.Γ(Y[i]..., P)*phii
-                zi = phii'*Gphii
-                dy = Y.yy[i+1] - Y.yy[i]
-                mu = mu + Vector(Gphii'*dy)
+                phi = phif(Y[i]..., P)
+                Gphi = Bridge.Γ(Y[i]..., P)*phi
+                zi = phi'*Gphi
+                dy = Y.yy[i+1] - Y.yy[i] 
+                ds = Y.tt[i+1] - Y.tt[i] 
+                mu = mu + Vector(Gphi'*(dy - intc(Y[i]..., P)*ds))
                 G[:] = G +  Matrix(zi * (Y.tt[i+1]-Y.tt[i]))
             end
         end #for m
@@ -125,28 +137,23 @@ function MyProp(u, v, P, proptype=:mbb)
     end
 end
 
-function param(θ, σ)
-    β, γ, ϵ, s = θ
-    σ1,σ2 = σ
-#   σ,    α, β, γ1,γ2, ϵ,  s 
-    diag2(σ1,σ2), ϵ, β, γ, 1., ϵ, s 
-end
+
 
 ############## Configuration ###################################
 srand(10)
-K = 20000
+K = 100000
 
 
 simid = 1
-propid = 1
+#propid = 1
 proptype = [:mbb,:guip][propid]
 
 simname =["full", "fullne"][simid] * "$proptype"
 
 
-θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s]
+θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s] 
 θtrue=copy(θ)
-scaleθ = 0.08*[1., 1., 5., 1.]
+scaleθ = 0.08*[1., 1., 5., 5.]
 σ = [0.25, 0.2]
 scaleσ = ([0.1, 0.1],[0.1, 0.1])[propid]
 
@@ -155,10 +162,10 @@ Ptrue = FitzHughNagumo(param(θ, σ)...)
  
 
 
-n = 200 # number of segments
+n = 400 # number of segments
 m = 200 # number of euler steps per segments
-mextra = 20 #number of extra steps for truth
-TT = 80.
+mextra = 20 #factor of extra steps for truth
+TT = 300.
 dt = TT/n/m
 tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
@@ -199,15 +206,20 @@ end
 
 
 ################### Prior ###################################
+conjθs = [1,2,3,4] #set of conjugate thetas
+phi = phi1234
+intercept = intercept1234
+estθ = [true, true, true, true] #params to estimate
 
 # arbitrary starting values
  
 σ = [0.7, 0.7]
-θ = 0.0 + 0.0*rand(length(θ))
+θ = 0.5 + 1.0*rand(length(θ)) #θ = copy(θtrue)
 
 for i in 1:length(θ) # start with truth for parameters not to be estimated
-    if scaleθ[i] == 0
+    if !estθ[i]
         θ[i] = θtrue[i]
+        scaleθ[i] = 0.
     end
 end    
 
@@ -233,7 +245,7 @@ piσ²(s2) = pdf(InverseGamma(Alpha,Beta), s2[1])*pdf(InverseGamma(Alpha,Beta), 
 lq(x, si) = Bridge.logpdfnormal(x, si^2*I)
 PiError = InverseGamma(Alpha,Beta)
 
-xi = 1./[50., 50., 50]
+xi = 1./[50., 50., 50., 50.]
 
 #######################################################
 
@@ -298,7 +310,7 @@ perf = @timed while true
 
     # update conjugate theta
 
-    θ[2:end] = conjugateb(BB, θ[2:end],xi, P)
+    θ[conjθs] = conjugateb(BB, θ[conjθs],xi[conjθs], P, phi, intercept) 
     
     
     # update sigma (and theta)

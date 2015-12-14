@@ -43,4 +43,4 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 # mean and covariance of vector brownian motion
 
 @test norm(Vec(5.,2.) - mean([sample(linspace(0.0,2.0,5),Wiener{Vec{2,Float64}}(),Vec(5.,2.)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
-@test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{Vec{2,Float64}}(),Vec(5.0,2.0)).yy[end] for i = 1:1000]),vardim=2))  < 0.3
+@test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{Vec{2,Float64}}(),Vec(5.0,2.0)).yy[end] for i = 1:1000]);vardim=2))  < 0.3

@@ -2,8 +2,8 @@ library(ggplot2); library(gridExtra);library(plyr);library(GGally)
 psep = '/'
 
 NUM=1
-thin = 50
-burnin = 500
+thin = 100
+burnin = 5000
 #if (Sys.info()["sysname"] == "Darwin") setwd("~/...")
 
 simid <- 3
@@ -11,8 +11,8 @@ simname <- c('exci','nonexci','fullmbb', 'fullguip')[simid]
 
 thetas_all <- read.csv(paste(simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
 trueparam = (read.csv(paste(simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
-trueparam$beta <- NULL
-thetas_all$beta <- NULL
+#trueparam$beta <- NULL
+#thetas_all$beta <- NULL
 
 params <- labels(trueparam)[[2]]
 paramsfn <- params
@@ -25,6 +25,7 @@ NP <- length(params)
 d_all <- stack(thetas_all)
 thetas_all$m <- rep(simname,each=N)
 head(d_all)
+head(thetas_all)
 
  
 d_all['m'] <- rep(rep(simname,each=N),NP)
@@ -54,18 +55,18 @@ den_fig[[i]] <- ggplot(subset(d_all2,parameter==params[i]), aes(x=value,colour=m
 
 
 #### acf plots
-lagmax <- 30
+lagmax <- 18
 
 ind <- sort(unique(d_all2thin$iterate))
 acfs = list(NP)
 # density plots
-cs = 2:5
+cs = 1:6
 
 for (i in 1:length(cs))
 {
-    acfs[[i]] <-acf(thetas_all[ind,cs[i]],lagmax,plot=F)$acf
+    acfs[[i]] <-acf(thetas_all[ind,cs[i]],lag.max = lagmax,plot=F)$acf
 }
-acfs2 <- c(c(acfs[[1]], acfs[[2]]),c(acfs[[3]], acfs[[4]]))
+acfs2 <- c(c(acfs[[1]], acfs[[2]]),c(acfs[[3]], acfs[[4]]), c(acfs[[5]], acfs[[6]]))
 
 acf.df <- data.frame(lag=rep(0:lagmax,length(cs)),
                      acf=acfs2,
@@ -80,7 +81,7 @@ acf_fig <- ggplot(data=acf.df, aes(x=lag, y=acf)) +
 pdf(paste(simname,psep,'pairs.pdf',sep=''))
 par(mfrow=c(1,NUM))
 #pairs plots
-prs= c(1,2,3,4,5)
+prs= c(1,2,3,4,5,6)
 
 tt <- subset(thetas_all,m==simname)
 colnames(tt) <- paramsfn
