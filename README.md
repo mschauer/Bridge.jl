@@ -28,7 +28,7 @@ X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
 ```
 
 - [x] Define and simulate diffusion processes in one or more dimension
-- [ ] Continuous and discrete likelihood using Girsanovs theorem and transition densities
+- [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
 - [x] Monte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T
 - [x] Brownian motion in one and more dimensions
 - [x] Ornstein-Uhlenbeck processes
