@@ -1,4 +1,7 @@
-import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace, logdet
+import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace, logdet, lyap
+export supnorm
+supnorm(x) = sum(abs(x))
+
 *(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ*A
 *(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A*J.λ
 /(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A/J.λ
@@ -39,23 +42,26 @@ immutable RandnFunctor{T} <: FixedSizeArrays.Func{1} end
 @inline call{T}(rf::Type{RandnFunctor{T}}, i...) = randn(T)
 @inline randn{FSA <: FixedArray}(x::Type{FSA}) = map(RandnFunctor{eltype(FSA)}, FSA)
 
-chol{T}(m::Mat{1,1,T},::Type{Val{:L}}) = Mat(chol(m[1,1], Val{:L}))
-function chol{T}(m::Mat{2,2,T},::Type{Val{:L}})
-    m[1,2]==m[2,1]' || throw(Error("Matrix not symmetric"))
-    l11 = chol(m[1,1], Val{:L})
+
+function chol{T}(m::Mat{2,2,T})
+    m[1,2]==m[2,1]' || error("Matrix not symmetric")
+    l11 = chol(m[1,1])
     @fsa    [l11        inv(l11)*m[1,2]
             zero(T) chol(m[2,2] - (m[2,1]*inv(m[1,1])*m[1,2]), Val{:L})]
 end
 
-function chol{T}(m::Mat{2,2,T},::Type{Val{:R}})
-    m[1,2]==m[2,1]' || throw(Error("Matrix not symmetric"))
-    l11 = sqrt(m[1,1])
+function chol{T}(m::Mat{2,2,T}, ::Type{Val{:L}})
+    m[1,2]==m[2,1]' || error("Matrix not symmetric")
+    l11 = chol(m[1,1])'
     @fsa    [l11   zero(T) 
             m[2,1]*inv(l11) chol(m[2,2] - (m[2,1]*inv(m[1,1])*m[1,2]), Val{:L})]
 end
 
+
 logdet(m::FixedSizeArrays.Mat) = log(det(m))
 logdet(x::Real) = log(x)
+
+lyap{m,T}(A::Mat{m,m,T},C::Mat{m,m,T}) = Mat(lyap(Matrix(A),Matrix(C)))
 
 function sumlogdiag{m,T}(A::Mat{m,m,T}, d=m) 
     t = zero(T)
@@ -84,3 +90,11 @@ function trace{m,T}(A::Mat{m,m,T})
     end
     t
 end    
+
+type Gaussian
+    mu
+    a
+    Sigma
+    Gaussian(mu, a) = new(mu, a, chol(a)')
+end
+rand(P::Gaussian) = P.mu + P.Sigma*randn(typeof(P.mu))

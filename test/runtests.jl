@@ -1,2 +1,5 @@
 include("wiener.jl")
 include("diffusion.jl")
+include("misc.jl")
+include("guip.jl")
+include("linpro.jl")

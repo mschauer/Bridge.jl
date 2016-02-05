@@ -30,8 +30,12 @@ quvar(X)
              
     Computes quadratic variation of ``X``.
 """
-function quvar(X::SamplePath)
-        sum(diff(X.yy).^2)
+function quvar{T}(X::SamplePath{T})
+        s = zero(T)*zero(T)'
+        for u in diff(X.yy)
+            s += u*u'
+        end
+        s
 end
 
 

@@ -41,7 +41,7 @@ Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
 kernel(x, a=0.001) = 1/sqrt(2pi*a)* exp(-abs2(x)/(2a))
 @vectorize_1arg Float64 kernel
 
-n = 500
+n = 700
 tt = 0.:1/n:1.
 m = 6000
 P = VOrnsteinUhlenbeck{2}(2., 1.)
@@ -153,3 +153,4 @@ p2 = sum(map(f,linspace(-20,20,1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
 @test_approx_eq pt2 sum(map(ft,linspace(-20,20,1001)))*40/1000
 @test abs(mean(Z2*pt2/p2-1)*sqrt(m)/std(Z2*pt2/p2)) < 1.96
+

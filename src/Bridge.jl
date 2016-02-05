@@ -2,6 +2,7 @@ module Bridge
 export ContinuousTimeProcess, SamplePath, Wiener, WienerBridge, sample, sample!, .., euler,euler!, eulerb,eulerb!, quvar, ito, bracket, lp, llikelihood,transitionprob, girsanov, LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess
 export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, innovations, innovations!, lptilde
 
+export LinPro, LinBridgeProp
 
 using Distributions
 import Distributions: sample, sample!
@@ -18,6 +19,7 @@ include("euler.jl")
 include("diffusion.jl")
 include("guip.jl")
 include("levy.jl")
+include("linpro.jl")
 
 export FixedDiagonal
 

@@ -16,9 +16,9 @@ brown1(s, t, n) = sample(linspace(s, t, n), Wiener{Float64}())
 bb(u,v,t,n) = sample(linspace(0, t, n), WienerBridge{Float64}(t,v), u)
 
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
-qu = [quvar(sample(linspace(0., 2., 1000), Wiener{Float64}())) for j in 1:1000]
-s2 = var(qu)
-@test abs(mean(qu)-2)/sqrt(s2)*sqrt(1000) < 3 
+quv = [quvar(sample(linspace(0., 2., 1000), Wiener{Float64}())) for j in 1:1000]
+s2 = var(quv)
+@test abs(mean(quv)-2)/sqrt(s2)*sqrt(1000) < 3 
 
 
 # int0^T w_t dw_t = w_T^2/2 - T/2
@@ -36,9 +36,9 @@ X = [euler(0., brown1(0.,1.,1000), WienerBridge(2., 1.)).yy[end] for i in 1:1000
 
 
 #test (roughly) the quadratic variance of Euler approximation
-qu = [quvar(euler(0., brown1(0.,1.,1000), Diff())) for j in 1: 1000]
-s2 = var(qu)
-@test abs(mean(qu)-1)/sqrt(s2)*sqrt(1000) < 5.
+quv = [quvar(euler(0., brown1(0.,1.,1000), Diff())) for j in 1: 1000]
+s2 = var(quv)
+@test abs(mean(quv)-1)/sqrt(s2)*sqrt(1000) < 5.
  
 
 #  B(t) = (1-t) W(t/(1-t)). 
