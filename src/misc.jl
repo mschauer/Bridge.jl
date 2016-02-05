@@ -1,6 +1,33 @@
 import Base: *, +, -, /, \, ctranspose, zero, dot, chol, trace, logdet, lyap
-export supnorm
+export supnorm, Gaussian
+type Gaussian
+    mu
+    a
+    Sigma
+    Gaussian(mu, a) = new(mu, a, chol(a)')
+end
+rand(P::Gaussian) = P.mu + P.Sigma*randn(typeof(P.mu))
+
+"""
+    cumsum0
+
+Cumulative sum starting at 0, 
+"""
+function cumsum0(dx::Vector)
+        n = length(dx) + 1
+        x = similar(dx, n)
+        x[1] = 0.0      
+        for i in 2:n
+                x[i] = x[i-1] + dx[i-1] 
+        end
+        x
+end
+
+
 supnorm(x) = sum(abs(x))
+
+
+## a lot of functionality not working 
 
 *(J::Base.LinAlg.UniformScaling, A::FixedSizeArrays.FixedArray) = J.λ*A
 *(A::FixedSizeArrays.FixedArray, J::Base.LinAlg.UniformScaling) = A*J.λ
@@ -23,15 +50,6 @@ dot(b::Float64, J::Base.LinAlg.UniformScaling{Float64}) = J.λ*b
 \{m,n,T}(mat::Mat{m,n,T}, v::Vec{n, T}) = inv(mat)*v
 
 
-function cumsum0(dx::Vector)
-        n = length(dx) + 1
-        x = similar(dx, n)
-        x[1] = 0.0      
-        for i in 2:n
-                x[i] = x[i-1] + dx[i-1] 
-        end
-        x
-end
 
 import Base: randn, rand
 
@@ -91,10 +109,3 @@ function trace{m,T}(A::Mat{m,m,T})
     t
 end    
 
-type Gaussian
-    mu
-    a
-    Sigma
-    Gaussian(mu, a) = new(mu, a, chol(a)')
-end
-rand(P::Gaussian) = P.mu + P.Sigma*randn(typeof(P.mu))
