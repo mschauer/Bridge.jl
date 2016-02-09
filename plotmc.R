@@ -2,12 +2,12 @@ library(ggplot2); library(gridExtra);library(plyr);library(GGally)
 psep = '/'
 
 NUM=1
-thin = 100
-burnin = 5000
+thin = 1
+burnin = 500
 #if (Sys.info()["sysname"] == "Darwin") setwd("~/...")
 
-simid <- 3
-simname <- c('exci','nonexci','fullmbb', 'fullguip')[simid]
+simid <- 7
+simname <- c('exci','nonexci','fullmbb', 'fullguip', 'atanguip100', 'atantcguip100', 'atanguip10', 'atantcguip10')[simid]
 
 thetas_all <- read.csv(paste(simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
 trueparam = (read.csv(paste(simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
@@ -21,6 +21,10 @@ colnames(thetas_all) <- c('n',params)
 thetas_all['n'] <- NULL
 N <- nrow(thetas_all)
 NP <- length(params)
+
+cs = 1:NP
+prs= 1:NP
+acf.col = 3
 
 d_all <- stack(thetas_all)
 thetas_all$m <- rep(simname,each=N)
@@ -60,28 +64,28 @@ lagmax <- 18
 ind <- sort(unique(d_all2thin$iterate))
 acfs = list(NP)
 # density plots
-cs = 1:6
 
 for (i in 1:length(cs))
 {
     acfs[[i]] <-acf(thetas_all[ind,cs[i]],lag.max = lagmax,plot=F)$acf
 }
-acfs2 <- c(c(acfs[[1]], acfs[[2]]),c(acfs[[3]], acfs[[4]]), c(acfs[[5]], acfs[[6]]))
-
+if (NP == 6) acfs2 <- c(c(acfs[[1]], acfs[[2]]),c(acfs[[3]], acfs[[4]]), c(acfs[[5]], acfs[[6]]))
+if (NP == 3) acfs2 <- c(c(acfs[[1]], acfs[[2]], acfs[[3]]))
+    
 acf.df <- data.frame(lag=rep(0:lagmax,length(cs)),
                      acf=acfs2,
                      parameter=rep(params[cs],each=NUM*(lagmax+1  )))
 head(acf.df)
 acf_fig <- ggplot(data=acf.df, aes(x=lag, y=acf)) + 
   geom_hline(aes(yintercept = 0)) +
-  geom_segment(mapping = aes(xend = lag, yend = 0))+ facet_wrap(~parameter, ncol=2)+ textlarge
+  geom_segment(mapping = aes(xend = lag, yend = 0))+ facet_wrap(~parameter, ncol=acf.col)+ textlarge
 
 
 
 pdf(paste(simname,psep,'pairs.pdf',sep=''))
 par(mfrow=c(1,NUM))
 #pairs plots
-prs= c(1,2,3,4,5,6)
+
 
 tt <- subset(thetas_all,m==simname)
 colnames(tt) <- paramsfn

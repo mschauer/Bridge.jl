@@ -18,19 +18,20 @@ P = LinPro{S}(B, mu, sigma)
 u = S([1., 0.])
 v = S([.5, 0.])
 
-@test (norm(Matrix(P.lambda*B' + B*P.lambda - a))) < eps()
+@test (norm(Matrix(-P.lambda*B' - B*P.lambda - a))) < eps()
 
 # Normal(mu, -lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
-X = Bridge.mat(S[euler(mu + chol(-P.lambda)'*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
+X = Bridge.mat(S[euler(mu + chol(P.lambda)'*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
 
-@test supnorm(cov(X,2) - Matrix(-P.lambda)) < .1
+@test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
 
 
-n = 10000
+n = 1000
 TT = 0.5
 tt = 0.:TT/n:TT
 
 X = euler(mu, sample(tt, Wiener{S}()),P)
-@test supnorm(quvar(X)-TT*a) < 0.02
+@test supnorm(quvar(X)-TT*a) < 0.06
+
 
 

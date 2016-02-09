@@ -1,49 +1,15 @@
-function cspline(s, t1, t2, p1, p2, m1, m2)
-    d = t2-t1
-    t = (s-t1)/(t2-t1)
-    t2 = t*t
-    t3 = t2*t
-    z = @fsa([2. -3. 0. 1.; -2. 3. 0. 0.; 1. -2. 1. 0.; 1. -1. 0. 0.])* @fsa([t3, t2, t, 1.])
-    z[1]*p1 + z[2]*p2 + z[3]*d*m1 + z[4]*d*m2
-end
-function intcspline(s, t1, t2, p1, p2, m1, m2)
-        d = t2-t1
-        t = (s-t1)/(t2-t1)
-        t2 = t*t
-        t3 = t2*t
-        t4 = t2*t2
-        t4, t3, t2 = t4/4, t3/3, t2/2
-        z = @fsa([2. -3. 0. 1.; -2. 3. 0. 0.; 1. -2. 1. 0.; 1. -1. 0. 0.])* @fsa([t4, t3, t2, t])
-        (z[1]*p1 + z[2]*p2 + z[3]*d*m1 + z[4]*d*m2)*d
-end
-intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2) - intcspline(s, t1, t2, p1, p2, m1, m2)
+""" 
+    r(t, x, T, v, P)
 
-type CSpline{T}
-    s; t; x::T; y::T; mx; my
+Returns ``r(t,x) = \operatorname{grad}_x \log p(t,x; T, v)`` where
+``p`` is the transition density of the process ``P``.
+""" 
+function r(t, x, T, v, P)
+    H(t, T, P, V(t, T, v, P)-x)
 end
-CSpline{T}(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 = m0) = CSpline{T}(s, t, x, y, mx, my)
-call(cs::CSpline, t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
-integrate(cs::CSpline, s, t) = intcspline(s,t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
 
-#####################
-
-type Ptilde{T} <: ContinuousTimeProcess{T}
-    cs::CSpline{T}
-    σ
-    a
-    Γ
-    Ptilde(cs, σ) = new(cs, σ, σ*σ', inv(σ*σ'))
-end
-b(t, x, P::Ptilde) = P.cs(t) 
-mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
-σ(t, x, P::Ptilde) = P.σ
-a(t, x, P::Ptilde) = P.a
-Ptilde{T}(cs::CSpline{T}, σ) = Ptilde{T}(cs, σ)
-
-
-function lp{T}(s, x, t, y, P::Ptilde{T}) 
-    logpdfnormal(y - mu(s,x,t,P), (t-s)*P.a)
-end
+tau(s, t, T) = t + (s.-t).*(2-(s-t)/(T-t))
+tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 #####################
 
@@ -74,6 +40,8 @@ a(t, x, P::BridgeProp) = a(t, x, P.Target)
 
 btilde(t, x, P::BridgeProp) = P.cs(t)
 atilde(t, x, P::BridgeProp) = P.a
+
+ 
 function r(t, x, P::BridgeProp) 
     P.Γ*h(t, x, P)/(P.t1 - t)
 end
@@ -81,6 +49,41 @@ function H(t, x, P::BridgeProp)
     P.Γ/(P.t1 - t)
 end
 
+function lptilde{T}(P::BridgeProp{T}) 
+    logpdfnormal(P.v1 - (P.v0 + integrate(P.cs, P.t0, P.t1)), (P.t1 -P.t0)*P.a)
+end
+
+
+"""
+    GuidedProp
+
+General bridge proposal process
+"""    
+type GuidedProp{T} <: ContinuousTimeProcess{T}
+    Target
+    t0; v0; t1; v1
+    Pt::ContinuousTimeProcess{T}
+
+    GuidedProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt) = new(Target, 
+        t0, v0, t1, v1, 
+        Pt)
+end
+
+GuidedProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt::ContinuousTimeProcess{T}) = GuidedProp{T}(Target, t0, v0, t1, v1, Pt)
+
+
+r(t, x, P::GuidedProp) = r(t, x, P.t1, P.v1, P.Pt) 
+b(t, x, P::GuidedProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P.t1, P.v1, P.Pt) 
+σ(t, x, P::GuidedProp) = σ(t, x, P.Target)
+a(t, x, P::GuidedProp) = a(t, x, P.Target)
+Γ(t, x, P::GuidedProp) = Γ(t, x, P.Target)
+
+btilde(t, x, P::GuidedProp) = b(t,x,P.Pt)
+atilde(t, x, P::GuidedProp) = a(t,x,P.Pt)
+
+function lptilde{T}(P::GuidedProp{T}) 
+     lp( P.t0, P.v0, P.t1, P.v1, P.Pt) 
+end
 
 #####################
 
@@ -185,28 +188,6 @@ a(t, x, P::FilterProp) = a(t, x, P.Target)
 
 
 
-function llikelihood{T}(Xcirc::SamplePath{T}, Pt::Union{BridgeProp{T},PBridgeProp{T},FilterProp{T}}; consta = true)
-    tt = Xcirc.tt
-    xx = Xcirc.yy
-
-    som::Float64 = 0.
-    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
-        s = tt[i]
-        x = xx[i]
-        r = Bridge.r(s, x, Pt)
-        som += (dot(b(s,x, Pt.Target) - btilde(s,x, Pt), r)  ) * (tt[i+1]-tt[i])
-        if consta == false
-            som += trace((a(s,x, Pt.Target) - atilde(s, x, Pt))*(H(s,x,Pt) -  r*r')) * (tt[i+1]-tt[i])
-        end
-    end
-    som
-end
-
-function lptilde{T}(P::BridgeProp{T}) 
-    logpdfnormal(P.v1 - (P.v0 + integrate(P.cs, P.t0, P.t1)), (P.t1 -P.t0)*P.a)
-end
-
-
 
 ################################################################
 
@@ -254,5 +235,28 @@ function lptilde{T}(P::DHBridgeProp{T})
     dv = P.v1-P.v0
     -length(P.v1)/2*log(2pi*(P.t1-P.t0)) -0.5*logdet(a(P.t1,P.v1,P)) - (0.5/(P.t1-P.t0))*dot(dv, Γ(P.t0,P.v0,P)*dv)
 end
+
+
+
+
+################################################################
+
+function llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}; consta = true)
+    tt = Xcirc.tt
+    xx = Xcirc.yy
+
+    som::Float64 = 0.
+    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
+        s = tt[i]
+        x = xx[i]
+        r = Bridge.r(s, x, Po)
+        som += (dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
+        if consta == false
+            som += trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+        end
+    end
+    som
+end
+
 
 

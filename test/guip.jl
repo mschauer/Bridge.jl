@@ -99,7 +99,10 @@ begin
 # BridgeProp
 
 T = 2.
-tt = linspace(0, T, n)
+ss = linspace(0, T, n)
+tau(s, T) = s.*(2-s/T)
+tt = tau(ss, T)
+
 u = 1.
 v = 0.5
 a = .7
@@ -121,6 +124,27 @@ pt = exp(lp(0., u, T, v, Pt))
 @test_approx_eq pt exp(lptilde(Po))
 @test abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)) < 1.96
 
+# GuidedProp
+β = 0.8
+Ptarget = LinPro(-β, 0., sqrt(a))
+Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
+
+z = Float64[
+    begin
+    W = sample(tt, Wiener{Float64}())
+    X = eulerb(W,Po)
+    llikelihood(X, Po)
+    end
+    for i in 1:m]
+
+p2 = pdf(transitionprob(0., u, T, Ptarget), v)
+p = exp(lp(0., u, T, v, Ptarget))
+pt = exp(lp(0., u, T, v, Pt))
+@test p == p2
+@test_approx_eq pt exp(lptilde(Po))
+@test abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)) < 1.96
+
+
 # DHBridgeProp
 
 Po3 = DHBridgeProp(P1, tt[1], u, tt[end], v)
@@ -130,6 +154,8 @@ Z = Float64[
     exp(llikelihood(X, Po3)) 
     end
     for i in 1:m]
+
+p = pdf(transitionprob(0., u, T, P1), v)    
 pt = exp(lptilde(Po3))
 @test_approx_eq lptilde(Po3) Bridge.logpdfnormal(v-u, T*a)
 @test abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)) < 1.96
@@ -153,4 +179,29 @@ p2 = sum(map(f,linspace(-20,20,1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
 @test_approx_eq pt2 sum(map(ft,linspace(-20,20,1001)))*40/1000
 @test abs(mean(Z2*pt2/p2-1)*sqrt(m)/std(Z2*pt2/p2)) < 1.96
+
+
+
+
+# GuidedProp 
+
+Ptarget = Bridge.Ptilde(cs2, sqrt(a))
+Pt = LinPro(-β, 0.2, sqrt(a))
+Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
+
+z = Float64[
+    begin
+    W = sample(tt, Wiener{Float64}())
+    X = eulerb(W,Po)
+    llikelihood(X, Po)
+    end
+    for i in 1:m]
+
+p2 = pdf(transitionprob(0., u, T, Ptarget), v)
+p = exp(lp(0., u, T, v, Ptarget))
+pt = exp(lp(0., u, T, v, Pt))
+@test p == p2
+@test_approx_eq pt exp(lptilde(Po))
+@test abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)) < 1.96
+
 
