@@ -100,3 +100,10 @@ function V(t, T, v, P::LinPro)
 end
 
 
+function dotV(t, T, v, P::LinPro)
+    expm(-(T-t)*P.B)*P.B*(v - P.μ)
+end
+
+
+
+

@@ -13,8 +13,6 @@ end
 end
 
 
-# 2: 1655 seconds
-
 
 immutable Atan <: ContinuousTimeProcess{Float64}
     α::Float64
@@ -99,7 +97,7 @@ srand(10)
 K = 10000
 m = 10 # number of euler steps per segments
 
-simid = 1
+simid = 2
 propid = 2
 proptype = [:mbb,:guip][propid]
 
@@ -234,7 +232,7 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        B = eulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
+        B = shiftedeulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
         if iter == 1
              BB[i] = B
         end
@@ -251,11 +249,15 @@ perf = @timed while true
     # update theta
 
     if iter % 1 == 0
-        BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
+        #BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
         θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
         Pθ = Atan(param(θ, σ)...)
         Pθ° = Atan(param(θ°, σ)...)
-        ll = girsanov(BBall, Pθ°, Pθ)
+        #ll = girsanov(BBall, Pθ°, Pθ)
+        ll = 0.
+        for i in 1:n
+            ll += girsanov(BB[i], Pθ°, Pθ)
+        end    
         if rand() < exp(ll)  
             θ = θ°
         end

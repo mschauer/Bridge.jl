@@ -6,8 +6,8 @@ thin = 1
 burnin = 500
 #if (Sys.info()["sysname"] == "Darwin") setwd("~/...")
 
-simid <- 7
-simname <- c('exci','nonexci','fullmbb', 'fullguip', 'atanguip100', 'atantcguip100', 'atanguip10', 'atantcguip10')[simid]
+simid <- 6
+simname <- c('exci','nonexci','fullmbb', 'fullguip', 'atanguip100', 'atantcguip100', 'atanguip20', 'atantcguip20')[simid]
 
 thetas_all <- read.csv(paste(simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
 trueparam = (read.csv(paste(simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
