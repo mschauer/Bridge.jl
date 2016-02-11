@@ -109,6 +109,31 @@ function eulerb!{T}(Y, W::SamplePath{T}, P)
     SamplePath{T}(tt, yy)
 end
 
+eulerbridge(W, P) = eulerbridge!(copy(W), W, P)
+function eulerbridge!{T}(Y, W::SamplePath{T}, P)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    
+    tt[1] != P.t0 && error("time axis mismatch between W and P  ")
+    tt[end] != P.t1 && error("time axis mismatch between W and P  ")
+    
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y = P.v0
+
+    for i in 1:N-1
+        yy[.., i] = y
+        ynew = Mu(tt[i+1], P.t1, P.Pt)*inv(Mu(tt[i], P.t1, P.Pt))*y
+        y = ynew + (b(tt[i], y, P) - P.Pt.B*y  + (a(tt[i], y, P)-P.Pt.a)*r(tt[i], y, P))*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
+    end
+    yy[.., N] = P.v1
+    SamplePath{T}(tt, yy)
+end
 
 
 shiftedeulerb(W, P) = shiftedeulerb!(copy(W), W, P)

@@ -98,16 +98,16 @@ begin
 ##########################################
 # BridgeProp
 srand(5)
-C = zeros(6)
-n, m = 20, 10000
+C = zeros(7)
+n, m = 200, 10000
 T = 2.
 ss = linspace(0, T, n)
 tau(s, T) = s.*(2-s/T)
-tt = tau(ss, T)
-#tt = ss
+#tt = tau(ss, T)
+tt = ss
 
-u = 1.
-v = 0.5
+u = 0.5
+v = 0*0.5
 a = .7
 P1 = OrnsteinUhlenbeck(0.8, sqrt(a))
 cs = 1*[u, u*exp(-P1.β*T), -P1.β*u, -exp(-P1.β*T)*P1.β*u]
@@ -223,7 +223,26 @@ p = exp(lp(0., u, T, v, Ptarget))
 pt = exp(lptilde(Po))
 C[6] = abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p))
 
-println("BridgeProp, GuidedProp, DHBridgeProp, PBridgeProp, GuidedProp, shifted GuidedProp")
+# GuidedProp with mu
+ 
+Ptarget = Bridge.Ptilde(cs2, sqrt(a))
+Pt = LinPro(-β, 0., sqrt(a))
+Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
+
+z = Float64[
+    begin
+    W = sample(tt, Wiener{Float64}())
+    X = Bridge.eulerbridge(W, Po)
+    llikelihood(X, Po)
+    end
+    for i in 1:m]
+
+p = exp(lp(0., u, T, v, Ptarget))
+pt = exp(lp(0., u, T, v, Pt))
+C[7] = abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p))
+
+
+println("BridgeProp, GuidedProp, DHBridgeProp, PBridgeProp, GuidedProp, shifted GuidedProp, GuidedProp with mu")
 println(C)
 
 @test  all(C .< 1.96)
