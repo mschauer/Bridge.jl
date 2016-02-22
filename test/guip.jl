@@ -135,7 +135,7 @@ Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 z = Float64[
     begin
     W = sample(tt, Wiener{Float64}())
-    X = eulerb(W,Po)
+    X = bridge(W,Po,euler!)
     llikelihood(X, Po)
     end
     for i in 1:m]
@@ -193,7 +193,7 @@ Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 z = Float64[
     begin
     W = sample(tt, Wiener{Float64}())
-    X = eulerb(W, Po)
+    X = bridge(W, Po)
     llikelihood(X, Po)
     end
     for i in 1:m]
@@ -214,7 +214,7 @@ Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 z = Float64[
     begin
     W = sample(tt, Wiener{Float64}())
-    X = shiftedeulerb(W, Po)
+    X = shiftedbridge(W, Po)
     llikelihood(X, Po)
     end
     for i in 1:m]
@@ -232,7 +232,7 @@ Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 z = Float64[
     begin
     W = sample(tt, Wiener{Float64}())
-    X = Bridge.eulerbridge(W, Po)
+    X = Bridge.eulermu(W, Po)
     llikelihood(X, Po)
     end
     for i in 1:m]

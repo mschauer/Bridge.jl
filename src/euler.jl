@@ -16,10 +16,19 @@ function euler!{T}(Y, u, W::SamplePath{T}, P)
         y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N] = y
-    SamplePath{T}(tt, yy)
+    Y
 end
 
-    
+bridge(W, P, scheme!) = bridge!(copy(W), W, P, scheme! = euler!)
+function bridge!{T}(Y, W::SamplePath{T}, P, scheme! = euler!)
+    W.tt[1] != P.t0 && error("time axis mismatch between W and P  ")
+    W.tt[end] != P.t1 && error("time axis mismatch between W and P  ")
+
+    scheme!(Y, P.v0, W, P)
+    Y.yy[.., N] = P.v1
+    Y
+end
+
 rungekutta(W, P) = rungekutta!(copy(W), W, P)
 function rungekutta!{T<:Number}(Y, u, W::SamplePath{T}, P)
 
@@ -48,69 +57,13 @@ function rungekutta!{T<:Number}(Y, u, W::SamplePath{T}, P)
     yy[.., N] = y
     SamplePath{T}(tt, yy)
 end
- 
-rungekuttab(W, P) = rungekuttab!(copy(W), W, P)
-function rungekuttab!{T<:Number}(Y, W::SamplePath{T}, P)
 
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    ww = W.yy
-    tt = Y.tt
-    
-    tt[1] != P.t0 && error("time axis mismatch between W and P  ")
-    tt[end] != P.t1 && error("time axis mismatch between W and P  ")
-    
-    yy = Y.yy
-    tt[:] = W.tt
-
-    y = P.v0
-
-    for i in 1:N-1
-        yy[.., i] = y
-        delta = tt[i+1]-tt[i]
-        sqdelta = sqrt(delta)
-        B = b(tt[i], y, P)
-        S = σ(tt[i], y, P)
-        dw = ww[.., i+1]-ww[..,i]
-        y = y + B*delta + S*dw
-        ups = y + B*delta + S*sqdelta
-        y = y + 0.5(σ(tt[i+1], ups, P) - S)*(dw^2 - delta)/sqdelta
-        
-    end
-    yy[.., N] = P.v1
-    SamplePath{T}(tt, yy)
-end
 
 # euler for bridges starting from P.v0 to P.v1 
 
-eulerb(W, P) = eulerb!(copy(W), W, P)
-function eulerb!{T}(Y, W::SamplePath{T}, P)
 
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    ww = W.yy
-    tt = Y.tt
-    
-    tt[1] != P.t0 && error("time axis mismatch between W and P  ")
-    tt[end] != P.t1 && error("time axis mismatch between W and P  ")
-    
-    yy = Y.yy
-    tt[:] = W.tt
-
-    y = P.v0
-
-    for i in 1:N-1
-        yy[.., i] = y
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
-    end
-    yy[.., N] = P.v1
-    SamplePath{T}(tt, yy)
-end
-
-eulerbridge(W, P) = eulerbridge!(copy(W), W, P)
-function eulerbridge!{T}(Y, W::SamplePath{T}, P)
+eulerMu(W, P) = eulerMu!(copy(W), W, P)
+function eulerMu{T}(Y, W::SamplePath{T}, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -161,6 +114,30 @@ function shiftedeulerb!{T}(Y, W::SamplePath{T}, P)
     SamplePath{T}(tt, yy)
 end
 
+euleru(W, P) = euleru!(copy(W), W, P)
+function eulertau!{T}(Y, W::SamplePath{T}, P, tau, dottau)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    
+    tt[1] != P.t0 && error("time axis mismatch between W and P")
+    tt[end] != P.t1 && error("time axis mismatch between W and P")
+    
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y = P.v0
+
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
+    end
+    yy[.., N] = P.v1
+    SamplePath{T}(tt, yy)
+end
 
 
 
