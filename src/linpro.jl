@@ -37,6 +37,11 @@ function V(t, T, v, P::Ptilde)
     v - integrate(P.cs, t, T)
 end
 
+function dotV(t, T, v, P::Ptilde)
+     P.cs(t)
+end
+
+
 function H(t, T, P::Ptilde)
     P.Γ/(T-t)
 end

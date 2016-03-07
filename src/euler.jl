@@ -63,7 +63,7 @@ end
 
 
 eulerMu(W, P) = eulerMu!(copy(W), W, P)
-function eulerMu{T}(Y, W::SamplePath{T}, P)
+function eulerMu!{T}(Y, W::SamplePath{T}, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -89,8 +89,8 @@ function eulerMu{T}(Y, W::SamplePath{T}, P)
 end
 
 
-shiftedeulerb(W, P) = shiftedeulerb!(copy(W), W, P)
-function shiftedeulerb!{T}(Y, W::SamplePath{T}, P)
+shiftedbridge(W, P) = shiftedbridge!(copy(W), W, P)
+function shiftedbridge!{T}(Y, W::SamplePath{T}, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -113,33 +113,6 @@ function shiftedeulerb!{T}(Y, W::SamplePath{T}, P)
     yy[.., N] = P.v1
     SamplePath{T}(tt, yy)
 end
-
-eulertau(W, P) = eulertau!(copy(W), W, P)
-function eulertau!{T}(Y, W::SamplePath{T}, P, tau, dottau)
-
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    ww = W.yy
-    tt = Y.tt
-    
-    tt[1] != P.t0 && error("time axis mismatch between W and P")
-    tt[end] != P.t1 && error("time axis mismatch between W and P")
-    
-    yy = Y.yy
-    tt[:] = W.tt
-
-    y = P.v0
-
-    for i in 1:N-1
-        yy[.., i] = y
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
-    end
-    yy[.., N] = P.v1
-    SamplePath{T}(tt, yy)
-end
-
-
 
 innovations(Y, P) = innovations!(copy(Y), Y, P)
 function innovations!{T}(W, Y::SamplePath{T}, P)

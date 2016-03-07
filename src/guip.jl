@@ -40,6 +40,7 @@ a(t, x, P::BridgeProp) = a(t, x, P.Target)
 
 btilde(t, x, P::BridgeProp) = P.cs(t)
 atilde(t, x, P::BridgeProp) = P.a
+ptilde(P::BridgeProp) = Ptilde(P.cs, σ(P.t1, P.v1, P.Target))
 
  
 function r(t, x, P::BridgeProp) 
@@ -82,6 +83,7 @@ a(t, x, P::GuidedProp) = a(t, x, P.Target)
 
 btilde(t, x, P::GuidedProp) = b(t,x,P.Pt)
 atilde(t, x, P::GuidedProp) = a(t,x,P.Pt)
+ptilde(P::GuidedProp) = P.Pt
 
 function lptilde{T}(P::GuidedProp{T}) 
      lp( P.t0, P.v0, P.t1, P.v1, P.Pt) 

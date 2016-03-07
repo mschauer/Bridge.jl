@@ -128,13 +128,13 @@ end
 
 function MyProp(u, v, P, proptype=:mbb)
     if proptype == :guip
-        cs = Bridge.CSpline(u[1], v[1], Bridge.b(u..., P),  Bridge.b( v..., P))
+        cs = Bridge.CSpline(u[1], v[1], Bridge.b(u..., P),  Bridge.b(v..., P))
         return BridgeProp(P, u..., v..., P.a, cs)
     elseif proptype == :lin
         #Vec(-P.α*x[1]^3 + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-        a = 0.5
+        a = (u[2][1] + v[2][1])/2
         y = -3*a^2*P.α
-        B = Mat([(P.ϵ+y) -P.ϵ; P.γ1 P.γ2])
+        B = Mat([(P.ϵ+y) -P.ϵ; P.γ1 -P.γ2])
         β = Vec(-a^3*P.α - a*y + P.s, P.β)
         Pt = Bridge.LinPro(B, -B\β, P.σ)
         return GuidedProp(P, u..., v..., Pt)
@@ -147,20 +147,22 @@ end
 
 ############## Configuration ###################################
 srand(10)
-K = 10000
+K = 10000 #100000
 
 
 simid = 1
-propid = 3
+#propid = 1
 proptype = [:mbb,:guip,:lin][propid]
 
 simname =["full", "fullne"][simid] * "$proptype"
 
+STIME = true
 
 θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s] 
 θtrue=copy(θ)
 scaleθ = 0.08*[1., 1., 5., 5.]
-σ = [0.25, 0.2]
+#σ = [0.25, 0.2]
+σ = [0.20, 0.15]
 scaleσ = ([0.1, 0.1],[0.1, 0.1],[0.1, 0.1])[propid]
 
 σtrue = copy(σ)
@@ -169,9 +171,9 @@ Ptrue = FitzHughNagumo(param(θ, σ)...)
 
 
 n = 400 # number of segments
-m = 200 # number of euler steps per segments
+m = 100 # number of euler steps per segments
 mextra = 20 #factor of extra steps for truth
-TT = 300.
+TT = 150.
 dt = TT/n/m
 tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
@@ -190,10 +192,15 @@ assert(endof(Yobs) == n+1)
 
 Y2 = SamplePath(tt, copy(Y.yy[1:mextra:end])) #subsample 
 normalize(tt) = (tt - tt[1])/(tt[end]-tt[1])
+tau(t, tmin, tmax) = tmin + (t-tmin).*(2-(t-tmin)/(tmax-tmin))
 
 θs = Float64[]
 iter = 0
-tts = [collect(tt[m*(i-1)+1:m*(i)+1]) for i in 1:n]
+if STIME
+    tts = [tau(collect(tt[m*(i-1)+1:m*(i)+1]), tt[m*(i-1)+1],tt[m*(i)+1]) for i in 1:n]
+else
+    tts = [(collect(tt[m*(i-1)+1:m*(i)+1])) for i in 1:n]
+end
 BB = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 for i in 1:n
     BB[i].yy[:] =  map(x -> BB[i].yy[1] + x*(BB[i].yy[end] - BB[i].yy[1]),normalize(tts[i]))
@@ -219,8 +226,10 @@ estθ = [true, true, true, true] #params to estimate
 
 # arbitrary starting values
  
-σ = [0.7, 0.7]
-θ = 0.5 + 1.0*rand(length(θ)) #θ = copy(θtrue)
+#σ = [0.7, 0.7]
+σ = copy(σtrue)
+#θ = 0.5 + 1.0*rand(length(θ)) 
+θ = copy(θtrue)
 
 for i in 1:length(θ) # start with truth for parameters not to be estimated
     if !estθ[i]
