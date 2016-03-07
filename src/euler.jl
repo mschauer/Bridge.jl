@@ -19,13 +19,13 @@ function euler!{T}(Y, u, W::SamplePath{T}, P)
     Y
 end
 
-bridge(W, P, scheme!) = bridge!(copy(W), W, P, scheme! = euler!)
+bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
 function bridge!{T}(Y, W::SamplePath{T}, P, scheme! = euler!)
     W.tt[1] != P.t0 && error("time axis mismatch between W and P  ")
     W.tt[end] != P.t1 && error("time axis mismatch between W and P  ")
 
     scheme!(Y, P.v0, W, P)
-    Y.yy[.., N] = P.v1
+    Y.yy[.., length(W.tt)] = P.v1
     Y
 end
 
@@ -114,7 +114,7 @@ function shiftedeulerb!{T}(Y, W::SamplePath{T}, P)
     SamplePath{T}(tt, yy)
 end
 
-euleru(W, P) = euleru!(copy(W), W, P)
+eulertau(W, P) = eulertau!(copy(W), W, P)
 function eulertau!{T}(Y, W::SamplePath{T}, P, tau, dottau)
 
     N = length(W)

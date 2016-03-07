@@ -1,5 +1,5 @@
 using Bridge, Distributions, FixedSizeArrays, ConjugatePriors
-PLOT = true
+PLOT = false
 
 if PLOT
 using Winston
@@ -127,11 +127,17 @@ function mcband(mc)
 end
 
 function MyProp(u, v, P, proptype=:mbb)
- 
-    
     if proptype == :guip
         cs = Bridge.CSpline(u[1], v[1], Bridge.b(u..., P),  Bridge.b( v..., P))
         return BridgeProp(P, u..., v..., P.a, cs)
+    elseif proptype == :lin
+        #Vec(-P.α*x[1]^3 + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+        a = 0.5
+        y = -3*a^2*P.α
+        B = Mat([(P.ϵ+y) -P.ϵ; P.γ1 P.γ2])
+        β = Vec(-a^3*P.α - a*y + P.s, P.β)
+        Pt = Bridge.LinPro(B, -B\β, P.σ)
+        return GuidedProp(P, u..., v..., Pt)
     else
         return DHBridgeProp(P, u..., v...)
     end
@@ -141,12 +147,12 @@ end
 
 ############## Configuration ###################################
 srand(10)
-K = 100000
+K = 10000
 
 
 simid = 1
-#propid = 1
-proptype = [:mbb,:guip][propid]
+propid = 3
+proptype = [:mbb,:guip,:lin][propid]
 
 simname =["full", "fullne"][simid] * "$proptype"
 
@@ -155,7 +161,7 @@ simname =["full", "fullne"][simid] * "$proptype"
 θtrue=copy(θ)
 scaleθ = 0.08*[1., 1., 5., 5.]
 σ = [0.25, 0.2]
-scaleσ = ([0.1, 0.1],[0.1, 0.1])[propid]
+scaleσ = ([0.1, 0.1],[0.1, 0.1],[0.1, 0.1])[propid]
 
 σtrue = copy(σ)
 Ptrue = FitzHughNagumo(param(θ, σ)...)
@@ -280,7 +286,7 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        B = eulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+        B = bridge!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
         if iter == 1
              BB[i] = B
         end
@@ -324,7 +330,7 @@ perf = @timed while true
             P° = MyProp(Yobs[i], Yobs[i+1], Pσ, proptype)
             P°° = MyProp(Yobs[i], Yobs[i+1], Pσ°, proptype)
             Z = innovations(BB[i], P°)
-            BBnew[i] = eulerb(Z, P°°)
+            BBnew[i] = bridge(Z, P°°)
             ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
       
         end
@@ -347,8 +353,7 @@ perf = @timed while true
     
     mc = mcnext(mc, BBall.yy)  
     mcparams = mcnext(mcparams, [θ ; σ])
-      
-    if iter % 10 == 0
+    if PLOT  && iter % 10 == 0
         xr = (5,7)
         
         

@@ -36,7 +36,9 @@ pdf(P::Gaussian,x) = exp(logpdf(P::Gaussian, x))
 logpdf of centered gaussian with covariance A
 """
 function logpdfnormal(x, A) 
-    S = chol(A)'
+
+    S = chol((A+A')/2)'
+
     d = length(x)
      -((norm(S\x))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
 end
