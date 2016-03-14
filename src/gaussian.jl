@@ -46,3 +46,4 @@ function logpdfnormal(x::Float64, A)
     S = sqrt(A)
      -((norm(S\x))^2 + 2log(S) + log(2pi))/2
 end
+

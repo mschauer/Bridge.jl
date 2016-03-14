@@ -48,6 +48,9 @@ end
 function Ju(s, T1, T2, P::Ptilde, x)
     H(tofs(s, T1, T2), T2, P, x)*(T2-s)^2/(T2-T1)
 end
+function J(s, T1, T2, P::Ptilde)
+    H(tofs(s, T1, T2), T2, P)*(T2-s)^2/(T2-T1)
+end
 
 ubridge(W, Po) = ubridge!(copy(W), W, Po)
 function ubridge!{T}(X, W::SamplePath{T}, Po)
@@ -80,3 +83,101 @@ function ubridge!{T}(X, W::SamplePath{T}, Po)
 end
 
 
+# using left approximation
+function ullikelihood{T}(Y::SamplePath{T}, Po)
+    yy = Y.yy
+    tt = Y.tt
+    T1 = Po.t0
+    T2 = Po.t1
+    v = Po.v1
+    P = Po.Target
+    Pt = ptilde(Po)
+    s2 = soft(tt[1], T1, T2)
+    som::Float64 = 0.
+    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
+        t = tt[i]
+        x = yy[.., i]
+        s = s2
+        s2 = soft(tt[i+1], T1, T2)
+      
+        j = J(s, T1, T2, Pt)
+        ju = j*uofx(s, yy[.., i], T1, T2, v, Pt) 
+        som += 2.*dot(b(t, x, P)  - b(t,x, Pt),ju)*(s2-s)
+        
+        if !constdiff(Po)
+            ad = a(t,x, P) - a(t,x, Pt)
+            som += -1./(T2-s)*(trace(j*ad) - T*dot(ju,ad*ju))*(s2-s)
+        end
+    end
+    som
+end
+function ullikelihoodtrapez{T}(Y::SamplePath{T}, Po)
+    yy = Y.yy
+    tt = Y.tt
+    T1 = Po.t0
+    T2 = Po.t1
+    v = Po.v1
+    P = Po.Target
+    Pt = ptilde(Po)
+    ss = soft(tt, T1, T2)
+    som::Float64 = 0.
+    for i in [1]
+        t = tt[i]
+        x = yy[.., i]
+        j = J(ss[i], T1, T2, Pt)
+        ju = j*uofx(ss[i], yy[.., i], T1, T2, v, Pt) 
+        som += dot(b(t, x, P)  - b(t,x, Pt),ju)*(ss[2]-ss[1])
+    end
+    
+    for i in 2:length(tt)-1 #skip last value, summing over n-1 elements
+        t = tt[i]
+        x = yy[.., i]
+        j = J(ss[i], T1, T2, Pt)
+        ju = j*uofx(ss[i], yy[.., i], T1, T2, v, Pt) 
+        som += dot(b(t, x, P)  - b(t,x, Pt),ju)*(ss[i+1]-ss[i-1])
+        
+        if !constdiff(Po)
+            error("not implemented")
+        end
+    end
+    som
+end
+
+uinnovations(Y, Po) = uinnovations!(copy(Y), Y, Po)
+function uinnovations!{T}(W, Y::SamplePath{T}, Po)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    yy = Y.yy
+    tt = Y.tt
+    ww = W.yy
+    ss = W.tt
+    Pt = ptilde(Po)
+    
+    T1 = Po.t0
+    T2 = Po.t1
+    v = Po.v1
+
+    w = zero(ww[.., 1])
+    s = s2 = soft(tt[1], T1, T2)
+    u2 = uofx(s2, yy[.., 1], T1, T2, v, Pt) 
+        
+    for i in 1:N-1
+        t = tt[i]
+        s, u = s2, u2
+        ww[.., i] = w
+        ss[i] = s
+
+        s2 = soft(tt[i+1], T1, T2)
+        u2 = uofx(s2, yy[.., i+1], T1, T2, v, Pt) 
+        
+        
+        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t,  yy[.., i], Po.Target) +   1/(T2-s)*(u - 2.*a(t,  yy[.., i], Po)*Ju(s, T1, T2, Pt, u) )
+        σU = -sqrt(2.0/((T2-T1)*(T2-s)))*σ(t, yy[.., i], Po)
+        
+        w = w + inv(σU)*(u2 - u - bU*(s2 - s)) 
+    end
+    ww[.., N] = ww[.., N-1] + randn(typeof(ww[.., N]))*sqrt(s2 - s)
+    SamplePath{T}(ss, ww)
+end

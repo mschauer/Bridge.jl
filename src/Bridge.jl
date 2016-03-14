@@ -5,8 +5,9 @@ export sample, sample!, .., euler, euler!, eulerb,eulerb!, rungekuttab, rungekut
 export shiftedeulerb,shiftedeulerb!, bridge!, bridge
 export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess
 export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, UProp, innovations, innovations!, lptilde
+export ubridge!, ubridge
 
-
+export ullikelihood, uinnovations!, ubridge
 
 using Distributions
 import Base.rand

@@ -15,6 +15,7 @@ mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
 σ(t, x, P::Ptilde) = P.σ
 a(t, x, P::Ptilde) = P.a
 gamma(t, x, P::Ptilde) = P.Γ
+constdiff(::Ptilde) = true
 
 """
     Ptilde(cs::CSpline, σ) 
@@ -65,6 +66,8 @@ end
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
 a(t, x, P::LinPro) = P.a
+constdiff(::LinPro) = true
+
 """
     LinPro(B, μ::T, σ) 
     

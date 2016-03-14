@@ -22,7 +22,7 @@ intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2)
 type CSpline{T}
     s; t; x::T; y::T; mx; my
 end
-CSpline{T}(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 = m0) = CSpline{T}(s, t, x, y, mx, my)
+CSpline{T}(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) = CSpline{T}(s, t, x, y, mx, my)
 @compat (cs::CSpline)(t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
 #call(cs::CSpline, t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
 

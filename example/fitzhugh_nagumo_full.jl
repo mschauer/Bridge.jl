@@ -1,7 +1,7 @@
 using Bridge, Distributions, FixedSizeArrays, ConjugatePriors
-PLOT = false
+PLOT = :pyplot
 
-if PLOT
+if PLOT == :winston
 using Winston
 import Winston: plot, oplot
 function plot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
@@ -39,6 +39,18 @@ function plot2(Y::SamplePath{Vec{2,Float64}}, a1="r", a2="b"; keyargs...)
     plot(Y.tt,  yy[1,:], a1; keyargs...)
     oplot(Y.tt, yy[2,:], a2; keyargs...)
 end    
+elseif PLOT == :pyplot
+using PyPlot
+import PyPlot: plot
+ 
+function plot(Y::SamplePath{Float64}; keyargs...) 
+    plot(Y.tt, Y.yy; keyargs...)
+end    
+function plot(Y::SamplePath{Vec{2,Float64}}; keyargs...) 
+    yy = Bridge.mat(Y.yy)
+    plot(yy[1,:], yy[2,:]; keyargs...)
+end
+
 end
 
 #diag2(x, y) = FixedDiagonal(Vec([x,y]))
@@ -80,7 +92,7 @@ intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
 Bridge.a(t, x, P::FitzHughNagumo) = P.a
 Bridge.Γ(t, x, P::FitzHughNagumo) = inv(P.a)
-
+Bridge.constdiff(::FitzHughNagumo) = true
 
 function conjugateb(YY, th, xi, P, phif, intc)
         n = length(th)
@@ -126,55 +138,65 @@ function mcband(mc)
     m-Q*std, m+Q*std
 end
 
-function MyProp(u, v, P, proptype=:mbb)
-    if proptype == :guip
-        cs = Bridge.CSpline(u[1], v[1], Bridge.b(u..., P),  Bridge.b(v..., P))
+function MyProp(u, v, P, proptype=:mdb)
+    if proptype == :aff
+        cs = Bridge.CSpline(u[1], v[1],  Bridge.b(u..., P),   Bridge.b(v..., P))
+        #println(Bridge.b(u..., P),  Bridge.b(v..., P))
         return BridgeProp(P, u..., v..., P.a, cs)
     elseif proptype == :lin
-        #Vec(-P.α*x[1]^3 + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-        a = (u[2][1] + v[2][1])/2
-        y = -3*a^2*P.α
-        B = Mat([(P.ϵ+y) -P.ϵ; P.γ1 -P.γ2])
-        β = Vec(-a^3*P.α - a*y + P.s, P.β)
-        Pt = Bridge.LinPro(B, -B\β, P.σ)
+        error("proptype $proptype not implemented")
+#        y = -3*a^2*P.α
+#        B = ...
+#        β = ...
+#        Pt = Bridge.LinPro(B, -B\β, P.σ)
         return GuidedProp(P, u..., v..., Pt)
-    else
+    elseif proptype == :dh
         return DHBridgeProp(P, u..., v...)
+    else        
+        error("proptype $proptype not implemented")
     end
 end
 
 
+function main(propid, m, budget)
 
 ############## Configuration ###################################
 srand(10)
-K = 10000 #100000
-
+K = 100000 #100000
+tim = time()
+budget *= 60
 
 simid = 1
 #propid = 1
-proptype = [:mbb,:guip,:lin][propid]
+proptype = [:dh, :aff, :aff][propid]
+eulertype = [:mdb, :eul, :tcs][propid]
+simname =["full", "fullne"][simid] * "$proptype$eulertype$m"
+println(simname)
+try
+    mkdir(simname)
+end
 
-simname =["full", "fullne"][simid] * "$proptype"
 
-STIME = true
+STIME = false
 
 θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s] 
 θtrue=copy(θ)
-scaleθ = 0.08*[1., 1., 5., 5.]
-#σ = [0.25, 0.2]
-σ = [0.20, 0.15]
-scaleσ = ([0.1, 0.1],[0.1, 0.1],[0.1, 0.1])[propid]
+scaleθ = 0.04*[1., 1., 5., 5.]
+σ = [0.25, 0.2]
+#σ = [0.20, 0.15]
+scaleσ = [0.02,0.02] #([0.01, 0.01],[0.01, 0.01],[0.01, 0.01])[propid]
 
 σtrue = copy(σ)
-Ptrue = FitzHughNagumo(param(θ, σ)...)
+Ptrue = FitzHughNagumo(param(θtrue, σtrue)...)
  
 
 
-n = 400 # number of segments
-m = 100 # number of euler steps per segments
-mextra = 20 #factor of extra steps for truth
+n = 500 # number of segments
+#m = 80 # number of euler steps per segments
+mextra = div(500, m) #factor of extra steps for truth
 TT = 150.
 dt = TT/n/m
+println("dt $dt")
 tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
 ttf = tt[1:m:end]
@@ -185,8 +207,8 @@ r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
 #######################################################
 
-Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
-Yobs = Y[1:mextra*m:end] #subsample
+global Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
+global Yobs = Y[1:mextra*m:end] #subsample
 assert(endof(Yobs) == n+1)
 
 
@@ -201,6 +223,8 @@ if STIME
 else
     tts = [(collect(tt[m*(i-1)+1:m*(i)+1])) for i in 1:n]
 end
+sss = deepcopy(tts)
+
 BB = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 for i in 1:n
     BB[i].yy[:] =  map(x -> BB[i].yy[1] + x*(BB[i].yy[end] - BB[i].yy[1]),normalize(tts[i]))
@@ -210,10 +234,12 @@ BBnew = copy(BB)
 BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
 
 # 
-if PLOT
+if PLOT == :winston
         xr = (5,7)
         plot2(Yobs, "o", "o"; xrange=xr, yrange=(-3,3),linewidth=0.1) 
         display(oplot2(BBall, "b", "b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
+elseif PLOT == :pyplot
+    PyPlot.clf();plot(Y[1:3000], linewidth=0.2, color="b"); plot(Yobs[1:5], linewidth=0, marker="o")
 end
 
 
@@ -222,21 +248,28 @@ end
 conjθs = [1,2,3,4] #set of conjugate thetas
 phi = phi1234
 intercept = intercept1234
-estθ = [true, true, true, true] #params to estimate
-
+estθ = [false, false, true, false] #params to estimate
+estσ = [false, true]
 # arbitrary starting values
  
-#σ = [0.7, 0.7]
-σ = copy(σtrue)
-#θ = 0.5 + 1.0*rand(length(θ)) 
-θ = copy(θtrue)
+σ[2] = 0.3
+#σ = copy(σtrue)
+θ = 0.5 + 1.0*rand(length(θ)) 
+#θ = copy(θtrue)
 
 for i in 1:length(θ) # start with truth for parameters not to be estimated
     if !estθ[i]
         θ[i] = θtrue[i]
         scaleθ[i] = 0.
     end
+end  
+for i in 1:length(σ) # start with truth for parameters not to be estimated
+    if !estσ[i]
+        σ[i] = σtrue[i]
+        scaleσ[i] = 0.
+    end
 end    
+
 
 P = FitzHughNagumo(param(θ, σ)...)
 
@@ -279,8 +312,9 @@ open(joinpath(simname,"params.txt"), "w") do f
 end
 
 # initialize
-bacc = 0
+bacc = zeros(Int, n-1)
 siacc = 0
+thacc = 0
 
 mc = mcstart(vcat([BB[i][1:end-1] for i in 1:n]...).yy )
 mcparams = mcstart([θ ; σ])
@@ -289,21 +323,37 @@ mcparams = mcstart([θ ; σ])
 
 
 perf = @timed while true
+
+    #σ[:] = σtrue
+    #θ[:] = θtrue
+
     P = FitzHughNagumo(param(θ, σ)...)
     iter += 1
 
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        B = bridge!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+        if eulertype == :tcs
+            B = ubridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+        elseif eulertype == :mdb
+            B = bridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°, Bridge.mdb!)
+        elseif eulertype == :eul
+            B = bridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+        else        
+            error("$eulertype not implemented")
+        end
         if iter == 1
              BB[i] = B
         end
-        llold = llikelihood(BB[i], P°)
-        llnew = llikelihood(B, P°)
-        
+        if eulertype == :tcs
+            llold = llikelihood(BB[i], P°)
+            llnew = llikelihood(B, P°)
+        else
+            llold = llikelihood(BB[i], P°)
+            llnew = llikelihood(B, P°)
+        end
         if rand() < exp(llnew - llold) 
-            bacc += 1
+            bacc[i] += 1
             BB[i] = copy(B)
         end
     end
@@ -319,14 +369,15 @@ perf = @timed while true
         ll = girsanov(BBall, Pθ°, Pθ)
         if rand() < exp(ll)  
             θ = θ°
+            thacc += 1
         end
     end
 
 
-    # update conjugate theta
-
-    θ[conjθs] = conjugateb(BB, θ[conjθs],xi[conjθs], P, phi, intercept) 
-    
+    #update conjugate theta
+    #if any(estθ[conjθs])
+    #    θ[conjθs[estθ]] = conjugateb(BB, θ[conjθs],xi[conjθs], P, phi, intercept)[estθ[conjθs]]
+    #end
     
     # update sigma (and theta)
     if iter % 1 == 0
@@ -338,13 +389,30 @@ perf = @timed while true
         for i in 1:n # reparametrization
             P° = MyProp(Yobs[i], Yobs[i+1], Pσ, proptype)
             P°° = MyProp(Yobs[i], Yobs[i+1], Pσ°, proptype)
-            Z = innovations(BB[i], P°)
-            BBnew[i] = bridge(Z, P°°)
-            ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
-      
+            if eulertype == :mdb 
+                Z = Bridge.mdbinnovations(BB[i], P°)
+                #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
+                #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
+                BBnew[i] = bridge(Z, P°°, Bridge.mdb!)
+                ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
+            elseif eulertype == :tcs
+                Z = Bridge.uinnovations(BB[i], P°)
+                #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
+                #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
+                BBnew[i] = Bridge.ubridge(Z, P°°)
+                ll += lptilde(P°°) - lptilde(P°) + ullikelihood(BBnew[i], P°°) - ullikelihood(BB[i], P°)
+            elseif eulertype == :eul
+                Z = innovations(BB[i], P°)
+                BBnew[i] = bridge(Z, P°°)
+                ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
+            else        
+                error("$eulertype not implemented")
+            end
+            
         end
-      #  println(ll)
+        
         if rand() < exp(ll) * (piσ²(σ°.^2)/piσ²(σ.^2)) * (prod(σ°.^2)/prod(σ.^2))
+        
             σ = σ°
             θ = θ°
             siacc += 1
@@ -355,56 +423,71 @@ perf = @timed while true
         end                    
     end     
     open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ],8)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
+    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; Inf; 100mean(bacc)/iter; 100minimum(bacc)/iter; Inf; 100thacc/iter; 100siacc/iter; ll  ],3),"\t")) 
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
     
     mc = mcnext(mc, BBall.yy)  
     mcparams = mcnext(mcparams, [θ ; σ])
-    if PLOT  && iter % 10 == 0
+    if PLOT == :winston && iter % 10 == 0
         xr = (5,7)
         
         
         plot2(Yobs, "o", "o"; xrange=xr, yrange=(-3,3),linewidth=0.1) 
         display(oplot2(BBall, "b", "g"; xrange=xr, yrange=(-3,3), linewidth=0.7))
+    elseif PLOT == :pyplot && iter % 10 == 1
+        #xr = (5,7)
+                
+        if iter % 1000 == 1
+            PyPlot.clf()
+            display(plot(Yobs[10:21]; linewidth=0.0, marker="o", color="b"))     
+        end
+        
+        display(plot(BBall[m*10:m*20], linewidth=0.1, color="b"))    
     end
-    if iter >= K break end
+    if iter >= K || abs(time() - tim) > budget 
+        break
+    end
 end
 
 open(joinpath(simname,"info.txt"), "w") do f
     println(f, "n $n m $m T $TT A $Alpha B $Beta") 
     println(f, "Y0 = $uu") 
     println(f, "xi = $xi") 
-    println(f, "acc = ", 100bacc/iter/n, " (br) ",  100siacc/iter, " (si)") 
+    println(f, "acc = ", 100bacc/iter, " (br) ",  100siacc/iter, " (si)",  100thacc/iter, " (th)") 
     println(f, perf)
 end
 
+if PLOT == :winston
+
+    plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
+    oplot2(Yobs,"+r", "+b")
+    savefig(joinpath(simname,"truth.pdf"))
+
+    plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
+    oplot2(Yobs,"or","ob";symbolsize=0.3)
+    mcb = mcband(mc);
+    oplot2(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
+    oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
+    hcat(mcbandste(mcparams)..., [θtrue; σtrue])
+
+    savefig(joinpath(simname,"band.pdf"))
+
+    xr = (6,10)
+    plot2(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
+    oplot2(Yobs,"or","ob";xrange=xr,symbolsize=0.3)
+    mcb = mcband(mc);
+    oplot2(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
+    oplot2(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
+    savefig(joinpath(simname,"bandpart.pdf"))
 
 
-plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
-oplot2(Yobs,"+r", "+b")
-savefig(joinpath(simname,"truth.pdf"))
 
-plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
-oplot2(Yobs,"or","ob";symbolsize=0.3)
-mcb = mcband(mc);
-oplot2(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
-oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
-hcat(mcbandste(mcparams)..., [θtrue; σtrue])
-
-savefig(joinpath(simname,"band.pdf"))
-
-xr = (6,10)
-plot2(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
-oplot2(Yobs,"or","ob";xrange=xr,symbolsize=0.3)
-mcb = mcband(mc);
-oplot2(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
-oplot2(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
-savefig(joinpath(simname,"bandpart.pdf"))
-
-
-
-plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
-oplot2(Yobs,"+r", "+b")
-savefig(joinpath(simname,"sample.pdf"))
+    plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
+    oplot2(Yobs,"+r", "+b")
+    savefig(joinpath(simname,"sample.pdf"))
+end 
+mc, mcparams
+end
+#include("fitzhugh_nagumo_full.jl"); for i in 1:3, m in [10,20,50]; main(i, m, 0.3); end

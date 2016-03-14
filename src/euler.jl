@@ -18,6 +18,26 @@ function euler!{T}(Y, u, W::SamplePath{T}, P)
     yy[.., N] = y
     Y
 end
+mdb(u, W, P) = mdb!(copy(W), u, W, P)
+function mdb!{T}(Y, u, W::SamplePath{T}, P)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y = u
+
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))*(ww[.., i+1]-ww[..,i])
+    end
+    yy[.., N] = y
+    Y
+end
 
 bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
 function bridge!{T}(Y, W::SamplePath{T}, P, scheme! = euler!)
@@ -130,6 +150,27 @@ function innovations!{T}(W, Y::SamplePath{T}, P)
     for i in 1:N-1
         ww[.., i] = w
         w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+    end
+    ww[.., N] = w
+    SamplePath{T}(tt, ww)
+end
+
+mdbinnovations(Y, P) = mdbinnovations!(copy(Y), Y, P)
+function mdbinnovations!{T}(W, Y::SamplePath{T}, P)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    yy = Y.yy
+    tt = Y.tt
+    ww = W.yy
+    W.tt[:] = Y.tt
+
+    w = zero(ww[.., 1])
+
+    for i in 1:N-1
+        ww[.., i] = w
+        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
     end
     ww[.., N] = w
     SamplePath{T}(tt, ww)
