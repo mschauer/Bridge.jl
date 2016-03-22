@@ -156,7 +156,7 @@ btilde(t, x, P::PBridgeProp) = P.cs(t)
 atilde(t, x, P::PBridgeProp) = P.a
 σ(t, x, P::PBridgeProp) = σ(t, x, P.Target)
 a(t, x, P::PBridgeProp) = a(t, x, P.Target)
-
+constdiff(P::PBridgeProp) = constdiff(P.Target)
 
 
 #####################
@@ -194,7 +194,7 @@ btilde(t, x, P::FilterProp) = P.cs(t)
 atilde(t, x, P::FilterProp) = P.a
 σ(t, x, P::FilterProp) = σ(t, x, P.Target)
 a(t, x, P::FilterProp) = a(t, x, P.Target)
-
+constdiff(P::FilterProp) = constdiff(P.Target)
 
 
 

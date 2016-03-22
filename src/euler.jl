@@ -1,5 +1,5 @@
 euler(u, W, P) = euler!(copy(W), u, W, P)
-function euler!{T}(Y, u, W::SamplePath{T}, P)
+function euler!(Y, u, W::SamplePath, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -19,7 +19,7 @@ function euler!{T}(Y, u, W::SamplePath{T}, P)
     Y
 end
 mdb(u, W, P) = mdb!(copy(W), u, W, P)
-function mdb!{T}(Y, u, W::SamplePath{T}, P)
+function mdb!(Y, u, W::SamplePath, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -40,10 +40,8 @@ function mdb!{T}(Y, u, W::SamplePath{T}, P)
 end
 
 bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
-function bridge!{T}(Y, W::SamplePath{T}, P, scheme! = euler!)
-    W.tt[1] != P.t0 && error("time axis mismatch between W and P  ")
-    W.tt[end] != P.t1 && error("time axis mismatch between W and P  ")
-
+function bridge!(Y, W::SamplePath, P, scheme! = euler!)
+    !(W.tt[1] == P.t0 && W.tt[end] == P.t1) && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
     scheme!(Y, P.v0, W, P)
     Y.yy[.., length(W.tt)] = P.v1
     Y
@@ -135,7 +133,7 @@ function shiftedbridge!{T}(Y, W::SamplePath{T}, P)
 end
 
 innovations(Y, P) = innovations!(copy(Y), Y, P)
-function innovations!{T}(W, Y::SamplePath{T}, P)
+function innovations!(W, Y::SamplePath, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -152,11 +150,11 @@ function innovations!{T}(W, Y::SamplePath{T}, P)
         w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
     end
     ww[.., N] = w
-    SamplePath{T}(tt, ww)
+    W
 end
 
 mdbinnovations(Y, P) = mdbinnovations!(copy(Y), Y, P)
-function mdbinnovations!{T}(W, Y::SamplePath{T}, P)
+function mdbinnovations!(W, Y::SamplePath, P)
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -173,5 +171,5 @@ function mdbinnovations!{T}(W, Y::SamplePath{T}, P)
         w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
     end
     ww[.., N] = w
-    SamplePath{T}(tt, ww)
+    W
 end

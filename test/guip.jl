@@ -23,6 +23,7 @@ Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
 Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 Bridge.Γ(t, x, P::OrnsteinUhlenbeck) = inv(P.σ^2)
 Bridge.transitionprob(s, x, t, P::OrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s)), sqrt((0.5P.σ^2/P.β) *(1-exp(-2*P.β*(t-s)))))
+Bridge.constdiff(::OrnsteinUhlenbeck) = true
 
 if !isdefined(:VOrnsteinUhlenbeck)
 immutable VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{Vec{d,Float64}}
@@ -39,11 +40,13 @@ end
 Bridge.b(t, x, P::VOrnsteinUhlenbeck) = -P.β*x
 Bridge.σ(t, x, P::VOrnsteinUhlenbeck) = P.σ*I
 Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
+Bridge.constdiff(::VOrnsteinUhlenbeck) = true
+
 kernel(x, a=0.001) = 1/sqrt(2pi*a)* exp(-abs2(x)/(2a))
 @vectorize_1arg Float64 kernel
 
 n = 500
-tt = 0.:1/n:1.
+tt = 1.:1/n:2.
 m = 5000
 P = VOrnsteinUhlenbeck{2}(2., 1.)
 P1 = OrnsteinUhlenbeck(2., 1.)
@@ -117,9 +120,18 @@ u = 0.5
 v = 0*0.5
 a = .7
 P1 = OrnsteinUhlenbeck(0.8, sqrt(a))
-cs = 1*[u, u*exp(-P1.β*T), -P1.β*u, -exp(-P1.β*T)*P1.β*u]
-cs2 = Bridge.CSpline(tt[1], tt[end], cs...)
-Po = BridgeProp(P1, tt[1], u, tt[end], v, a, cs2)
+#cs = Bridge.CSpline(tt[1], tt[end], u, u*exp(-P1.β*T), -P1.β*u, -exp(-P1.β*T)*P1.β*u)
+#cs = Bridge.CSpline(tt[1], tt[end],  -P1.β*u, -exp(-P1.β*T)*P1.β*u)
+h = 0.01
+
+cs = Bridge.CSpline(tt[1], tt[end],  
+    Bridge.b(tt[1], u, P1), 
+    Bridge.b(tt[end], v, P1), 
+    (Bridge.b(tt[2], u + Bridge.b(tt[1], u, P1)*(tt[2]-tt[1]), P1)-Bridge.b(tt[1], u, P1))/(tt[2]-tt[1]), # -P1.β*u*(1-exp(-P1.β*dt))/dt
+    (Bridge.b(tt[end], v, P1) - Bridge.b(tt[end-1], v - Bridge.b(tt[end], v, P1)*(tt[end]-tt[end-1]), P1))/(tt[end]-tt[end-1])
+)
+
+Po = BridgeProp(P1, tt[1], u, tt[end], v, a, cs)
 Z = Float64[
     begin
     X = euler(u, sample(tt, Wiener{Float64}()),Po)
@@ -129,7 +141,7 @@ Z = Float64[
 
 p = pdf(transitionprob(0., u, T, P1), v)
 
-Pt = Bridge.Ptilde(cs2, sqrt(a))
+Pt = Bridge.Ptilde(cs, sqrt(a))
 pt = exp(lp(0., u, T, v, Pt))
 @test_approx_eq pt exp(lptilde(Po))
 push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
@@ -148,7 +160,7 @@ p = pdf(transitionprob(0., u, T, P1), v)
 Pt = Bridge.ptilde(Po)
 pt = exp(lptilde(Po))
 push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
-error("end")
+#error("end")
 
 # GuidedProp
 push!(Cnames, "GuidedProp")
@@ -194,7 +206,7 @@ push!(Cnames, "PBridgeProp")
 tm, vm = 0.5, 0.7
 si = 1.
 L = 1.
-Po2 = PBridgeProp(P1, tt[1], u, tm, vm, tt[end], v, L, si^2, a, cs2)
+Po2 = PBridgeProp(P1, tt[1], u, tm, vm, tt[end], v, L, si^2, a, cs)
 Z2 = Float64[
     begin
     X = euler(u, sample(tt, Wiener{Float64}()),Po2)
@@ -212,7 +224,7 @@ push!(C, abs(mean(Z2*pt2/p2-1)*sqrt(m)/std(Z2*pt2/p2)))
 
 # GuidedProp 
 push!(Cnames, "GuidedProp")
-Ptarget = Bridge.Ptilde(cs2, sqrt(a))
+Ptarget = Bridge.Ptilde(cs, sqrt(a))
 Pt = LinPro(-β, 0.2, sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
@@ -235,7 +247,7 @@ push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
 
 # GuidedProp shifted
 push!(Cnames, "GuidedProp(shifted)")
-Ptarget = Bridge.Ptilde(cs2, sqrt(a))
+Ptarget = Bridge.Ptilde(cs, sqrt(a))
 Pt = LinPro(-β, 0.2, sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
@@ -253,7 +265,7 @@ push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
 
 # GuidedProp with mu
 push!(Cnames, "GuidedPropwithmu")
-Ptarget = Bridge.Ptilde(cs2, sqrt(a))
+Ptarget = Bridge.Ptilde(cs, sqrt(a))
 Pt = LinPro(-β, 0., sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
@@ -267,7 +279,7 @@ z = Float64[
 
 p = exp(lp(0., u, T, v, Ptarget))
 pt = exp(lp(0., u, T, v, Pt))
-push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
+#push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
 
 
 println(Cnames)

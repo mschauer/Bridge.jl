@@ -191,10 +191,12 @@ Ptrue = FitzHughNagumo(param(θtrue, σtrue)...)
  
 
 
-n = 500 # number of segments
+#n = 500 # number of segments
+n = 3
 #m = 80 # number of euler steps per segments
 mextra = div(500, m) #factor of extra steps for truth
-TT = 150.
+#TT = 150.
+TT = 1.
 dt = TT/n/m
 println("dt $dt")
 tt = linspace(0., TT, n*m+1)
@@ -239,7 +241,7 @@ if PLOT == :winston
         plot2(Yobs, "o", "o"; xrange=xr, yrange=(-3,3),linewidth=0.1) 
         display(oplot2(BBall, "b", "b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
 elseif PLOT == :pyplot
-    PyPlot.clf();plot(Y[1:3000], linewidth=0.2, color="b"); plot(Yobs[1:5], linewidth=0, marker="o")
+#    PyPlot.clf();plot(Y[1:3000], linewidth=0.2, color="b"); plot(Yobs[1:5], linewidth=0, marker="o")
 end
 
 
@@ -248,7 +250,8 @@ end
 conjθs = [1,2,3,4] #set of conjugate thetas
 phi = phi1234
 intercept = intercept1234
-estθ = [false, false, true, false] #params to estimate
+#estθ = [false, false, true, false] #params to estimate
+estθ = [true, false, false, false] #params to estimate
 estσ = [false, true]
 # arbitrary starting values
  
@@ -361,7 +364,7 @@ perf = @timed while true
  
     # update theta
 
-    if iter % 1 == 0
+    if iter % 1 == 1
         BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
         θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
         Pθ = FitzHughNagumo(param(θ, σ)...)
@@ -382,7 +385,7 @@ perf = @timed while true
     # update sigma (and theta)
     if iter % 1 == 0
         σ° = σ .* exp(scaleσ .* randn(length(σ))) 
-        θ° = θ #+ (2rand(length(θ)) .- 1).*scaleθ/3
+        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = FitzHughNagumo(param(θ, σ)...)
         Pσ° = FitzHughNagumo(param(θ°, σ°)...)
         ll = 0.
@@ -411,7 +414,7 @@ perf = @timed while true
             
         end
         
-        if rand() < exp(ll) * (piσ²(σ°.^2)/piσ²(σ.^2)) * (prod(σ°.^2)/prod(σ.^2))
+        if rand() < exp(ll) #* (piσ²(σ°.^2)/piσ²(σ.^2)) * (prod(σ°.^2)/prod(σ.^2))
         
             σ = σ°
             θ = θ°
@@ -441,10 +444,10 @@ perf = @timed while true
                 
         if iter % 1000 == 1
             PyPlot.clf()
-            display(plot(Yobs[10:21]; linewidth=0.0, marker="o", color="b"))     
+            display(plot(Yobs[1:min(10,n)]; linewidth=0.0, marker="o", color="b"))     
         end
         
-        display(plot(BBall[m*10:m*20], linewidth=0.1, color="b"))    
+        display(plot(BBall[m*1:m*min(9, n-1)], linewidth=0.1, color="b"))    
     end
     if iter >= K || abs(time() - tim) > budget 
         break
