@@ -34,12 +34,19 @@ BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs=CSpline(t0
 
 h(t,x, P::BridgeProp) = P.v1 - x -  integrate(P.cs, t,  P.t1)
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P) 
+function bderiv(t, x, P::BridgeProp) 
+    assert(constdiff(P))
+    bderiv(t, x, P.Target) - a(t, x, P.Target)*P.Γ/(P.t1 - t)
+end    
+
 σ(t, x, P::BridgeProp) = σ(t, x, P.Target)
 a(t, x, P::BridgeProp) = a(t, x, P.Target)
 Γ(t, x, P::BridgeProp) = Γ(t, x, P.Target)
+constdiff(P::BridgeProp) = constdiff(P.Target)
 
 btilde(t, x, P::BridgeProp) = P.cs(t)
 atilde(t, x, P::BridgeProp) = P.a
+ptilde(P::BridgeProp) = Ptilde(P.cs, σ(P.t1, P.v1, P.Target))
 
  
 function r(t, x, P::BridgeProp) 
@@ -79,9 +86,11 @@ b(t, x, P::GuidedProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P.t1, P.v
 σ(t, x, P::GuidedProp) = σ(t, x, P.Target)
 a(t, x, P::GuidedProp) = a(t, x, P.Target)
 Γ(t, x, P::GuidedProp) = Γ(t, x, P.Target)
+constdiff(P::GuidedProp) = constdiff(P.Target) && constdiff(P.Pt)
 
 btilde(t, x, P::GuidedProp) = b(t,x,P.Pt)
 atilde(t, x, P::GuidedProp) = a(t,x,P.Pt)
+ptilde(P::GuidedProp) = P.Pt
 
 function lptilde{T}(P::GuidedProp{T}) 
      lp( P.t0, P.v0, P.t1, P.v1, P.Pt) 
@@ -152,7 +161,7 @@ btilde(t, x, P::PBridgeProp) = P.cs(t)
 atilde(t, x, P::PBridgeProp) = P.a
 σ(t, x, P::PBridgeProp) = σ(t, x, P.Target)
 a(t, x, P::PBridgeProp) = a(t, x, P.Target)
-
+constdiff(P::PBridgeProp) = constdiff(P.Target)
 
 
 #####################
@@ -190,7 +199,7 @@ btilde(t, x, P::FilterProp) = P.cs(t)
 atilde(t, x, P::FilterProp) = P.a
 σ(t, x, P::FilterProp) = σ(t, x, P.Target)
 a(t, x, P::FilterProp) = a(t, x, P.Target)
-
+constdiff(P::FilterProp) = constdiff(P.Target)
 
 
 
@@ -211,6 +220,7 @@ b(t, x, P::DHBridgeProp) = (P.v1 - x )/(P.t1 - t)
 σ(t, x, P::DHBridgeProp) = σ(t, x, P.Target)
 a(t, x, P::DHBridgeProp) = a(t, x, P.Target)
 Γ(t, x, P::DHBridgeProp) = Γ(t, x, P.Target)
+constdiff(P::DHBridgeProp) = constdiff(P.Target)
 
 function llikelihood{T}(Xcirc::SamplePath{T}, P::DHBridgeProp{T})
     tt = Xcirc.tt
@@ -247,7 +257,7 @@ end
 ################################################################
 
 # using left approximation
-function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}, consta)
+function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}})
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -257,7 +267,7 @@ function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Bridge
         x = xx[i]
         r = Bridge.r(s, x, Po)
         som += (dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
-        if consta == false
+        if !constdiff(Po)
             som += trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
         end
     end
@@ -265,7 +275,7 @@ function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Bridge
 end
 
 #using trapezoidal rule
-function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}, consta)
+function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}})
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -275,7 +285,7 @@ function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Brid
     x = xx[i]
     r = Bridge.r(s, x, Po)
     som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
-    if consta == false
+    if !constdiff(Po)
         som += 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
     end
 
@@ -284,12 +294,12 @@ function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Brid
         x = xx[i]
         r = Bridge.r(s, x, Po)
         som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i-1])
-        if consta == false
+        if !constdiff(Po)
             som += 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i-1])
         end
     end
     som
 end
-llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}; consta = true) = llikelihoodleft(Xcirc, Po, consta)
-#llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}; consta = true) = llikelihoodtrapez(Xcirc, Po, consta) 
+llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) = llikelihoodleft(Xcirc, Po)
+#llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) = llikelihoodtrapez(Xcirc, Po) 
 

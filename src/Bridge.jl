@@ -2,11 +2,13 @@ module Bridge
 export ContinuousTimeProcess, SamplePath
 export LinPro, PTilde, Wiener, WienerBridge, CSpline
 export sample, sample!, .., euler, euler!, eulerb,eulerb!, rungekuttab, rungekuttab!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
-export shiftedeulerb,shiftedeulerb!, bridge!, bridge
+export bridge!, bridge
 export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess
 export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, UProp, innovations, innovations!, lptilde
+export ubridge!, ubridge
+export thetamethod, thetamethod!, thetainnovations!, thetainnovations, heun, heun!
 
-
+export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 
 using Distributions
 import Base.rand

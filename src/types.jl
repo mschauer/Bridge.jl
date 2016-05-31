@@ -38,6 +38,6 @@ unmat{T}(A::Matrix{T}) = reinterpret(Vec{size(A,1),T},A[:])
 unmat{d,T}(_::Type{Vec{d,T}}, A::Matrix{T}) = reinterpret(Vec{d,T},A[:])
 
 # seperate a Zip2
-sep{T1,T2}(Z::Base.Zip2{Vector{T1},Vector{T2}}) = T1[z[1] for z in Z], T2[z[2] for z in Z]
+sep{T1,T2}(Z::Base.Zip2{Vector{T1},Vector{T2}}) = T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
 
 

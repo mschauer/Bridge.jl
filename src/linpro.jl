@@ -15,6 +15,7 @@ mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
 σ(t, x, P::Ptilde) = P.σ
 a(t, x, P::Ptilde) = P.a
 gamma(t, x, P::Ptilde) = P.Γ
+constdiff(::Ptilde) = true
 
 """
     Ptilde(cs::CSpline, σ) 
@@ -36,6 +37,11 @@ transitionprob(s,x,t,P::Ptilde) = Gaussian(mu(s,x,t,P), (t-s)*P.a)
 function V(t, T, v, P::Ptilde)
     v - integrate(P.cs, t, T)
 end
+
+function dotV(t, T, v, P::Ptilde)
+     P.cs(t)
+end
+
 
 function H(t, T, P::Ptilde)
     P.Γ/(T-t)
@@ -59,7 +65,12 @@ end
 
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
+bderiv(t, x, P::LinPro) = P.B
+σderiv(t, x, P::LinPro) = 0.*P.σ
+
 a(t, x, P::LinPro) = P.a
+constdiff(::LinPro) = true
+
 """
     LinPro(B, μ::T, σ) 
     

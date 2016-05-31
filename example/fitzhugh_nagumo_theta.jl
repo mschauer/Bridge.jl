@@ -57,9 +57,6 @@ end
 diag2(x, y) = Mat((x,0.),(0.,y))
 
 
-# 2: 1655 seconds
-
-
 immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
     α::Float64
     β::Float64 
@@ -79,15 +76,20 @@ end
 #Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
 #phi234(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
 function param(θ, σ)
-    β, γ, ϵ, s = θ
+    β, γ, ϵ = θ
     σ1, σ2 = σ
 #   σ,    α, β, γ1,γ2, ϵ,  s 
-    diag2(σ1,σ2), ϵ, β, γ, 1., ϵ, s  # α == ϵ
+    diag2(σ1,σ2), ϵ, β, γ, 1., ϵ, 0.5*ϵ  # α == ϵ, s = 0.5*ϵ
 end
- 
-Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3 + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-phi1234(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (-x[1]^3 + x[1]-x[2], 0.),  (1.,0.) ) #β, γ, ϵ, s
-intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+
+
+Bridge.bderiv(t,x, P::FitzHughNagumo) = Mat([(P.ϵ - 3*P.α*(x[1]*x[1])) -P.ϵ; P.γ1 -P.γ2])
+Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]*x[1]*x[1] + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+#phi1234(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (-x[1]*x[1]*x[1] + x[1]-x[2], 0.),  (1.,0.) ) #β, γ, ϵ, s
+#intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+phi123(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (1.-x[1]*x[1]*x[1] + x[1]-x[2], 0.) ) #β, γ, ϵ
+intercept123(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+
 
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
 Bridge.a(t, x, P::FitzHughNagumo) = P.a
@@ -145,10 +147,6 @@ function MyProp(u, v, P, proptype=:mdb)
         return BridgeProp(P, u..., v..., P.a, cs)
     elseif proptype == :lin
         error("proptype $proptype not implemented")
-#        y = -3*a^2*P.α
-#        B = ...
-#        β = ...
-#        Pt = Bridge.LinPro(B, -B\β, P.σ)
         return GuidedProp(P, u..., v..., Pt)
     elseif proptype == :dh
         return DHBridgeProp(P, u..., v...)
@@ -162,43 +160,48 @@ function main(propid, m, budget)
 
 ############## Configuration ###################################
 srand(10)
-K = 100000 #100000
+K = 1000000 #100000
 tim = time()
 budget *= 60
 
 simid = 1
 #propid = 1
-proptype = [:dh, :aff, :aff][propid]
-eulertype = [:mdb, :eul, :tcs][propid]
-simname =["full", "fullne"][simid] * "$proptype$eulertype$m"
+proptype = [:dh, :aff, :aff, :aff, :aff][propid]
+eulertype = [:mdb, :eul, :tcs, :theta, :utheta][propid]
+simname =["ex", "nex"][simid] * "$proptype$eulertype$m"
 println(simname)
 try
     mkdir(simname)
 end
 
 
-STIME = false
+INNOS = false  # compute innovations from bridge?
+STIME = false # use a grid with smaller steps towards the end-point of a bridge
 
-θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s] 
+#θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s]
+θ =  [[0.6, 1.4][simid], 1.5, 10.] # [β, γ, ϵ] 
 θtrue=copy(θ)
-scaleθ = 0.04*[1., 1., 5., 5.]
+#scaleθ = 0.08*[1., 1., 5., 5.]
+scaleθ = 0.08*[1., 1., 5.]
 σ = [0.25, 0.2]
 #σ = [0.20, 0.15]
 scaleσ = [0.02,0.02] #([0.01, 0.01],[0.01, 0.01],[0.01, 0.01])[propid]
 
 σtrue = copy(σ)
 Ptrue = FitzHughNagumo(param(θtrue, σtrue)...)
- 
+
+if !INNOS && scaleθ == 0
+    error("θ does not get updated")
+end    
 
 
-#n = 500 # number of segments
-n = 3
+n = 400 # number of segments #evil case: n200 T200; nice case n400, T300
+
 #m = 80 # number of euler steps per segments
-mextra = div(500, m) #factor of extra steps for truth
-#TT = 150.
-TT = 1.
+mextra = div(2000, m) #factor of extra steps for truth
+TT = 300.
 dt = TT/n/m
-println("dt $dt")
+println("Δ $(TT/n) dt $dt dt-sim $(TT/n/m/mextra)")
 tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
 ttf = tt[1:m:end]
@@ -228,6 +231,7 @@ end
 sss = deepcopy(tts)
 
 BB = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
+ZZ = SamplePath[Y2[m*(i-1)+1:m*i+1] for i in 1:n]
 for i in 1:n
     BB[i].yy[:] =  map(x -> BB[i].yy[1] + x*(BB[i].yy[end] - BB[i].yy[1]),normalize(tts[i]))
 end
@@ -247,14 +251,15 @@ end
 
 
 ################### Prior ###################################
-conjθs = [1,2,3,4] #set of conjugate thetas
-phi = phi1234
-intercept = intercept1234
+conjθs = [1,2,3] # set of conjugate thetas [β, γ, ϵ=alpha, s] 
+phi = phi123
+intercept = intercept123
 #estθ = [false, false, true, false] #params to estimate
-estθ = [true, false, false, false] #params to estimate
-estσ = [false, true]
+estθ = [true, true, true] #params to estimate
+estσ = [true, true]
 # arbitrary starting values
  
+σ[1] = 0.3 
 σ[2] = 0.3
 #σ = copy(σtrue)
 θ = 0.5 + 1.0*rand(length(θ)) 
@@ -289,14 +294,15 @@ ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i)+1)) ## checkme!
 yy = copy(ww)
 
 # Prior
-Alpha = 1/500
-Beta= 1/500
+Alpha = 0.002
+Beta= 0.002
 
 piσ²(s2) = pdf(InverseGamma(Alpha,Beta), s2[1])*pdf(InverseGamma(Alpha,Beta), s2[2])
 lq(x, si) = Bridge.logpdfnormal(x, si^2*I)
 PiError = InverseGamma(Alpha,Beta)
 
-xi = 1./[50., 50., 50., 50.]
+#xi = 1./[50., 50., 50., 50.]
+xi = 1./[50., 50., 50.]
 
 #######################################################
 
@@ -336,21 +342,31 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
+        Z° = sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}())
         if eulertype == :tcs
-            B = ubridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+            B = ubridge!(SamplePath(sss[i], yy), Z°, P°)
         elseif eulertype == :mdb
-            B = bridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°, Bridge.mdb!)
+            B = bridge!(SamplePath(sss[i], yy), Z°, P°, Bridge.mdb!)
         elseif eulertype == :eul
-            B = bridge!(SamplePath(sss[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}()),P°)
+            B = bridge!(SamplePath(sss[i], yy), Z°, P°)
+        elseif eulertype == :theta
+            B = bridge!(SamplePath(sss[i], yy), Z°, P°, Bridge.thetamethod!)
+        elseif eulertype == :utheta
+            B = ubridgetheta!(SamplePath(sss[i], yy), Z°, P°)
+        elseif eulertype == :heun
+            B = bridge!(SamplePath(sss[i], yy), Z°, P°, Bridge.heun!)
         else        
             error("$eulertype not implemented")
         end
         if iter == 1
              BB[i] = B
+             if !INNOS
+                ZZ[i] = copy(Z°)
+             end
         end
         if eulertype == :tcs
-            llold = llikelihood(BB[i], P°)
-            llnew = llikelihood(B, P°)
+            llold = ullikelihoodtrapez(BB[i], P°)
+            llnew = ullikelihoodtrapez(B, P°)
         else
             llold = llikelihood(BB[i], P°)
             llnew = llikelihood(B, P°)
@@ -358,30 +374,35 @@ perf = @timed while true
         if rand() < exp(llnew - llold) 
             bacc[i] += 1
             BB[i] = copy(B)
+            if !INNOS
+                ZZ[i] = copy(Z°)
+            end   
         end
     end
 
  
-    # update theta
-
-    if iter % 1 == 1
-        BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
-        θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
-        Pθ = FitzHughNagumo(param(θ, σ)...)
-        Pθ° = FitzHughNagumo(param(θ°, σ)...)
-        ll = girsanov(BBall, Pθ°, Pθ)
-        if rand() < exp(ll)  
-            θ = θ°
-            thacc += 1
-        end
-    end
-
-
-    #update conjugate theta
-    #if any(estθ[conjθs])
-    #    θ[conjθs[estθ]] = conjugateb(BB, θ[conjθs],xi[conjθs], P, phi, intercept)[estθ[conjθs]]
-    #end
+    if INNOS
+        # update theta using X
     
+    
+        if iter % 1 == 1
+            BBall = vcat([BB[i][1:end-1] for i in 1:n]...)
+            θ° = θ + (2rand(length(θ)) .- 1).*scaleθ
+            Pθ = FitzHughNagumo(param(θ, σ)...)
+            Pθ° = FitzHughNagumo(param(θ°, σ)...)
+            ll = girsanov(BBall, Pθ°, Pθ)
+            if rand() < exp(ll)  
+                θ = θ°
+                thacc += 1
+            end
+        end
+
+
+        #update conjugate theta
+     #   if any(estθ[conjθs])
+     #       θ[conjθs[estθ]] = conjugateb(BB, θ[conjθs],xi[conjθs], P, phi, intercept)[estθ[conjθs]]
+     #   end
+    end
     # update sigma (and theta)
     if iter % 1 == 0
         σ° = σ .* exp(scaleσ .* randn(length(σ))) 
@@ -393,20 +414,50 @@ perf = @timed while true
             P° = MyProp(Yobs[i], Yobs[i+1], Pσ, proptype)
             P°° = MyProp(Yobs[i], Yobs[i+1], Pσ°, proptype)
             if eulertype == :mdb 
-                Z = Bridge.mdbinnovations(BB[i], P°)
+                if !INNOS
+                    Z = ZZ[i]
+                else
+                    Z = Bridge.mdbinnovations(BB[i], P°)
+                end    
                 #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
                 #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
                 BBnew[i] = bridge(Z, P°°, Bridge.mdb!)
                 ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
             elseif eulertype == :tcs
-                Z = Bridge.uinnovations(BB[i], P°)
-                #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
-                #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
+                if !INNOS
+                    Z = ZZ[i]
+                else
+                    Z = Bridge.uinnovations(BB[i], P°)
+                end    
                 BBnew[i] = Bridge.ubridge(Z, P°°)
-                ll += lptilde(P°°) - lptilde(P°) + ullikelihood(BBnew[i], P°°) - ullikelihood(BB[i], P°)
+                ll += lptilde(P°°) - lptilde(P°) + ullikelihoodtrapez(BBnew[i], P°°) - ullikelihoodtrapez(BB[i], P°)
             elseif eulertype == :eul
-                Z = innovations(BB[i], P°)
+                if !INNOS
+                    Z = ZZ[i]
+                else
+                    Z = Bridge.innovations(BB[i], P°)
+                end    
                 BBnew[i] = bridge(Z, P°°)
+                ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
+            elseif eulertype == :theta
+                if !INNOS
+                    Z = ZZ[i]
+                else
+                    Z = thetainnovations(BB[i], P°)
+                end
+                BBnew[i] = bridge(Z, P°°, Bridge.thetamethod!)
+                ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
+             elseif eulertype == :utheta
+                Z = Bridge.uinnovations(BB[i], P°)
+                BBnew[i] = Bridge.ubridge(Z, P°°)
+                ll += lptilde(P°°) - lptilde(P°) + ullikelihood(BBnew[i], P°°) - ullikelihood(BB[i], P°)    
+            elseif eulertype == :heun
+                if !INNOS
+                    Z = ZZ[i]
+                else
+                    Z = heuninnovations(BB[i], P°)
+                end
+                BBnew[i] = bridge(Z, P°°, Bridge.heun!)
                 ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
             else        
                 error("$eulertype not implemented")
