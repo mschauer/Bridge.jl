@@ -201,7 +201,10 @@ atilde(t, x, P::FilterProp) = P.a
 a(t, x, P::FilterProp) = a(t, x, P.Target)
 constdiff(P::FilterProp) = constdiff(P.Target)
 
-
+function bderiv(t, x, P::FilterProp) 
+    assert(constdiff(P))
+    bderiv(t, x, P.Target) - a(t, x, P.Target)*H(t, P)
+end    
 
 ################################################################
 

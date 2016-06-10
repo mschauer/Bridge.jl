@@ -20,11 +20,11 @@ v = S([.5, 0.])
 
 @test (norm(Matrix(-P.lambda*B' - B*P.lambda - a))) < eps()
 
-# Normal(mu, -lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
-X = Bridge.mat(S[euler(mu + chol(P.lambda)'*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
+# Normal(mu, lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
+X = Bridge.mat(S[euler(mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
 
 @test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
-
+print("Fixme: supnorm(cov(X,2) - Matrix(P.lambda)) < .1")
 
 n = 1000
 TT = 0.5
@@ -35,6 +35,6 @@ X = euler(mu, sample(tt, Wiener{S}()),P)
 
 
 theta = 0.7
-X = Bridge.mat(S[thetamethod(mu + chol(P.lambda)'*randn(S), sample(tt, Wiener{S}()), P, theta).yy[end] - mu for i in 1:m])
+X = Bridge.mat(S[thetamethod(mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()), P, theta).yy[end] - mu for i in 1:m])
 
 @test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
