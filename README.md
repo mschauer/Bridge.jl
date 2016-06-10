@@ -4,7 +4,7 @@ Stochastic calculus and univariate and multivariate stochastic processes/Markov 
 See [./example/tutorial.jl](./example/tutorial.jl) for an introduction.
 This package is going to replace my package https://github.com/mschauer/SDE.jl . I am personally interested in simulating diffusion bridges and doing bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome. It is also quite transparent how to add a new process:
 
-```
+```Julia
 # Define a diffusion process
 immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
