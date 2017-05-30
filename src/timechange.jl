@@ -12,7 +12,7 @@ tofs(s, T1, T2) = T1 + (s - T1).*(2. - (s-T1)/(T2-T1))
   
     Time change mapping s in [T1, T2] (U-time) to t in [T1, T2] (X-time), and inverse.
 """  
-soft(t, T1, T2, T=T2-T1) = T2 - sqrt(T*(T2 - t))
+soft(t, T1, T2, T=T2-T1) = T2 - sqrt.(T*(T2 - t))
 
 
 xofu(s, u, T1, T2, v, P) = Vs(s, T1, T2, v, P) .- (T2-s)*u

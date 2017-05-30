@@ -37,4 +37,4 @@ X = euler(mu, sample(tt, Wiener{S}()),P)
 theta = 0.7
 X = Bridge.mat(S[thetamethod(mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()), P, theta).yy[end] - mu for i in 1:m])
 
-@test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
+@test supnorm(cov(X,2) - Matrix(P.lambda)) < 1.0

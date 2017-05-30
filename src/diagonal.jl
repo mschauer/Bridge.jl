@@ -102,9 +102,9 @@ end
 
 eye{N,T}(::Type{FixedDiagonal{N,T}}) = FixedDiagonal(one(SVector{n,Int}))
 
-expm(D::FixedDiagonal) = FixedDiagonal(exp(D.diag))
-logm(D::FixedDiagonal) = FixedDiagonal(log(D.diag))
-sqrtm(D::FixedDiagonal) = FixedDiagonal(sqrt(D.diag))
+expm(D::FixedDiagonal) = FixedDiagonal(exp.(D.diag))
+logm(D::FixedDiagonal) = FixedDiagonal(log.(D.diag))
+sqrtm(D::FixedDiagonal) = FixedDiagonal(sqrt.(D.diag))
 
 \(D::FixedDiagonal, B::SMatrix) = scale(1 ./ D.diag, B)
 /(B::SMatrix, D::FixedDiagonal) = scale(1 ./ D.diag, B)

@@ -16,7 +16,7 @@ function cumsum0(dx::Vector)
 end
 
 
-supnorm(x) = sum(abs(x))
+supnorm(x) = sum(abs.(x))
 
 dot(J::Base.LinAlg.UniformScaling{Float64}, b::Float64) = J.λ*b
 dot(b::Float64, J::Base.LinAlg.UniformScaling{Float64}) = J.λ*b

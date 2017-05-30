@@ -188,7 +188,7 @@ p = exp(lp(0., u, T, v, Ptarget))
 pt = exp(lp(0., u, T, v, Pt))
 @test p == p2
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
+push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 
 # DHBridgeProp
@@ -248,7 +248,7 @@ p = exp(lp(0., u, T, v, Ptarget))
 pt = exp(lp(0., u, T, v, Pt))
 @test p == p2
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(exp(z)*pt/p-1)*sqrt(m)/std(exp(z)*pt/p)))
+push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 
 println(Cnames)

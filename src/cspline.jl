@@ -1,6 +1,5 @@
 using Compat, StaticArrays
 function cspline(s, t1, t2, p1, p2, m1, m2)
-    # @show (s, t1, t2, p1, p2, m1, m2)
     d = t2-t1
     t = (s-t1)/(t2-t1)
     t2 = t*t
