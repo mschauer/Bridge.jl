@@ -29,9 +29,6 @@ if !isdefined(:VOrnsteinUhlenbeck)
 immutable VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β 
     σ 
-    function VOrnsteinUhlenbeck(β, σ)
-           new(β, σ)
-    end
 end
 end
 

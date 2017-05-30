@@ -14,7 +14,7 @@ type Gaussian{T}
     mu::T
     a
     sigma
-    Gaussian(mu, a) = new(mu, a, chol(a)')
+    Gaussian{T}(mu, a) where T = new(mu, a, chol(a)')
 end
 Gaussian{T}(mu::T, a) = Gaussian{T}(mu, a)
 

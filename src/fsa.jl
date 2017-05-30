@@ -12,6 +12,6 @@ function sumlogdiag{m,T}(A::SMatrix{m,m,T}, d=m)
     t
 end   
  
-zero{T, NDim, SIZE}(_::SMatrix{T,NDim,SIZE}) = zero(typeof(_))
+zero{T, NDim, SIZE}(prototype::SMatrix{T,NDim,SIZE}) = zero(typeof(prototype))
 
  

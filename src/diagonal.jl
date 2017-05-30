@@ -1,6 +1,6 @@
 #using FixedSizeArrays
-import Base: getindex,setindex!,==,-,+,*,/,\,transpose,ctranspose,convert, size, abs, real, imag, conj, eye, inv, scale
-import Base.LinAlg: ishermitian, issym, isposdef, factorize, diag, trace, det, logdet, expm, logm, sqrtm
+import Base: getindex,setindex!,==,-,+,*,/,\,transpose,ctranspose,convert, size, abs, real, imag, conj, eye, inv
+import Base.LinAlg: ishermitian, issymmetric, isposdef, factorize, diag, trace, det, logdet, expm, logm, sqrtm
 
 @generated function scale{T, M, N}(a::SMatrix{M, N, T}, b::SVector{N,T})
     expr = [:((SVector(column(a, $i)) * b[$i])._)for i=1:N]

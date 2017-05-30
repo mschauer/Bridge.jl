@@ -8,7 +8,7 @@ type Ptilde{T} <: ContinuousTimeProcess{T}
     σ
     a
     Γ
-    Ptilde(cs, σ) = new(cs, σ, σ*σ', inv(σ*σ'))
+    Ptilde{T}(cs, σ) where T = new(cs, σ, σ*σ', inv(σ*σ'))
 end
 b(t, x, P::Ptilde) = P.cs(t) 
 mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
@@ -57,10 +57,10 @@ type LinPro{T} <: ContinuousTimeProcess{T}
     a
     Γ
     lambda # stationary covariance
-    LinPro(B, μ, σ) = let 
+    function LinPro{T}(B, μ, σ) where T
         a = σ*σ'
-        new(B, μ, σ, σ*σ', inv(a), symmetrize(lyap(B, a)))
-        end
+        return new(B, μ, σ, σ*σ', inv(a), symmetrize(lyap(B, a)))
+    end
 end
 
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
