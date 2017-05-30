@@ -23,8 +23,8 @@ r = 2.576
 n = 1000
 
 
-varmu(x, mu) = dot(x-mu, x-mu)/length(x)
-var0(x) = dot(x, x)/length(x)
+# varmu(x, mu) = dot(x-mu, x-mu)/length(x)
+# var0(x) = dot(x, x)/length(x)
 
 
 
@@ -43,5 +43,4 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 # mean and covariance of vector brownian motion
 
 @test norm(SVector(5.,2.) - mean([sample(linspace(0.0,2.0,5),Wiener{SVector{2,Float64}}(),SVector(5.,2.)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
-# M = Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SVector{2,Float64}}(),SVector(5.0,2.0)).yy[end] for i = 1:1000])
-# @test norm(2I - Base.cov(M, mean(M,1), 2, true))  < 0.3
+@test norm(2I - Base.cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SVector{2,Float64}}(),SVector(5.0,2.0)).yy[end] for i = 1:1000]), 2, true))  < 0.3
