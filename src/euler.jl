@@ -78,7 +78,7 @@ function thetamethod!(Y, u, W::SamplePath, P, theta=0.5)
             dy2 = -inv(I - theta*(bderiv(tt[i+1], y2, P)*(tt[i+1]-tt[i])))*(y2 - y - (1-theta)*delta1 - theta*delta2 - σ(tt[i], y, P)*dw)
             
             y2 += dy2
-            if  maximum(abs(dy2)) < eps2
+            if  maximum(abs.(dy2)) < eps2
                 break;
             end
             
