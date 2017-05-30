@@ -31,11 +31,11 @@ end
 
 #
 
-mat{d,T}(X::SamplePath{Vec{d,T}}) = reshape(reinterpret(T,X.yy), d, length(X.yy))
-mat{d,T}(yy::Vector{Vec{d,T}}) = reshape(reinterpret(T,yy), d, length(yy))
+mat{d,T}(X::SamplePath{SVector{d,T}}) = reshape(reinterpret(T,X.yy), d, length(X.yy))
+mat{d,T}(yy::Vector{SVector{d,T}}) = reshape(reinterpret(T,yy), d, length(yy))
 
-unmat{T}(A::Matrix{T}) = reinterpret(Vec{size(A,1),T},A[:])
-unmat{d,T}(_::Type{Vec{d,T}}, A::Matrix{T}) = reinterpret(Vec{d,T},A[:])
+unmat{T}(A::Matrix{T}) = reinterpret(SVector{size(A,1),T},A[:])
+unmat{d,T}(_::Type{SVector{d,T}}, A::Matrix{T}) = reinterpret(SVector{d,T},A[:])
 
 # separate a Zip2
 sep{T1,T2}(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) = T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length

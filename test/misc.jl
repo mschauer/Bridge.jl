@@ -1,11 +1,11 @@
-using Bridge, FixedSizeArrays, Distributions
+using Bridge, Distributions
 using Base.Test
 #import Bridge: b, σ, a, transitionprob
 qu(x) = x*x'
-S = Vec{2,Float64}
-B = Mat{2,2,Float64}([-1 0.1; -0.2 -1])
+S = SVector{2,Float64}
+B = SMatrix{2,2,Float64}([-1 0.1; -0.2 -1])
 mu = S([0.2, 0.3])
-sigma = Mat{2,2,Float64}([-0.212887  0.0687025
+sigma = SMatrix{2,2,Float64}([-0.212887  0.0687025
   0.193157  0.388997 ])
 a = qu(sigma)
 @test supnorm(qu(chol(a)') - a) < eps()

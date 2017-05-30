@@ -13,7 +13,7 @@ export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 using Distributions
 import Base.rand
 import Distributions: sample, sample!
-using FixedSizeArrays
+using StaticArrays
 
 include("diagonal.jl")
 include("misc.jl")
