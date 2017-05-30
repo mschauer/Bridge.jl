@@ -45,7 +45,6 @@ Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
 Bridge.constdiff(::VOrnsteinUhlenbeck) = true
 
 kernel(x, a=0.001) = 1/sqrt(2pi*a)* exp(-abs2(x)/(2a))
-@vectorize_1arg Float64 kernel
 
 n = 500
 tt = 1.:1/n:2.
@@ -225,8 +224,8 @@ Z2 = Float64[
     end
     for i in 1:m]
 
-f(x) = pdf(transitionprob(0., u, tm, P1), x)*pdf(transitionprob(tm,x,T, P1), v)*kernel(x-vm,si^2)
-ft(x) = exp(Bridge.lp(0., u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel(x-vm,si^2)
+f(x) = pdf(transitionprob(0., u, tm, P1), x)*pdf(transitionprob(tm,x,T, P1), v)*kernel.(x-vm,si^2)
+ft(x) = exp(Bridge.lp(0., u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel.(x-vm,si^2)
 p2 = sum(map(f,linspace(-20,20,1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
 @test pt2 ≈ sum(map(ft,linspace(-20,20,1001)))*40/1000
