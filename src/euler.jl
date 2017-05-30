@@ -13,9 +13,9 @@ function euler!(Y, u, W::SamplePath, P)
 
     for i in 1:N-1
         yy[.., i] = y
-        sigma = σ(tt[i], y, P)
-        isa(sigma,UniformScaling) && ( sigma = sigma.λ )
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + (sigma(tt[i], y, P)).λ*(ww[.., i+1]-ww[..,i])
+        factor = σ(tt[i], y, P)
+        isa(factor,UniformScaling) && ( factor = factor.λ )
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + factor*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N] = y
     Y
