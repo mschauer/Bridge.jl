@@ -43,7 +43,7 @@ oplot(B.tt, B.yy, "r")
 
 
 # Define a diffusion process
-immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
+struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
@@ -101,7 +101,7 @@ oplot()
 
 
 # Define a diffusion process
-immutable VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{Vec{d,Float64}}
+struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{Vec{d,Float64}}
     β # drift parameter (also known as inverse relaxation time)
     σ # diffusion parameter
     function VOrnsteinUhlenbeck(β, σ)

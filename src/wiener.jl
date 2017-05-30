@@ -1,6 +1,6 @@
-type Wiener{T}  <: ContinuousTimeProcess{T}
+mutable struct Wiener{T}  <: ContinuousTimeProcess{T}
 end
-type WienerBridge{T}  <: ContinuousTimeProcess{T}
+mutable struct WienerBridge{T}  <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
 end

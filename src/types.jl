@@ -1,10 +1,10 @@
 import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof
-abstract ContinuousTimeProcess{T} 
+abstract type ContinuousTimeProcess{T} end
 
-immutable SamplePath{T}
+struct SamplePath{T}
     tt :: Vector{Float64}
     yy :: Vector{T}
-    SamplePath(tt, yy) = new(tt, yy)
+    SamplePath{T}(tt, yy) where T = new(tt, yy)
 end
 SamplePath{T}(tt, yy::Vector{T}) = SamplePath{T}(tt, yy)
 copy{T}(X::SamplePath{T}) = SamplePath{T}(copy(X.tt), copy(X.yy))

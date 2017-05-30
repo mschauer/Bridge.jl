@@ -5,7 +5,7 @@ const percentile = 100.3
 
 # Define a diffusion process
 if !isdefined(:OrnsteinUhlenbeck)
-immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
+struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
@@ -26,7 +26,7 @@ Bridge.transitionprob(s, x, t, P::OrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s))
 Bridge.constdiff(::OrnsteinUhlenbeck) = true
 
 if !isdefined(:VOrnsteinUhlenbeck)
-immutable VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
+struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β 
     σ 
 end

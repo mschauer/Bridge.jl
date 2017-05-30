@@ -20,7 +20,7 @@ function intcspline(s, t1, t2, p1, p2, m1, m2)
 end
 intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2) - intcspline(s, t1, t2, p1, p2, m1, m2)
 
-type CSpline{T}
+mutable struct CSpline{T}
     s; t; x::T; y::T; mx; my
 end
 CSpline{T}(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) = CSpline{T}(s, t, x, y, mx, my)

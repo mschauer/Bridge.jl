@@ -10,7 +10,7 @@ sumlogdiag{T}(J::UniformScaling{T},d) = log(J.λ)*d
 
 
 import Distributions: logpdf, pdf
-type Gaussian{T}
+mutable struct Gaussian{T}
     mu::T
     a
     sigma

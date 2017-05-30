@@ -1,18 +1,18 @@
-abstract LevyProcess{T} <: ContinuousTimeProcess{T}
+abstract type LevyProcess{T} <: ContinuousTimeProcess{T} end
 
-immutable GammaProcess <: LevyProcess{Float64}
+struct GammaProcess <: LevyProcess{Float64}
     γ::Float64
     λ::Float64
 end
 
 
-immutable VarianceGammaProcess <: LevyProcess{Float64}
+struct VarianceGammaProcess <: LevyProcess{Float64}
     θ::Float64
     σ::Float64
     ν::Float64
 end
 
-immutable VarianceGamma 
+struct VarianceGamma 
     θ::Float64
     σ::Float64
     t::Float64
@@ -20,7 +20,7 @@ immutable VarianceGamma
 end
 
 
-immutable GammaBridge  <: ContinuousTimeProcess{Float64}
+struct GammaBridge  <: ContinuousTimeProcess{Float64}
     t::Float64;v::Float64
     P::GammaProcess
 end

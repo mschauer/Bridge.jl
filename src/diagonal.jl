@@ -15,7 +15,7 @@ end
 #end
 
 if !isdefined(:FixedDiagonal) 
-immutable FixedDiagonal{N,T}
+struct FixedDiagonal{N,T}
     diag::SVector{N,T}
 end    
 end

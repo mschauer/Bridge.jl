@@ -14,7 +14,7 @@ end
 
 
 
-immutable Atan <: ContinuousTimeProcess{Float64}
+struct Atan <: ContinuousTimeProcess{Float64}
     α::Float64
     β::Float64 
     σ::Float64

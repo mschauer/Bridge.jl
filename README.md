@@ -6,7 +6,7 @@ This package is going to replace my package https://github.com/mschauer/SDE.jl .
 
 ```Julia
 # Define a diffusion process
-immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
+struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)

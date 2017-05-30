@@ -3,7 +3,7 @@ symmetrize(A) = (A + A')/2
 
 #####################
 
-type Ptilde{T} <: ContinuousTimeProcess{T}
+mutable struct Ptilde{T} <: ContinuousTimeProcess{T}
     cs::CSpline{T}
     σ
     a
@@ -50,7 +50,7 @@ function H(t, T, P::Ptilde, x)
     P.Γ*x/(T-t)
 end
 
-type LinPro{T} <: ContinuousTimeProcess{T}
+mutable struct LinPro{T} <: ContinuousTimeProcess{T}
     B
     μ
     σ
