@@ -1,4 +1,4 @@
-using Winston, Bridge, Distributions, FixedSizeArrays
+using Winston, Bridge, Distributions, StaticArrays
 
 #
 t = 2. 
@@ -12,7 +12,7 @@ P = Wiener{Float64}() #returns object representing standard Brownian motion
 typeof(P)
 #prints Bridge.Wiener{Float64}
 
-super(typeof(P))
+supertype(typeof(P))
 #prints Bridge.ContinuousTimeProcess{Float64}
 
  
@@ -83,8 +83,8 @@ plot(X.tt, 1+X.yy)
 oplot(X2.tt, X2.yy)
 
 # sample vector Brownian motion
-W2 = sample(0:0.1:10, Wiener{Vec{4,Float64}}())
-llikelihood(W2,Wiener{Vec{4,Float64}}())
+W2 = sample(0:0.1:10, Wiener{SVector{4,Float64}}())
+llikelihood(W2,Wiener{SVector{4,Float64}}())
 
 P = BridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 1., 1.)
 X = euler(0.1, sample(0:0.01:1, Wiener{Float64}()),P)
@@ -101,7 +101,7 @@ oplot()
 
 
 # Define a diffusion process
-struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{Vec{d,Float64}}
+struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β # drift parameter (also known as inverse relaxation time)
     σ # diffusion parameter
     function VOrnsteinUhlenbeck(β, σ)
@@ -116,7 +116,7 @@ Bridge.σ(t, x, P::VOrnsteinUhlenbeck) = P.σ*I
 Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
 
 # Simulate
-X = euler(Vec(0., 0.), sample(0.:0.003:10., Wiener{Vec{2,Float64}}()),VOrnsteinUhlenbeck{2}(3., 1.)) 
+X = euler(SVector(0., 0.), sample(0.:0.003:10., Wiener{SVector{2,Float64}}()),VOrnsteinUhlenbeck{2}(3., 1.)) 
 yy = Bridge.mat(X.yy)
 plot(yy[1,:], yy[2,:], xrange=(-2, 2), yrange=(-2,2),  linewidth=0.5)
 
