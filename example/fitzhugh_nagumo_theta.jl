@@ -71,7 +71,7 @@ function mcnext(mc, x)
     delta = x - m
     n = n + 1
     m = m + delta*(1/n)
-    m2 = m2 + map(.*, delta, x - m)
+    m2 = m2 + map((x,y)->x.*y, delta, x - m)
     m, m2, n
 end 
 function mcbandste(mc) 
@@ -262,7 +262,7 @@ end
 
 open(joinpath(simname,"truth.txt"), "w") do f
     println(f, "beta gamma eps s sigma eta") 
-    println(f, join(round([θtrue ; σtrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue],3)," ")) 
 end
 
 open(joinpath(simname,"params.txt"), "w") do f
@@ -354,7 +354,7 @@ perf = @timed while true
     end
     # update sigma (and theta)
     if iter % 1 == 0
-        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        σ° = σ .* exp.(scaleσ .* randn(length(σ))) 
         θ° = θ + (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = FitzHughNagumo(param(θ, σ)...)
         Pσ° = FitzHughNagumo(param(θ°, σ°)...)
@@ -425,8 +425,8 @@ perf = @timed while true
          #  print("acc")
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ],8)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; Inf; 100mean(bacc)/iter; 100minimum(bacc)/iter; Inf; 100thacc/iter; 100siacc/iter; ll  ],3),"\t")) 
+    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
+    println(iter, "\t", join(round.([θ./θtrue; σ./σtrue; Inf; 100mean(bacc)/iter; 100minimum(bacc)/iter; Inf; 100thacc/iter; 100siacc/iter; ll  ],3),"\t")) 
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
