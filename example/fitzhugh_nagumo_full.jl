@@ -248,8 +248,9 @@ xi = 1./[50., 50., 50., 50.]
 #######################################################
 
 # Bookkeeping
+mkpath(("output",simname)
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
 open(joinpath("output",simname,"truth.txt"), "w") do f

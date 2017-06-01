@@ -256,8 +256,9 @@ xi = 1./[50., 50., 50.]
 #######################################################
 
 # Bookkeeping
+mkpath(("output",simname)
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
 open(joinpath("output",simname,"truth.txt"), "w") do f
@@ -466,7 +467,7 @@ if PLOT == :winston
 
     plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
     oplot2(Yobs,"+r", "+b")
-    savefig(joinpath(simname,"truth.pdf"))
+    savefig(joinpath("output",simname,"truth.pdf"))
 
     plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
     oplot2(Yobs,"or","ob";symbolsize=0.3)
@@ -475,7 +476,7 @@ if PLOT == :winston
     oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
     hcat(mcbandste(mcparams)..., [θtrue; σtrue])
 
-    savefig(joinpath(simname,"band.pdf"))
+    savefig(joinpath("output",simname,"band.pdf"))
 
     xr = (6,10)
     plot2(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
@@ -483,13 +484,13 @@ if PLOT == :winston
     mcb = mcband(mc);
     oplot2(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
     oplot2(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
-    savefig(joinpath(simname,"bandpart.pdf"))
+    savefig(joinpath("output",simname,"bandpart.pdf"))
 
 
 
     plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
     oplot2(Yobs,"+r", "+b")
-    savefig(joinpath(simname,"sample.pdf"))
+    savefig(joinpath("output",simname,"sample.pdf"))
 end 
 mc, mcparams
 end

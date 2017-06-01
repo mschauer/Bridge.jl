@@ -82,8 +82,9 @@ function param(θ, σ)
 end
 simid = 2
 simname =["exci", "nonexci"][simid]
+mkpath(("output",simname)
 try 
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
 θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s]
@@ -344,8 +345,8 @@ end
 
 plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"+r")
-savefig(joinpath(simname,"truth.svg"))
-savefig(joinpath(simname,"truth.pdf"))
+savefig(joinpath("output",simname,"truth.svg"))
+savefig(joinpath("output",simname,"truth.pdf"))
 
 plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"or";symbolsize=0.3)
@@ -354,10 +355,10 @@ oplot2(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
 oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
 hcat(mcbandste(mcparams)..., [θtrue; σtrue; si])
 
-savefig(joinpath(simname,"band.svg"))
-savefig(joinpath(simname,"band.pdf"))
+savefig(joinpath("output",simname,"band.svg"))
+savefig(joinpath("output",simname,"band.pdf"))
 
 plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
 oplot(Yobs,"+r")
-savefig(joinpath(simname,"sample.svg"))
-savefig(joinpath(simname,"sample.pdf"))
+savefig(joinpath("output",simname,"sample.svg"))
+savefig(joinpath("output",simname,"sample.pdf"))

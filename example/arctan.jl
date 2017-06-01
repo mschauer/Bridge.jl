@@ -190,8 +190,9 @@ xi = 1./[5., 5.] #prior prec
 #######################################################
 
 # Bookkeeping
+mkpath(("output",simname)
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
 open(joinpath("output",simname,"truth.txt"), "w") do f
@@ -316,7 +317,7 @@ if PLOT
 
 plot(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"+r", "+b")
-savefig(joinpath(simname,"truth.pdf"))
+savefig(joinpath("output",simname,"truth.pdf"))
 
 plot(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"or","ob";symbolsize=0.3)
@@ -325,7 +326,7 @@ oplot(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
 oplot(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
 hcat(mcbandste(mcparams)..., [θtrue; σtrue])
 
-savefig(joinpath(simname,"band.pdf"))
+savefig(joinpath("output",simname,"band.pdf"))
 
 xr = (6,10)
 plot(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
@@ -333,11 +334,11 @@ oplot(Yobs,"or","ob";xrange=xr,symbolsize=0.3)
 mcb = mcband(mc);
 oplot(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
 oplot(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
-savefig(joinpath(simname,"bandpart.pdf"))
+savefig(joinpath("output",simname,"bandpart.pdf"))
 
 
 
 plot(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
 oplot(Yobs,"+r", "+b")
-savefig(joinpath(simname,"sample.pdf"))
+savefig(joinpath("output",simname,"sample.pdf"))
 end 
