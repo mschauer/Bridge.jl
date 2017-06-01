@@ -256,7 +256,7 @@ xi = 1./[50., 50., 50.]
 #######################################################
 
 # Bookkeeping
-mkpath("output",simname)
+mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end

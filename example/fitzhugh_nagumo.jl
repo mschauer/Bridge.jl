@@ -82,7 +82,7 @@ function param(θ, σ)
 end
 simid = 2
 simname =["exci", "nonexci"][simid]
-mkpath("output",simname)
+mkpath(joinpath("output",simname))
 try 
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
