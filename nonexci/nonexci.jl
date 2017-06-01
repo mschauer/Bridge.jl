@@ -68,7 +68,7 @@ function mcband(mc)
     m, m2, k = mc
     Q = sqrt(2.)*erfinv(0.95)
     
-    std = eltype(m)[sqrt(v) for v in m2 * (1/(k - 1))]
+    std = eltype(m)[sqrt.(v) for v in m2 * (1/(k - 1))]
     m-Q*std, m+Q*std
 end
 
@@ -194,7 +194,7 @@ xi = 1./[20., 20., 20]
 
 open(joinpath(simname,"truth.txt"), "w") do f
     println(f, "beta gamma eps s sigma err") 
-    println(f, join(round([θtrue ; σtrue; sitrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue; sitrue],3)," ")) 
 end
 
 open(joinpath(simname,"params.txt"), "w") do f
@@ -321,7 +321,7 @@ while true
             end
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ; si],8)," ")) end
+    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ; si],8)," ")) end
     println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue; 100bacc/iter/n  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  

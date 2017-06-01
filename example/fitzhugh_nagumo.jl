@@ -321,8 +321,8 @@ while true
             end
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ; si],8)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue; 100bacc/iter/n  ],3),"\t"))
+    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ; si],8)," ")) end
+    println(iter, "\t", join(round.([θ./θtrue; σ./σtrue; si/sitrue; 100bacc/iter/n  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
