@@ -119,10 +119,6 @@ proptype = [:dh, :aff, :aff, :aff, :aff][propid]
 eulertype = [:mdb, :eul, :tcs, :theta, :utheta][propid]
 simname =["ex", "nex"][simid] * "$proptype$eulertype$m"
 println(simname)
-try
-    mkdir(simname)
-end
-
 
 INNOS = false  # compute innovations from bridge?
 STIME = false # use a grid with smaller steps towards the end-point of a bridge
