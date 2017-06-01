@@ -7,7 +7,7 @@ include("plot.jl")
 diag2(x, y) = Mat((x,0.),(0.,y))
 
 
-struct FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
+struct FitzHughNagumo  <: ContinuousTimeProcess{SVector{2,Float64}}
     α::Float64
     β::Float64 
     γ1::Float64
@@ -162,7 +162,7 @@ r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
 #######################################################
 
-global Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
+global Y = euler(uu, sample(tttrue, Wiener{SVector{2,Float64}}()), Ptrue) 
 global Yobs = Y[1:mextra*m:end] #subsample
 assert(endof(Yobs) == n+1)
 
@@ -240,7 +240,7 @@ P = FitzHughNagumo(param(θ, σ)...)
 
 # reserve some space
 i = 1
-ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i)+1)) ## checkme!
+ww = Array{SVector{2,Float64},1}(length(m*(i-1)+1:m*(i)+1)) ## checkme!
 yy = copy(ww)
 
 # Prior
@@ -292,7 +292,7 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        Z° = sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}())
+        Z° = sample!(SamplePath(tts[i],ww), Wiener{SVector{2,Float64}}())
         if eulertype == :tcs
             B = ubridge!(SamplePath(sss[i], yy), Z°, P°)
         elseif eulertype == :mdb
@@ -369,7 +369,7 @@ perf = @timed while true
                 else
                     Z = Bridge.mdbinnovations(BB[i], P°)
                 end    
-                #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
+                #Z2 = sample(Z.tt, Wiener{SVector{2,Float64}}())
                 #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
                 BBnew[i] = bridge(Z, P°°, Bridge.mdb!)
                 ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
