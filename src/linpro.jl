@@ -142,11 +142,11 @@ function Mu(t, T, P::LinPro)
 end
 
 #Mu(tt[n-1], T, P)*inv(Mu(0, T, P))*x0
-#Vec(1.1596192644448247,0.9449866351942955)
+#@SVector [1.1596192644448247,0.9449866351942955]
 
 #xx = zeros(n);x = x0;for i in 1:n
 #       x = x + (P.B -  P.a*Bridge.H(tt[i], tt[end], P))*x*(tt[i+1]-tt[i]) 
 #      xx[i] = x[1];end;x
-#Vec(1.1594605378744431,0.9448833540533151)
+#@SVector [1.1594605378744431,0.9448833540533151]
 
 

@@ -3,9 +3,8 @@ using Bridge, Distributions, StaticArrays
 PLOT = :pyplot
 include("plot.jl")
 
-#diag2(x, y) = SDiagonal(Vec([x,y]))
-diag2(x, y) = Mat((x,0.),(0.,y))
-
+#diag2(x, y) = SDiagonal(@SVector [x,y])
+diag2(x, y) = @SMatrix [ x 0. ; 0. y]
 
 struct FitzHughNagumo  <: ContinuousTimeProcess{SVector{2,Float64}}
     α::Float64
@@ -23,8 +22,8 @@ struct FitzHughNagumo  <: ContinuousTimeProcess{SVector{2,Float64}}
 end
 
 
-#Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-#phi234(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
+#Bridge.b(t, x, P::FitzHughNagumo) = @SVector [-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β]
+#phi234(t, x, P::FitzHughNagumo) = @SMatrix [0. -x[1]^3 + x[1]-x[2] 1. ; x[1] 0. 0. ] #γ, ϵ, s 
 function param(θ, σ)
     β, γ, ϵ = θ
     σ1, σ2 = σ
@@ -33,12 +32,12 @@ function param(θ, σ)
 end
 
 
-Bridge.bderiv(t,x, P::FitzHughNagumo) = Mat([(P.ϵ - 3*P.α*(x[1]*x[1])) -P.ϵ; P.γ1 -P.γ2])
-Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]*x[1]*x[1] + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-#phi1234(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (-x[1]*x[1]*x[1] + x[1]-x[2], 0.),  (1.,0.) ) #β, γ, ϵ, s
-#intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
-phi123(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (1.-x[1]*x[1]*x[1] + x[1]-x[2], 0.) ) #β, γ, ϵ
-intercept123(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+Bridge.bderiv(t,x, P::FitzHughNagumo) = @SMatrix [(P.ϵ - 3*P.α*(x[1]*x[1])) P.γ1 ; -P.ϵ -P.γ2]
+Bridge.b(t, x, P::FitzHughNagumo) = @SVector [-P.α*x[1]*x[1]*x[1] + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β]
+#phi1234(t, x, P::FitzHughNagumo) = @SMatrix [0. 0. -x[1]*x[1]*x[1] + x[1]-x[2] 1. ; 1. x[1] 0. 0. ]#β, γ, ϵ, s
+#intercept1234(t, x, P::FitzHughNagumo) = @SVector [0, - P.γ2*x[2]]
+phi123(t, x, P::FitzHughNagumo) = @SMatrix [0. 0. 1.-x[1]*x[1]*x[1] + x[1]-x[2] ; 1. x[1] 0. ] #β, γ, ϵ
+intercept123(t, x, P::FitzHughNagumo) = @SVector [0, - P.γ2*x[2]]
 
 
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
@@ -156,7 +155,7 @@ tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
 ttf = tt[1:m:end]
 
-uu = Vec(0., 1.)
+uu = @SVector [0., 1.]
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
