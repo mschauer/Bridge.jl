@@ -1,6 +1,8 @@
 using Bridge, Distributions, StaticArrays
 
+PLOT = :winston
 include("plot.jl")
+
 tt = linspace(0,1, 1000)
 G =  GammaProcess(10., 1.)
 X = sample(tt, G)

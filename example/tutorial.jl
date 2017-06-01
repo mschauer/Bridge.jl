@@ -1,4 +1,7 @@
-using Winston, Bridge, Distributions, StaticArrays
+using Bridge, Distributions, StaticArrays
+
+PLOT = :winston
+include("plot.jl")
 
 #
 t = 2. 

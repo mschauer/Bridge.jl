@@ -1,18 +1,7 @@
 using Bridge, Distributions
+
 PLOT = false
-
-if PLOT
-using Winston
-import Winston: plot, oplot
-function plot(Y::SamplePath{Float64}, args...; keyargs...) 
-    plot(Y.tt, Y.yy, args...; keyargs...)
-end    
-function oplot(Y::SamplePath{Float64}, args...; keyargs...) 
-    oplot(Y.tt, Y.yy, args...; keyargs...)
-end    
-end
-
-
+include("plot.jl")
 
 struct Atan <: ContinuousTimeProcess{Float64}
     α::Float64

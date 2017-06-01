@@ -1,6 +1,7 @@
 using Bridge, Distributions, StaticArrays
 using ConjugatePriors
 
+PLOT = :winston
 include("plot.jl")
 
 srand(10)
