@@ -41,7 +41,7 @@ function conjugateb(YY, th, xi, P, phif, intc)
             end
         end #for m
         WW = G .+ diagm(xi)
-        WL = chol(WW,Val{:L})
+        WL = transpose(chol(WW))
         th° = WL'\(randn(n)+WL\mu)
 end        
 
@@ -51,7 +51,7 @@ function mcnext(mc, x)
     delta = x - m
     n = n + 1
     m = m + delta*(1/n)
-    m2 = m2 + map(.*, delta, x - m)
+    m2 = m2 + map((x,y)->x.*y, delta, x - m)
     m, m2, n
 end 
 function mcbandste(mc) 
@@ -83,14 +83,15 @@ end
 
 ############## Configuration ###################################
 srand(10)
-K = 10000
+K = 100
 m = 10 # number of euler steps per segments
 
 simid = 2
 propid = 2
 proptype = [:mbb,:guip][propid]
 
-simname =["atan", "atantc"][simid] * "$proptype$m"
+simname =["atan", "atantc"][simid]
+# simname =["atan", "atantc"][simid] * "$proptype$m"
 
 
 θ = [-2., 0.]  
@@ -148,8 +149,6 @@ if PLOT
         display(oplot(BBall,"b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
 end
 
-
-
 ################### Prior ###################################
 conjθs = [1,2] #set of conjugate thetas
 phi = phi12 
@@ -197,7 +196,7 @@ end
 
 open(joinpath(simname,"truth.txt"), "w") do f
     println(f, "alpha beta sigma") 
-    println(f, join(round([θtrue ; σtrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue],3)," ")) 
 end
 
 open(joinpath(simname,"params.txt"), "w") do f
@@ -211,8 +210,7 @@ siacc = 0
 mc = mcstart(vcat([BB[i][1:end-1] for i in 1:n]...).yy )
 mcparams = mcstart([θ ; σ])
 
-
-
+Bridge.constdiff(::Atan) = true
 
 perf = @timed while true
     P = Atan(param(θ, σ)...)
@@ -221,7 +219,8 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        B = shiftedeulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
+        B = bridge!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
+        # B = shiftedeulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
         if iter == 1
              BB[i] = B
         end
@@ -260,7 +259,7 @@ perf = @timed while true
     
     # update sigma (and theta)
     if iter % 1 == 0
-        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        σ° = σ .* exp.(scaleσ .* randn(length(σ))) 
         θ° = θ #+ (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = Atan(param(θ, σ)...)
         Pσ° = Atan(param(θ°, σ°)...)
@@ -269,7 +268,8 @@ perf = @timed while true
             P° = MyProp(Yobs[i], Yobs[i+1], Pσ, proptype)
             P°° = MyProp(Yobs[i], Yobs[i+1], Pσ°, proptype)
             Z = innovations(BB[i], P°)
-            BBnew[i] = eulerb(Z, P°°)
+            BBnew[i] = bridge(Z, P°°)
+            # BBnew[i] = eulerb(Z, P°°)
             ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
       
         end
@@ -284,8 +284,8 @@ perf = @timed while true
          #  print("acc")
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ],8)," ")) end
-    println(iter, "\t", join(round([θ; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
+    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
+    println(iter, "\t", join(round.([θ; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
