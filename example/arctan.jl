@@ -1,4 +1,4 @@
-using Bridge, Distributions, ConjugatePriors
+using Bridge, Distributions
 PLOT = false
 
 if PLOT

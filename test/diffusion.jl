@@ -1,4 +1,4 @@
-using Bridge, FixedSizeArrays
+using Bridge
 using Base.Test
 srand(8)
 

@@ -1,4 +1,4 @@
-using Bridge, Distributions, FixedSizeArrays, ConjugatePriors
+using Bridge, Distributions, StaticArrays
 PLOT = :pyplot
 
 if PLOT == :winston
@@ -53,7 +53,7 @@ end
 
 end
 
-#diag2(x, y) = FixedDiagonal(Vec([x,y]))
+#diag2(x, y) = SDiagonal(Vec([x,y]))
 diag2(x, y) = Mat((x,0.),(0.,y))
 
 
@@ -64,10 +64,10 @@ struct FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
     γ2::Float64
     ϵ::Float64
     s::Float64
-#    σ::FixedDiagonal{2,Float64}
-#    a::FixedDiagonal{2,Float64}
-    σ::FixedSizeArrays.Mat{2,2,Float64}
-    a::FixedSizeArrays.Mat{2,2,Float64}
+#    σ::SDiagonal{2,Float64}
+#    a::SDiagonal{2,Float64}
+    σ::SMatrix{2,2,Float64}
+    a::SMatrix{2,2,Float64}
 
     FitzHughNagumo(σ, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ') #'
 end
