@@ -194,12 +194,12 @@ try # save cp of this file as documentation
     cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
 end
 
-open(joinpath(simname,"truth.txt"), "w") do f
+open(joinpath("output",simname,"truth.txt"), "w") do f
     println(f, "alpha beta sigma") 
     println(f, join(round.([θtrue ; σtrue],3)," ")) 
 end
 
-open(joinpath(simname,"params.txt"), "w") do f
+open(joinpath("output",simname,"params.txt"), "w") do f
     println(f, "n alpha beta sigma") 
 end
 
@@ -284,7 +284,7 @@ perf = @timed while true
          #  print("acc")
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
+    open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
     println(iter, "\t", join(round.([θ; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
@@ -304,7 +304,7 @@ perf = @timed while true
     if iter >= K break end
 end
 
-open(joinpath(simname,"info.txt"), "w") do f
+open(joinpath("output",simname,"info.txt"), "w") do f
     println(f, "n $n m $m T $TT A $Alpha B $Beta") 
     println(f, "Y0 = $uu") 
     println(f, "xi = $xi") 
