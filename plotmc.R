@@ -9,8 +9,8 @@ burnin = 500
 simid <- 6
 simname <- c('exci','nonexci','fullmbb', 'fullguip', 'atanguip100', 'atantcguip100', 'atanguip20', 'atantcguip20')[simid]
 
-thetas_all <- read.csv(paste(simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
-trueparam = (read.csv(paste(simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
+thetas_all <- read.csv(paste("output", psep, simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
+trueparam = (read.csv(paste("output", psep, simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
 #trueparam$beta <- NULL
 #thetas_all$beta <- NULL
 
@@ -82,7 +82,7 @@ acf_fig <- ggplot(data=acf.df, aes(x=lag, y=acf)) +
 
 
 
-pdf(paste(simname,psep,'pairs.pdf',sep=''))
+pdf(paste("output", psep, simname,psep,'pairs.pdf',sep=''))
 par(mfrow=c(1,NUM))
 #pairs plots
 
@@ -100,24 +100,24 @@ ddply(d_all2, parameter~m, summarise,
       sd = round(sd(value),4) )
 
 
-pdf(paste(simname,psep,'iteratesfirst.pdf',sep=''))
+pdf(paste("output", psep, simname,psep,'iteratesfirst.pdf',sep=''))
 show(iterates_first_fig)
 dev.off()
 
-pdf(paste(simname,psep,'iteratesthin.pdf',sep=''))
+pdf(paste("output", psep, simname,psep,'iteratesthin.pdf',sep=''))
 show(iterates_thin_fig)
 dev.off()
 
 for (i in 1:NP)
 {
-  pdf(paste(simname,psep,'den', paramsfn[i], '.pdf',sep=''))
+  pdf(paste("output", psep, simname,psep,'den', paramsfn[i], '.pdf',sep=''))
   show(den_fig[[i]])
   dev.off()
 }
 
  
 
-pdf(paste(simname,psep,'acf.pdf',sep=''))
+pdf(paste("output", psep, simname,psep,'acf.pdf',sep=''))
 show(acf_fig)
 dev.off()
 

@@ -4,7 +4,7 @@ import Base: rand
 import Distributions: pdf, logpdf
 
 sumlogdiag(a::Float64, d=1) = log(a)
-sumlogdiag(A,d) = sum(log(diag(A)))
+sumlogdiag(A,d) = sum(log.(diag(A)))
 sumlogdiag{T}(J::UniformScaling{T},d) = log(J.λ)*d
  
 
@@ -29,6 +29,15 @@ end
 
 pdf(P::Gaussian,x) = exp(logpdf(P::Gaussian, x))
 
+function Base.LinAlg.chol(u::UniformScaling{T}) where T<:Real
+    u.λ >= 0 || error(Base.LinAlg.PosDefException(1))
+    return UniformScaling{T}(sqrt(u.λ))
+end
+
+function Base.LinAlg.chol(u::SDiagonal{N,T}) where T<:Real where N
+    all(u.diag .>= zero(T)) || error(Base.LinAlg.PosDefException(1))
+    return SDiagonal(sqrt.(u.diag))
+end
 
 """
     logpdfnormal(x, A) 
