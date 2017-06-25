@@ -57,7 +57,7 @@ end
 diag2(x, y) = Mat((x,0.),(0.,y))
 
 
-immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
+struct FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
     α::Float64
     β::Float64 
     γ1::Float64

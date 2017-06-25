@@ -1,6 +1,6 @@
-type Wiener{T}  <: ContinuousTimeProcess{T}
+mutable struct Wiener{T}  <: ContinuousTimeProcess{T}
 end
-type WienerBridge{T}  <: ContinuousTimeProcess{T}
+mutable struct WienerBridge{T}  <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
 end
@@ -18,7 +18,7 @@ function sample{T}(tt, P::Wiener{T},y1)
 end
 
 
-function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1])
+function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = W.yy[1])
     sz = d
     W.yy[1] = y1
     yy = mat(W.yy) 
@@ -28,7 +28,7 @@ function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::Wiener{Vec{d,T}}, y1 = W.yy[1]
             yy[sz*(i-1) + j] = yy[sz*(i-2) + j] + rootdt*randn(T)
         end
     end
-    SamplePath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
+    SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
 end
 
 function sample!{T}(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1])
@@ -53,12 +53,12 @@ function sample{T}(tt, P::WienerBridge{T},y1)
     sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
-function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W.yy[1])
+function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 = W.yy[1])
     
     TT = P.t - W.tt[1]
     sz = d
     W.yy[1] = y1
-    v = Vector(P.v)
+    v = SVector(P.v)
     yy = mat(W.yy) 
   
     wtotal = zeros(sz)
@@ -87,7 +87,7 @@ function sample!{d,T}(W::SamplePath{Vec{d,T}}, P::WienerBridge{Vec{d,T}}, y1 = W
     end
        
     
-    SamplePath{Vec{d,T}}(W.tt, unmat(Vec{d,T}, yy))
+    SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
 end
 
 function sample!{T}(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1])
@@ -147,8 +147,8 @@ end
 # transition density
 transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
 
-transitionprob{N}(s, x, t, P::Wiener{Vec{N,Float64}}) = MvNormal(Vector(x),(t-s))
-lp{N}(s, x, t, y, P::Wiener{Vec{N,Float64}}) = logpdf(transitionprob(s, x, t, P), Vector(y))
+transitionprob{N}(s, x, t, P::Wiener{SVector{N,Float64}}) = MvNormal(Vector(x),(t-s))
+lp{N}(s, x, t, y, P::Wiener{SVector{N,Float64}}) = logpdf(transitionprob(s, x, t, P), Vector(y))
 
 
 function b(s, x, P::WienerBridge)

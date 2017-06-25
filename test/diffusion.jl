@@ -24,7 +24,7 @@ s2 = var(quv)
 # int0^T w_t dw_t = w_T^2/2 - T/2
 @test abs((b -> (ito(b, b).yy[end] - (0.5b.yy[end]^2 - 1)))(brown1(0, 2, 10000))) < 0.1
 
-type Diff
+mutable struct Diff
 end
 import Bridge: b, σ
 Bridge.b(t,x, _::Diff) = -5x

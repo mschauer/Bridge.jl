@@ -13,7 +13,9 @@ function euler!(Y, u, W::SamplePath, P)
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
+        factor = σ(tt[i], y, P)
+        isa(factor,UniformScaling) && ( factor = factor.λ )
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + factor*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N] = y
     Y
@@ -78,7 +80,7 @@ function thetamethod!(Y, u, W::SamplePath, P, theta=0.5)
             dy2 = -inv(I - theta*(bderiv(tt[i+1], y2, P)*(tt[i+1]-tt[i])))*(y2 - y - (1-theta)*delta1 - theta*delta2 - σ(tt[i], y, P)*dw)
             
             y2 += dy2
-            if  maximum(abs(dy2)) < eps2
+            if  maximum(abs.(dy2)) < eps2
                 break;
             end
             

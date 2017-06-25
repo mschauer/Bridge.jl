@@ -1,4 +1,4 @@
-using Bridge, FixedSizeArrays, Distributions
+using Bridge, Distributions
 using PyPlot
 using Base.Test
 

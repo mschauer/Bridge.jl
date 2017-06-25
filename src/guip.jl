@@ -15,20 +15,14 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 
 
-type BridgeProp{T} <: ContinuousTimeProcess{T}
+mutable struct BridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     cs::CSpline{T}
-    
-    
     a
     Γ
-
-    BridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs) = new(Target, 
-        t0, v0, t1, v1, 
-        cs,
-        a, inv(a))
-
+    BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs) where T = 
+        new(Target, t0, v0, t1, v1, cs, a, inv(a))
 end
 BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs=CSpline(t0, t1, zero(T))) = BridgeProp{T}(Target, t0, v0, t1, v1, a, cs)
 
@@ -66,14 +60,12 @@ end
 
 General bridge proposal process
 """    
-type GuidedProp{T} <: ContinuousTimeProcess{T}
+mutable struct GuidedProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     Pt::ContinuousTimeProcess{T}
-
-    GuidedProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt) = new(Target, 
-        t0, v0, t1, v1, 
-        Pt)
+    GuidedProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt) where T = 
+        new(Target, t0, v0, t1, v1, Pt)
 end
 
 GuidedProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt::ContinuousTimeProcess{T}) = GuidedProp{T}(Target, t0, v0, t1, v1, Pt)
@@ -102,20 +94,15 @@ end
 #####################
 
 
-type PBridgeProp{T} <: ContinuousTimeProcess{T}
+mutable struct PBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; tm; vm; t1; v1
     L; Lt; Σ
-    cs::CSpline{T}
-    
+    cs::CSpline{T}    
     a
     Γ
-
-    PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs) = new(Target, 
-        t0, v0, tm, vm, t1, v1, 
-        L, L', Σ,
-        cs,
-        a, inv(a))
+    PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs) where T = 
+        new(Target, t0, v0, tm, vm, t1, v1, L, L', Σ, cs, a, inv(a))
 end
 PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
         
@@ -167,20 +154,15 @@ constdiff(P::PBridgeProp) = constdiff(P.Target)
 #####################
 
 
-type FilterProp{T} <: ContinuousTimeProcess{T}
+mutable struct FilterProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     L; Lt; Σ
     cs
-    
     a
     Γ
-
-    FilterProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs) = new(Target, 
-        t0, v0, t1, v1, 
-        L, L', Σ,
-        cs,
-        a, inv(a))
+    FilterProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs) where T = 
+        new(Target, t0, v0, t1, v1, L, L', Σ, cs, a, inv(a))
 end
 FilterProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) = FilterProp{T}(Target, t0, v0, t1, v1,  L, Σ, a, cs)
         
@@ -209,12 +191,11 @@ end
 ################################################################
 
 
-type DHBridgeProp{T} <: ContinuousTimeProcess{T}
+mutable struct DHBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0::T; t1; v1::T
-
-    DHBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) = new(Target, 
-        t0, v0, t1, v1)
+    DHBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) where T = 
+        new(Target, t0, v0, t1, v1)
 
 end
 DHBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) = DHBridgeProp{T}(Target, t0, v0, t1, v1)
