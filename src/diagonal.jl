@@ -22,7 +22,7 @@ end
 #    a.*b
 # end
 
-@isdefined :SDiagonal
+if ! @isdefined(SDiagonal)
 struct SDiagonal{N,T}
     diag::SVector{N,T}
 end    
