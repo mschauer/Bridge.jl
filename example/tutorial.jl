@@ -107,7 +107,7 @@ oplot()
 struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β # drift parameter (also known as inverse relaxation time)
     σ # diffusion parameter
-    function VOrnsteinUhlenbeck(β, σ)
+    function VOrnsteinUhlenbeck{d}(β, σ) where d
            new(β, σ)
     end
 end
