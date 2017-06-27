@@ -1,5 +1,5 @@
 import Base: dot, randn, rand
-export supnorm
+export supnorm, @_isdefined
 """
     cumsum0
 
@@ -25,4 +25,14 @@ dot(x::Float64, y::Float64) = x*y
 
 randn(::Type{Float64}) = randn()
 randn{T}(::Type{Complex{T}}) = Complex(randn(T), randn(T))
-
+ 
+macro _isdefined(var)
+    quote
+        try local _ = $(esc(var))
+            true
+        catch err
+            isa(err, UndefVarError) ? false : rethrow(err)
+        end
+    end
+end
+ 

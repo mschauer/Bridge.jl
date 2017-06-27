@@ -4,7 +4,7 @@ using Base.Test
 const percentile = 100.3 
 
 # Define a diffusion process
-if ! @isdefined(OrnsteinUhlenbeck)
+if ! @_isdefined(OrnsteinUhlenbeck)
 struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
@@ -25,7 +25,7 @@ Bridge.Γ(t, x, P::OrnsteinUhlenbeck) = inv(P.σ^2)
 Bridge.transitionprob(s, x, t, P::OrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s)), sqrt((0.5P.σ^2/P.β) *(1-exp(-2*P.β*(t-s)))))
 Bridge.constdiff(::OrnsteinUhlenbeck) = true
 
-if ! @isdefined(VOrnsteinUhlenbeck)
+if ! @_isdefined(VOrnsteinUhlenbeck)
 struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β 
     σ 

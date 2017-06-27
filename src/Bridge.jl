@@ -15,8 +15,9 @@ import Base.rand
 import Distributions: sample, sample!
 using StaticArrays
 
-include("diagonal.jl")
 include("misc.jl")
+include("diagonal.jl")
+
 include("fsa.jl")
 include("gaussian.jl")
 
