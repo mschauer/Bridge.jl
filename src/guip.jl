@@ -15,7 +15,7 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 
 
-mutable struct BridgeProp{T} <: ContinuousTimeProcess{T}
+struct BridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     cs::CSpline{T}
@@ -60,7 +60,7 @@ end
 
 General bridge proposal process
 """    
-mutable struct GuidedProp{T} <: ContinuousTimeProcess{T}
+struct GuidedProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     Pt::ContinuousTimeProcess{T}
@@ -94,7 +94,7 @@ end
 #####################
 
 
-mutable struct PBridgeProp{T} <: ContinuousTimeProcess{T}
+struct PBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; tm; vm; t1; v1
     L; Lt; Σ
@@ -154,7 +154,7 @@ constdiff(P::PBridgeProp) = constdiff(P.Target)
 #####################
 
 
-mutable struct FilterProp{T} <: ContinuousTimeProcess{T}
+struct FilterProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0; t1; v1
     L; Lt; Σ
@@ -191,7 +191,7 @@ end
 ################################################################
 
 
-mutable struct DHBridgeProp{T} <: ContinuousTimeProcess{T}
+struct DHBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     t0; v0::T; t1; v1::T
     DHBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) where T = 
