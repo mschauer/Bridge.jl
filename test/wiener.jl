@@ -1,6 +1,5 @@
 using Bridge, StaticArrays
 using Base.Test
-srand(8)
 
 
 @test begin # functions callable

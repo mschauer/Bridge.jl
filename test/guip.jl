@@ -1,7 +1,7 @@
 using Bridge, StaticArrays, Distributions
 using Base.Test
 #import Bridge: b, σ, a, transitionprob
-const percentile = 100.3 
+const percentile = 20 
 
 # Define a diffusion process
 if ! @_isdefined(OrnsteinUhlenbeck)

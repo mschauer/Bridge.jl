@@ -1,6 +1,5 @@
 using Bridge
 using Base.Test
-srand(8)
 
 # tests with alpha 0.01
 # test fail 1% of the time

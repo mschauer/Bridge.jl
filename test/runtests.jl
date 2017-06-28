@@ -1,3 +1,4 @@
+srand("SEED",1)
 include("wiener.jl")
 include("diffusion.jl")
 include("misc.jl")

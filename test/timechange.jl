@@ -1,7 +1,6 @@
 using Bridge, Distributions
 using Base.Test
 
-#srand(5)
 h = 1e-7    
 n, m = 50, 10000
 T1 = 1.
