@@ -1,4 +1,7 @@
 euler(u, W, P) = euler!(copy(W), u, W, P)
+_scale(w,σ) = σ*w
+_scale(w::Number, σ::UniformScaling) = σ.λ*w
+
 function euler!(Y, u, W::SamplePath, P)
 
     N = length(W)
@@ -13,9 +16,7 @@ function euler!(Y, u, W::SamplePath, P)
 
     for i in 1:N-1
         yy[.., i] = y
-        factor = σ(tt[i], y, P)
-        isa(factor,UniformScaling) && ( factor = factor.λ )
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + factor*(ww[.., i+1]-ww[..,i])
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]),σ(tt[i], y, P))
     end
     yy[.., N] = y
     Y
