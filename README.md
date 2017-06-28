@@ -38,7 +38,7 @@ X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
 
 The layout/api was originally written to be compatible with SimonDanisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl).
 
-
+The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
 
 
 
