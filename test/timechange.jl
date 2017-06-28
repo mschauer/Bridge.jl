@@ -1,7 +1,6 @@
-using Bridge, FixedSizeArrays, Distributions
+using Bridge, Distributions
 using Base.Test
 
-#srand(5)
 h = 1e-7    
 n, m = 50, 10000
 T1 = 1.
@@ -74,7 +73,7 @@ z = Float64[
     end
     for i in 1:m]
  
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
  
 push!(Cnames, "Euler + Trapez") 
@@ -85,7 +84,7 @@ z = Float64[
     end
     for i in 1:m]
  
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "MDGP+Left")
 z = Float64[
@@ -95,7 +94,7 @@ z = Float64[
     end
     for i in 1:m]
  
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "MDGP+Trapez")
 z = Float64[
@@ -105,7 +104,7 @@ z = Float64[
     end
     for i in 1:m]
  
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 
 push!(Cnames, "TCSGP")
@@ -116,7 +115,7 @@ z = Float64[
     end
     for i in 1:m]
 
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 
 push!(Cnames, "TCSGP + Trapez")
@@ -127,7 +126,7 @@ z = Float64[
     end
     for i in 1:m]
 
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 
 push!(Cnames, "TCSGPLL")
@@ -137,7 +136,7 @@ z = Float64[
         ullikelihood(X, Po)
     end
     for i in 1:m]
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "TCSGPLL + Trapez")
 z = Float64[
@@ -146,7 +145,7 @@ z = Float64[
         Bridge.ullikelihoodtrapez(X, Po)
     end
     for i in 1:m]
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "TCSGP + Inno + Update")
 z = Float64[
@@ -161,7 +160,7 @@ z = Float64[
                   end
                   for i in 1:m]
 
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "TCSGPLL + Inno Mix")
 z = Float64[
@@ -173,7 +172,7 @@ z = Float64[
                Bridge.llikelihoodtrapez(X, Po)
            end
            for i in 1:m]
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "MDGP + Trapez + Inno")
 z = Float64[
@@ -185,7 +184,8 @@ z = Float64[
     end
     for i in 1:m]
  
-o = mean(exp(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp(z)*pt/p))
+o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 display([Cnames C Co])
-
+println("  Method                   rel error  mean")
+println("Remark: Change of measure is successfull if mean is close to 1")

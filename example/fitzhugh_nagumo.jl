@@ -1,72 +1,34 @@
-using Winston, Bridge, Distributions, FixedSizeArrays, ConjugatePriors
+using Bridge, Distributions, StaticArrays
+using ConjugatePriors
 
-import Winston: plot, oplot
-function plot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(yy[1,:], yy[2,:], args...; keyargs...)
-end    
-function plot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(Y.tt, yy[1,:], args...; keyargs...)
-end    
-function plot(Y::SamplePath{Float64}, args...; keyargs...) 
-    plot(Y.tt, Y.yy, args...; keyargs...)
-end    
-
-function oplot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(Y.tt, yy[1,:], args...; keyargs...)
-end   
-function oplot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(yy[1,:], yy[2,:], args...; keyargs...)
-end    
-function oplot(Y::SamplePath{Float64}, args...; keyargs...) 
-    oplot(Y.tt, Y.yy, args...; keyargs...)
-end    
-
-
-function oplot2(Y::SamplePath{Vec{2,Float64}},  a1="r", a2="b";  keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(Y.tt, yy[1,:], a1; keyargs...)
-    oplot(Y.tt, yy[2,:], a2; keyargs...)
-end    
-function plot2(Y::SamplePath{Vec{2,Float64}}, a1="r", a2="b"; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(Y.tt,  yy[1,:], a1; keyargs...)
-    oplot(Y.tt, yy[2,:], a2; keyargs...)
-end    
-        
-diag2(x, y) = FixedDiagonal(Vec([x,y]))
-    
+PLOT = :winston
+include("plot.jl")
 
 srand(10)
+        
+diag2(x, y) = SDiagonal(@SVector [x,y])
 
- 
-
-
-immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
+struct FitzHughNagumo  <: ContinuousTimeProcess{SVector{2,Float64}}
     α::Float64
     β::Float64 
     γ1::Float64
     γ2::Float64
     ϵ::Float64
     s::Float64
-    σ::FixedDiagonal{2,Float64}
-    a::FixedDiagonal{2,Float64}
-#    σ::FixedSizeArrays.Mat{2,2,Float64}
-#    a::FixedSizeArrays.Mat{2,2,Float64}
+    σ::SDiagonal{2,Float64}
+    a::SDiagonal{2,Float64}
+#    σ::SMatrix{2,2,Float64}
+#    a::SMatrix{2,2,Float64}
 
     FitzHughNagumo(σ, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ') #'
 end
-#phi(t, x, P::FitzHughNagumo) = Mat((-x[1]^3, 0.), (x[1]-x[2], 0.), (1.,0.), (0., x[1]), (0., -x[2]), (0., 1.))
-phi(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
+#phi(t, x, P::FitzHughNagumo) = (@SMatrix [-x[1]^3 x[1]-x[2] 1. 0. 0. 0. ; 0. 0. 0. x[1] -x[2] 1.])
+phi(t, x, P::FitzHughNagumo) = (@SMatrix [0.  -x[1]^3 + x[1]-x[2] 1. ; x[1]  0.  0. ]) #γ, ϵ, s 
  
-Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
+Bridge.b(t, x, P::FitzHughNagumo) = (@SVector [-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β])
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
 Bridge.a(t, x, P::FitzHughNagumo) = P.a
 Bridge.Γ(t, x, P::FitzHughNagumo) = inv(P.a)
-
 
 function conjugateb(YY, th, xi, P)
         n = length(th)
@@ -83,7 +45,7 @@ function conjugateb(YY, th, xi, P)
             end
         end #for m
         WW = G .+ diagm(xi)
-        WL = chol(WW,Val{:L})
+        WL = transpose(chol(WW))
         th° = WL'\(randn(n)+WL\mu)
 end        
 
@@ -93,7 +55,7 @@ function mcnext(mc, x)
     delta = x - m
     n = n + 1
     m = m + delta*(1/n)
-    m2 = m2 + map(.*, delta, x - m)
+    m2 = m2 + map((x,y)->x.*y, delta, (x - m))
     m, m2, n
 end 
 function mcbandste(mc) 
@@ -107,7 +69,7 @@ function mcband(mc)
     m, m2, k = mc
     Q = sqrt(2.)*erfinv(0.95)
     
-    std = eltype(m)[sqrt(v) for v in m2 * (1/(k - 1))]
+    std = eltype(m)[sqrt.(v) for v in m2 * (1/(k - 1))]
     m-Q*std, m+Q*std
 end
 
@@ -120,8 +82,9 @@ function param(θ, σ)
 end
 simid = 2
 simname =["exci", "nonexci"][simid]
+mkpath(joinpath("output",simname))
 try 
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
 θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s]
@@ -143,15 +106,15 @@ tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*10*m+1)
 ttf = tt[1:m:end]
 
-uu = Vec(0., 1.)
-Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
+uu = (@SVector [0., 1.])
+Y = euler(uu, sample(tttrue, Wiener{SVector{2,Float64}}()), Ptrue) 
 
 
 Ytrue = Y[1:10m:end] #subsample
 assert(endof(Ytrue) == n+1)
 
-L = Mat(((1.,),(0.,)))
-Yobs = SamplePath{Vec{1,Float64}}(Ytrue.tt, [L*Ytrue.yy[i] + si*randn(Vec{1,Float64}) for i in 1:length(Ytrue.yy)])
+L = @SMatrix [ 1. 0. ]
+Yobs = SamplePath{SVector{1,Float64}}(Ytrue.tt, [L*Ytrue.yy[i] + si*randn(SVector{1,Float64}) for i in 1:length(Ytrue.yy)])
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
@@ -167,9 +130,10 @@ if false
     plot(Yobs[1:2],"o:")
 
     i = 4
-    v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
+    v = SVector(Matrix(L)\Vector(Yobs.yy[i+1]))
     P° = PBridgeProp(Ptrue, Ytrue[i]..., Yobs.tt[i+1], v, Ytrue[i+2]..., L,si^2*I, Ptrue.a)
-    B = eulerb(sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{Vec{2,Float64}}()),P°)
+    B = bridge(sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{SVector{2,Float64}}()),P°)
+    # B = eulerb(sample(tt[m*(i-1)+1:m*(i+1)+1] , Wiener{SVector{2,Float64}}()),P°)
     plot(B; r...)
     oplot(Ytrue[i:i+2],"ro:"; r...)
     oplot([Yobs.yy[i+1][1],Yobs.yy[i+1][1]],[-2, 2], ":"; r...)
@@ -177,7 +141,7 @@ if false
 end
 
 #Y2 = SamplePath(tt, copy(Y.yy[1:10:end])) #initialize with truth
-Y2 = SamplePath{Vec{2,Float64}}(tt, zeros(Vec{2,Float64}, length(tt))+uu) #initialize path with constant
+Y2 = SamplePath{SVector{2,Float64}}(tt, map(x->x+uu,zeros(SVector{2,Float64}, length(tt)))) #initialize path with constant
 Yfil = Y2[1:m:end] 
 
 θs = Float64[]
@@ -203,9 +167,10 @@ P = FitzHughNagumo(param(θ, σ)...)
 
 if false
     for i in 1:n # reparametrization
-        v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
-        P° = PBridgeProp(P, Ytrue[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
-        BB[i] = eulerb(sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
+        v = SVector(Matrix(L)\Vector(Yobs.yy[i+1]))
+        P° = PBridgeProp(P, Ytrue[i]..., Yobs.tt[i+1], v, 1000., (@SVector [0.,0.]), L,  si^2*I, P.a)
+        BB[i] = bridge(sample(tt[m*(i-1)+1:m*i+1], Wiener{SVector{2,Float64}}()),P°)
+        # BB[i] = eulerb(sample(tt[m*(i-1)+1:m*i+1], Wiener{SVector{2,Float64}}()),P°)
         Ytrue.yy[i+1] = BB[i].yy[m+1]
     end
 end
@@ -215,7 +180,7 @@ display(oplot2(Y2, "b", "b"; yrange=(-3,3), linewidth=0.7))
 i = 1
 
 # reserve some space
-ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i+1)+1))
+ww = Array{SVector{2,Float64},1}(length(m*(i-1)+1:m*(i+1)+1))
 yy = copy(ww)
 
 # Prior
@@ -229,16 +194,16 @@ PiError = InverseGamma(Alpha,Beta)
 xi = 1./[20., 20., 20]
 
 
-open(joinpath(simname,"truth.txt"), "w") do f
+open(joinpath("output",simname,"truth.txt"), "w") do f
     println(f, "beta gamma eps s sigma err") 
-    println(f, join(round([θtrue ; σtrue; sitrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue; sitrue],3)," ")) 
 end
 
-open(joinpath(simname,"params.txt"), "w") do f
+open(joinpath("output",simname,"params.txt"), "w") do f
     println(f, "n beta gamma eps s sigma err") 
 end
 
-open(joinpath(simname,"info.txt"), "w") do f
+open(joinpath("output",simname,"info.txt"), "w") do f
     println(f, "n $n m $m T $TT A $Alpha B $Beta") 
     println(f, "Y0 = $uu") 
     println(f, "xi = $xi") 
@@ -250,6 +215,8 @@ bacc = 0
 mc = mcstart(vcat([BB[i][1:end-1] for i in 1:n]...).yy )
 mcparams = mcstart([θ ; σ; si])
 
+Bridge.constdiff(::FitzHughNagumo) = true
+
 while true
     P = FitzHughNagumo(param(θ, σ)...)
     iter += 1
@@ -258,11 +225,12 @@ while true
     for j = 1:2
 
         for i in j:2:n-1
-            v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
+            v = SVector{2,Float64}(Matrix(L)\Vector(Yobs.yy[i+1]))
             cs = Bridge.CSpline(Yobs.tt[i], Yobs.tt[i+2], Bridge.b( Yfil[i]..., P),  Bridge.b( Yfil[i+2]..., P))
             
             P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, Yfil[i+2]..., L,  si^2*I, P.a, cs)
-            B2 = eulerb!(SamplePath(tt2[i], yy), sample!(SamplePath(tt2[i],ww), Wiener{Vec{2,Float64}}()),P°)
+            B2 = bridge!(SamplePath(tt2[i], yy), sample!(SamplePath(tt2[i],ww), Wiener{SVector{2,Float64}}()),P°)
+            # B2 = eulerb!(SamplePath(tt2[i], yy), sample!(SamplePath(tt2[i],ww), Wiener{SVector{2,Float64}}()),P°)
             
             llold = llikelihood([BB[i]; BB[i+1][2:end]], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1], si)
             llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1], si)
@@ -277,9 +245,9 @@ while true
  
     end
     let i = n #do the last bridge
-            v = Vec(Matrix(L)\Vector(Yobs.yy[i+1]))
-            P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, 1000., Vec(0.,0.), L,  si^2*I, P.a)
-            B2 = euler(P°.v0, sample(tt[m*(i-1)+1:m*i+1], Wiener{Vec{2,Float64}}()),P°)
+            v = SVector{2,Float64}(Matrix(L)\Vector(Yobs.yy[i+1]))
+            P° = PBridgeProp(P, Yfil[i]..., Yobs.tt[i+1], v, 1000., (@SVector [0.,0.]), L,  si^2*I, P.a)
+            B2 = euler(P°.v0, sample(tt[m*(i-1)+1:m*i+1], Wiener{SVector{2,Float64}}()),P°)
             
             llold = llikelihood(BB[i], P°) + lq(Yobs.yy[i+1] -L*Yfil.yy[i+1], si)
             llnew = llikelihood(B2, P°) + lq(Yobs.yy[i+1]-L*B2.yy[m+1], si)
@@ -295,6 +263,7 @@ while true
     if size(L,1) == 1 # one dimensional
         residual = Yobs.yy - map(x->L*x,Yfil.yy)
         si = sqrt(rand(ConjugatePriors.posterior_canon(PiError,suffstats(Distributions.NormalKnownMu(0.), Bridge.mat(residual)))))
+        si = sqrt(rand(PiError))
     else
         error("todo: multivariate observations")
     end    
@@ -321,7 +290,7 @@ while true
     
     # update sigma (and theta)
     if iter % 1 == 0
-        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        σ° = σ .* exp.(scaleσ .* randn(length(σ))) 
         θ° = θ #+ (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = FitzHughNagumo(param(θ, σ)...)
         Pσ° = FitzHughNagumo(param(θ°, σ°)...)
@@ -333,7 +302,8 @@ while true
             P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a, cs)
             Z = innovations(BB[i], P°)
 
-            BBnew[i] = eulerb(Z, P°°)
+            BBnew[i] = bridge(Z, P°°)
+            # BBnew[i] = eulerb(Z, P°°)
             ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
     #        println(lptilde(P°°), " - ", ptilde(lP°))
     #        println(llikelihood(BBnew[i], P°°), " - ",  llikelihood(BB[i], P°))
@@ -353,8 +323,8 @@ while true
             end
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ; si],8)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; si/sitrue; 100bacc/iter/n  ],3),"\t"))
+    open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ; si],8)," ")) end
+    println(iter, "\t", join(round.([θ./θtrue; σ./σtrue; si/sitrue; 100bacc/iter/n  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
@@ -364,20 +334,19 @@ while true
       
     if iter % 10 == 0
         xr = (5,7)
-        
+        @show iter
         plot2(Y, "r","r" ; xrange=xr, yrange=(-3,3),linewidth=0.5)
         oplot2(Yfil, "o","o"; xrange=xr, yrange=(-3,3),linewidth=0.1)
         oplot(Yobs, "ro"; xrange=xr, yrange=(-3,3),linewidth=0.1) 
         display(oplot2(BBall, "b", "b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
     end
-    if iter >= 10000 break end
+    if iter >= 100 break end
 end
-
 
 plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"+r")
-savefig(joinpath(simname,"truth.svg"))
-savefig(joinpath(simname,"truth.pdf"))
+savefig(joinpath("output",simname,"truth.svg"))
+savefig(joinpath("output",simname,"truth.pdf"))
 
 plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"or";symbolsize=0.3)
@@ -386,12 +355,10 @@ oplot2(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
 oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
 hcat(mcbandste(mcparams)..., [θtrue; σtrue; si])
 
-savefig(joinpath(simname,"band.svg"))
-savefig(joinpath(simname,"band.pdf"))
-
-
+savefig(joinpath("output",simname,"band.svg"))
+savefig(joinpath("output",simname,"band.pdf"))
 
 plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
 oplot(Yobs,"+r")
-savefig(joinpath(simname,"sample.svg"))
-savefig(joinpath(simname,"sample.pdf"))
+savefig(joinpath("output",simname,"sample.svg"))
+savefig(joinpath("output",simname,"sample.pdf"))

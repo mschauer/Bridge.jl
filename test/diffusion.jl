@@ -1,6 +1,5 @@
-using Bridge, FixedSizeArrays
+using Bridge
 using Base.Test
-srand(8)
 
 # tests with alpha 0.01
 # test fail 1% of the time
@@ -9,7 +8,7 @@ n = 1000
 chiupper = 1118.95 #upper 0.005 percentile for n = 1000
 chilower = 888.56 #lower 0.005 percentile for n = 1000
 
-varmu(x, mu) = dot(x-mu, x-mu)/length(x)
+# varmu(x, mu) = dot(x-mu, x-mu)/length(x)
 var0(x) = dot(x, x)/length(x)
 
 brown1(s, t, n) = sample(linspace(s, t, n), Wiener{Float64}())
@@ -24,7 +23,7 @@ s2 = var(quv)
 # int0^T w_t dw_t = w_T^2/2 - T/2
 @test abs((b -> (ito(b, b).yy[end] - (0.5b.yy[end]^2 - 1)))(brown1(0, 2, 10000))) < 0.1
 
-type Diff
+mutable struct Diff
 end
 import Bridge: b, σ
 Bridge.b(t,x, _::Diff) = -5x

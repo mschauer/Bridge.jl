@@ -26,9 +26,9 @@ end
 
 
 """
-quvar(X)
+    quvar(X)
              
-    Computes quadratic variation of ``X``.
+Computes quadratic variation of ``X``.
 """
 function quvar{T}(X::SamplePath{T})
         s = zero(T)*zero(T)'
@@ -41,10 +41,10 @@ end
 
 
 """
-bracket(X)
-bracket(X,Y)
+    bracket(X)
+    bracket(X,Y)
   
-     Computes quadratic variation process of ``x`` (of ``x`` and ``y``).
+Computes quadratic variation process of ``x`` (of ``x`` and ``y``).
 """     
 function bracket(X::SamplePath)
         cumsum0(diff(X.yy).^2)
@@ -55,9 +55,9 @@ function bracket(X::SamplePath,Y::SamplePath)
 end
 
 """
-ito(Y, X)
+    ito(Y, X)
 
-    Integrate a valued stochastic process with respect to a stochastic differential.
+Integrate a valued stochastic process with respect to a stochastic differential.
 """
 function ito{T}(X::SamplePath, W::SamplePath{T})
         assert(X.tt[1] == W.tt[1])
@@ -71,7 +71,11 @@ function ito{T}(X::SamplePath, W::SamplePath{T})
         SamplePath{T}(X.tt,yy) 
 end
 
+"""
+    girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
 
+log likelihood      
+"""    
 function girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
     tt = X.tt
     xx = X.yy

@@ -18,9 +18,9 @@ for (m in stepsizes)
     for (p in 1:4)
     {  
             simname <- paste(methods[p], m, sep="")
-            thetas <- read.csv(paste(simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
+            thetas <- read.csv(paste("output", psep, simname, psep, "params",".txt",sep=""),header=TRUE, sep=" ")
             thetas["n"]=c()
-            trueparam = (read.csv(paste(simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
+            trueparam = (read.csv(paste("output", psep, simname, psep, "truth",".txt",sep=""),header=TRUE, sep=" "))
             
             rels <- unlist(colMeans(thetas)/trueparam)
             eff <- effectiveSize(thetas)

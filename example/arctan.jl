@@ -1,20 +1,9 @@
-using Bridge, Distributions, ConjugatePriors
+using Bridge, Distributions
+
 PLOT = false
+include("plot.jl")
 
-if PLOT
-using Winston
-import Winston: plot, oplot
-function plot(Y::SamplePath{Float64}, args...; keyargs...) 
-    plot(Y.tt, Y.yy, args...; keyargs...)
-end    
-function oplot(Y::SamplePath{Float64}, args...; keyargs...) 
-    oplot(Y.tt, Y.yy, args...; keyargs...)
-end    
-end
-
-
-
-immutable Atan <: ContinuousTimeProcess{Float64}
+struct Atan <: ContinuousTimeProcess{Float64}
     α::Float64
     β::Float64 
     σ::Float64
@@ -52,7 +41,7 @@ function conjugateb(YY, th, xi, P, phif, intc)
             end
         end #for m
         WW = G .+ diagm(xi)
-        WL = chol(WW,Val{:L})
+        WL = transpose(chol(WW))
         th° = WL'\(randn(n)+WL\mu)
 end        
 
@@ -62,7 +51,7 @@ function mcnext(mc, x)
     delta = x - m
     n = n + 1
     m = m + delta*(1/n)
-    m2 = m2 + map(.*, delta, x - m)
+    m2 = m2 + map((x,y)->x.*y, delta, x - m)
     m, m2, n
 end 
 function mcbandste(mc) 
@@ -94,14 +83,15 @@ end
 
 ############## Configuration ###################################
 srand(10)
-K = 10000
+K = 100
 m = 10 # number of euler steps per segments
 
 simid = 2
 propid = 2
 proptype = [:mbb,:guip][propid]
 
-simname =["atan", "atantc"][simid] * "$proptype$m"
+simname =["atan", "atantc"][simid]
+# simname =["atan", "atantc"][simid] * "$proptype$m"
 
 
 θ = [-2., 0.]  
@@ -159,8 +149,6 @@ if PLOT
         display(oplot(BBall,"b"; xrange=xr, yrange=(-3,3), linewidth=0.7))
 end
 
-
-
 ################### Prior ###################################
 conjθs = [1,2] #set of conjugate thetas
 phi = phi12 
@@ -202,16 +190,17 @@ xi = 1./[5., 5.] #prior prec
 #######################################################
 
 # Bookkeeping
+mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
-open(joinpath(simname,"truth.txt"), "w") do f
+open(joinpath("output",simname,"truth.txt"), "w") do f
     println(f, "alpha beta sigma") 
-    println(f, join(round([θtrue ; σtrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue],3)," ")) 
 end
 
-open(joinpath(simname,"params.txt"), "w") do f
+open(joinpath("output",simname,"params.txt"), "w") do f
     println(f, "n alpha beta sigma") 
 end
 
@@ -222,8 +211,7 @@ siacc = 0
 mc = mcstart(vcat([BB[i][1:end-1] for i in 1:n]...).yy )
 mcparams = mcstart([θ ; σ])
 
-
-
+Bridge.constdiff(::Atan) = true
 
 perf = @timed while true
     P = Atan(param(θ, σ)...)
@@ -232,7 +220,8 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        B = shiftedeulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
+        B = bridge!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
+        # B = shiftedeulerb!(SamplePath(tts[i], yy), sample!(SamplePath(tts[i],ww), Wiener{Float64}()),P°)
         if iter == 1
              BB[i] = B
         end
@@ -271,7 +260,7 @@ perf = @timed while true
     
     # update sigma (and theta)
     if iter % 1 == 0
-        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        σ° = σ .* exp.(scaleσ .* randn(length(σ))) 
         θ° = θ #+ (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = Atan(param(θ, σ)...)
         Pσ° = Atan(param(θ°, σ°)...)
@@ -280,7 +269,8 @@ perf = @timed while true
             P° = MyProp(Yobs[i], Yobs[i+1], Pσ, proptype)
             P°° = MyProp(Yobs[i], Yobs[i+1], Pσ°, proptype)
             Z = innovations(BB[i], P°)
-            BBnew[i] = eulerb(Z, P°°)
+            BBnew[i] = bridge(Z, P°°)
+            # BBnew[i] = eulerb(Z, P°°)
             ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
       
         end
@@ -295,8 +285,8 @@ perf = @timed while true
          #  print("acc")
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ],8)," ")) end
-    println(iter, "\t", join(round([θ; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
+    open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
+    println(iter, "\t", join(round.([θ; σ./σtrue; 100bacc/iter/n;  100siacc/iter  ],3),"\t"))
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
@@ -315,7 +305,7 @@ perf = @timed while true
     if iter >= K break end
 end
 
-open(joinpath(simname,"info.txt"), "w") do f
+open(joinpath("output",simname,"info.txt"), "w") do f
     println(f, "n $n m $m T $TT A $Alpha B $Beta") 
     println(f, "Y0 = $uu") 
     println(f, "xi = $xi") 
@@ -327,7 +317,7 @@ if PLOT
 
 plot(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"+r", "+b")
-savefig(joinpath(simname,"truth.pdf"))
+savefig(joinpath("output",simname,"truth.pdf"))
 
 plot(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
 oplot(Yobs,"or","ob";symbolsize=0.3)
@@ -336,7 +326,7 @@ oplot(SamplePath(tt, mcb[1]),"r","b";linewidth=0.5)
 oplot(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
 hcat(mcbandste(mcparams)..., [θtrue; σtrue])
 
-savefig(joinpath(simname,"band.pdf"))
+savefig(joinpath("output",simname,"band.pdf"))
 
 xr = (6,10)
 plot(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
@@ -344,11 +334,11 @@ oplot(Yobs,"or","ob";xrange=xr,symbolsize=0.3)
 mcb = mcband(mc);
 oplot(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
 oplot(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
-savefig(joinpath(simname,"bandpart.pdf"))
+savefig(joinpath("output",simname,"bandpart.pdf"))
 
 
 
 plot(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
 oplot(Yobs,"+r", "+b")
-savefig(joinpath(simname,"sample.pdf"))
+savefig(joinpath("output",simname,"sample.pdf"))
 end 

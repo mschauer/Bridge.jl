@@ -1,6 +1,8 @@
+srand(joinpath(@__DIR__,"SEED"),1)
 include("wiener.jl")
 include("diffusion.jl")
 include("misc.jl")
 include("guip.jl")
 include("linpro.jl")
 include("timechange.jl")
+include("uniformscaling.jl")

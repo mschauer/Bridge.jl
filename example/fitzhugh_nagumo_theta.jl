@@ -1,80 +1,29 @@
-using Bridge, Distributions, FixedSizeArrays, ConjugatePriors
+using Bridge, Distributions, StaticArrays
+
 PLOT = :pyplot
+include("plot.jl")
 
-if PLOT == :winston
-using Winston
-import Winston: plot, oplot
-function plot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(yy[1,:], yy[2,:], args...; keyargs...)
-end    
-function plot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(Y.tt, yy[1,:], args...; keyargs...)
-end    
-function plot(Y::SamplePath{Float64}, args...; keyargs...) 
-    plot(Y.tt, Y.yy, args...; keyargs...)
-end    
+#diag2(x, y) = SDiagonal(@SVector [x,y])
+diag2(x, y) = @SMatrix [ x 0. ; 0. y]
 
-function oplot(Y::SamplePath{Vec{1,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(Y.tt, yy[1,:], args...; keyargs...)
-end   
-function oplot(Y::SamplePath{Vec{2,Float64}}, args...; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(yy[1,:], yy[2,:], args...; keyargs...)
-end    
-function oplot(Y::SamplePath{Float64}, args...; keyargs...) 
-    oplot(Y.tt, Y.yy, args...; keyargs...)
-end    
-
-
-function oplot2(Y::SamplePath{Vec{2,Float64}},  a1="r", a2="b";  keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    oplot(Y.tt, yy[1,:], a1; keyargs...)
-    oplot(Y.tt, yy[2,:], a2; keyargs...)
-end    
-function plot2(Y::SamplePath{Vec{2,Float64}}, a1="r", a2="b"; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(Y.tt,  yy[1,:], a1; keyargs...)
-    oplot(Y.tt, yy[2,:], a2; keyargs...)
-end    
-elseif PLOT == :pyplot
-using PyPlot
-import PyPlot: plot
- 
-function plot(Y::SamplePath{Float64}; keyargs...) 
-    plot(Y.tt, Y.yy; keyargs...)
-end    
-function plot(Y::SamplePath{Vec{2,Float64}}; keyargs...) 
-    yy = Bridge.mat(Y.yy)
-    plot(yy[1,:], yy[2,:]; keyargs...)
-end
-
-end
-
-#diag2(x, y) = FixedDiagonal(Vec([x,y]))
-diag2(x, y) = Mat((x,0.),(0.,y))
-
-
-immutable FitzHughNagumo  <: ContinuousTimeProcess{Vec{2,Float64}}
+struct FitzHughNagumo  <: ContinuousTimeProcess{SVector{2,Float64}}
     α::Float64
     β::Float64 
     γ1::Float64
     γ2::Float64
     ϵ::Float64
     s::Float64
-#    σ::FixedDiagonal{2,Float64}
-#    a::FixedDiagonal{2,Float64}
-    σ::FixedSizeArrays.Mat{2,2,Float64}
-    a::FixedSizeArrays.Mat{2,2,Float64}
+#    σ::SDiagonal{2,Float64}
+#    a::SDiagonal{2,Float64}
+    σ::SMatrix{2,2,Float64}
+    a::SMatrix{2,2,Float64}
 
     FitzHughNagumo(σ, α = 1/3,  β = 0.08*0.7, γ1 = 0.08, γ2 = 0.08*0.8,  ϵ = 1.,  s = 1.) = new(α, β, γ1, γ2, ϵ, s, σ, σ*σ') #'
 end
 
 
-#Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-#phi234(t, x, P::FitzHughNagumo) = Mat((0., x[1]), (-x[1]^3 + x[1]-x[2], 0.), (1.,0.) ) #γ, ϵ, s 
+#Bridge.b(t, x, P::FitzHughNagumo) = @SVector [-P.α*x[1]^3+ P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β]
+#phi234(t, x, P::FitzHughNagumo) = @SMatrix [0. -x[1]^3 + x[1]-x[2] 1. ; x[1] 0. 0. ] #γ, ϵ, s 
 function param(θ, σ)
     β, γ, ϵ = θ
     σ1, σ2 = σ
@@ -83,12 +32,12 @@ function param(θ, σ)
 end
 
 
-Bridge.bderiv(t,x, P::FitzHughNagumo) = Mat([(P.ϵ - 3*P.α*(x[1]*x[1])) -P.ϵ; P.γ1 -P.γ2])
-Bridge.b(t, x, P::FitzHughNagumo) = Vec(-P.α*x[1]*x[1]*x[1] + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β)
-#phi1234(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (-x[1]*x[1]*x[1] + x[1]-x[2], 0.),  (1.,0.) ) #β, γ, ϵ, s
-#intercept1234(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
-phi123(t, x, P::FitzHughNagumo) = Mat((0., 1.), (0., x[1]), (1.-x[1]*x[1]*x[1] + x[1]-x[2], 0.) ) #β, γ, ϵ
-intercept123(t, x, P::FitzHughNagumo) = Vec(0, - P.γ2*x[2])
+Bridge.bderiv(t,x, P::FitzHughNagumo) = @SMatrix [(P.ϵ - 3*P.α*(x[1]*x[1])) P.γ1 ; -P.ϵ -P.γ2]
+Bridge.b(t, x, P::FitzHughNagumo) = @SVector [-P.α*x[1]*x[1]*x[1] + P.ϵ*(x[1]-x[2]) + P.s, P.γ1*x[1]- P.γ2*x[2] + P.β]
+#phi1234(t, x, P::FitzHughNagumo) = @SMatrix [0. 0. -x[1]*x[1]*x[1] + x[1]-x[2] 1. ; 1. x[1] 0. 0. ]#β, γ, ϵ, s
+#intercept1234(t, x, P::FitzHughNagumo) = @SVector [0, - P.γ2*x[2]]
+phi123(t, x, P::FitzHughNagumo) = @SMatrix [0. 0. 1.-x[1]*x[1]*x[1] + x[1]-x[2] ; 1. x[1] 0. ] #β, γ, ϵ
+intercept123(t, x, P::FitzHughNagumo) = @SVector [0, - P.γ2*x[2]]
 
 
 Bridge.σ(t, x, P::FitzHughNagumo) = P.σ
@@ -122,7 +71,7 @@ function mcnext(mc, x)
     delta = x - m
     n = n + 1
     m = m + delta*(1/n)
-    m2 = m2 + map(.*, delta, x - m)
+    m2 = m2 + map((x,y)->x.*y, delta, x - m)
     m, m2, n
 end 
 function mcbandste(mc) 
@@ -170,10 +119,6 @@ proptype = [:dh, :aff, :aff, :aff, :aff][propid]
 eulertype = [:mdb, :eul, :tcs, :theta, :utheta][propid]
 simname =["ex", "nex"][simid] * "$proptype$eulertype$m"
 println(simname)
-try
-    mkdir(simname)
-end
-
 
 INNOS = false  # compute innovations from bridge?
 STIME = false # use a grid with smaller steps towards the end-point of a bridge
@@ -206,13 +151,13 @@ tt = linspace(0., TT, n*m+1)
 tttrue = linspace(0., TT, n*mextra*m+1)
 ttf = tt[1:m:end]
 
-uu = Vec(0., 1.)
+uu = @SVector [0., 1.]
 
 r = [(:xrange,(-2,2)), (:yrange,(-1,3))]
 
 #######################################################
 
-global Y = euler(uu, sample(tttrue, Wiener{Vec{2,Float64}}()), Ptrue) 
+global Y = euler(uu, sample(tttrue, Wiener{SVector{2,Float64}}()), Ptrue) 
 global Yobs = Y[1:mextra*m:end] #subsample
 assert(endof(Yobs) == n+1)
 
@@ -290,7 +235,7 @@ P = FitzHughNagumo(param(θ, σ)...)
 
 # reserve some space
 i = 1
-ww = Array{Vec{2,Float64},1}(length(m*(i-1)+1:m*(i)+1)) ## checkme!
+ww = Array{SVector{2,Float64},1}(length(m*(i-1)+1:m*(i)+1)) ## checkme!
 yy = copy(ww)
 
 # Prior
@@ -307,16 +252,17 @@ xi = 1./[50., 50., 50.]
 #######################################################
 
 # Bookkeeping
+mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath(simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
-open(joinpath(simname,"truth.txt"), "w") do f
+open(joinpath("output",simname,"truth.txt"), "w") do f
     println(f, "beta gamma eps s sigma eta") 
-    println(f, join(round([θtrue ; σtrue],3)," ")) 
+    println(f, join(round.([θtrue ; σtrue],3)," ")) 
 end
 
-open(joinpath(simname,"params.txt"), "w") do f
+open(joinpath("output",simname,"params.txt"), "w") do f
     println(f, "n beta gamma eps s sigma eta") 
 end
 
@@ -342,7 +288,7 @@ perf = @timed while true
 
     for i in 1:n-1
         P° = MyProp(Yobs[i], Yobs[i+1], P, proptype)
-        Z° = sample!(SamplePath(tts[i],ww), Wiener{Vec{2,Float64}}())
+        Z° = sample!(SamplePath(tts[i],ww), Wiener{SVector{2,Float64}}())
         if eulertype == :tcs
             B = ubridge!(SamplePath(sss[i], yy), Z°, P°)
         elseif eulertype == :mdb
@@ -405,7 +351,7 @@ perf = @timed while true
     end
     # update sigma (and theta)
     if iter % 1 == 0
-        σ° = σ .* exp(scaleσ .* randn(length(σ))) 
+        σ° = σ .* exp.(scaleσ .* randn(length(σ))) 
         θ° = θ + (2rand(length(θ)) .- 1).*scaleθ/3
         Pσ = FitzHughNagumo(param(θ, σ)...)
         Pσ° = FitzHughNagumo(param(θ°, σ°)...)
@@ -419,7 +365,7 @@ perf = @timed while true
                 else
                     Z = Bridge.mdbinnovations(BB[i], P°)
                 end    
-                #Z2 = sample(Z.tt, Wiener{Vec{2,Float64}}())
+                #Z2 = sample(Z.tt, Wiener{SVector{2,Float64}}())
                 #Z.yy[:] = sqrt(.9)*Z.yy + sqrt(0.1)*Z2.yy
                 BBnew[i] = bridge(Z, P°°, Bridge.mdb!)
                 ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
@@ -476,8 +422,8 @@ perf = @timed while true
          #  print("acc")
         end                    
     end     
-    open(joinpath(simname,"params.txt"), "a") do f; println(f, iter, " ", join(round([θ ; σ],8)," ")) end
-    println(iter, "\t", join(round([θ./θtrue; σ./σtrue; Inf; 100mean(bacc)/iter; 100minimum(bacc)/iter; Inf; 100thacc/iter; 100siacc/iter; ll  ],3),"\t")) 
+    open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([θ ; σ],8)," ")) end
+    println(iter, "\t", join(round.([θ./θtrue; σ./σtrue; Inf; 100mean(bacc)/iter; 100minimum(bacc)/iter; Inf; 100thacc/iter; 100siacc/iter; ll  ],3),"\t")) 
       
     BBall = vcat([BB[i][1:end-1] for i in 1:n]...)  
       
@@ -505,7 +451,7 @@ perf = @timed while true
     end
 end
 
-open(joinpath(simname,"info.txt"), "w") do f
+open(joinpath("output",simname,"info.txt"), "w") do f
     println(f, "n $n m $m T $TT A $Alpha B $Beta") 
     println(f, "Y0 = $uu") 
     println(f, "xi = $xi") 
@@ -517,7 +463,7 @@ if PLOT == :winston
 
     plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
     oplot2(Yobs,"+r", "+b")
-    savefig(joinpath(simname,"truth.pdf"))
+    savefig(joinpath("output",simname,"truth.pdf"))
 
     plot2(Y, "r","b" ; yrange=(-3,3),linewidth=0.5)
     oplot2(Yobs,"or","ob";symbolsize=0.3)
@@ -526,7 +472,7 @@ if PLOT == :winston
     oplot2(SamplePath(tt, mcb[2]),"r","b";linewidth=0.5)
     hcat(mcbandste(mcparams)..., [θtrue; σtrue])
 
-    savefig(joinpath(simname,"band.pdf"))
+    savefig(joinpath("output",simname,"band.pdf"))
 
     xr = (6,10)
     plot2(Y, "r","b" ; xrange=xr,yrange=(-3,3),linewidth=0.5)
@@ -534,13 +480,13 @@ if PLOT == :winston
     mcb = mcband(mc);
     oplot2(SamplePath(tt, mcb[1]),"r","b";xrange=xr,linewidth=0.5)
     oplot2(SamplePath(tt, mcb[2]),"r","b";xrange=xr,linewidth=0.5)
-    savefig(joinpath(simname,"bandpart.pdf"))
+    savefig(joinpath("output",simname,"bandpart.pdf"))
 
 
 
     plot2(vcat([BB[i] for i in 1:n]...), "r", "b"; yrange=(-3,3), linewidth=0.5)
     oplot2(Yobs,"+r", "+b")
-    savefig(joinpath(simname,"sample.pdf"))
+    savefig(joinpath("output",simname,"sample.pdf"))
 end 
 mc, mcparams
 end

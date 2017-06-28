@@ -1,14 +1,24 @@
 symmetrize(A) = (A + A')/2
 
+lyap{T}(a::SMatrix{1, 1, T}, c::SMatrix{1, 1, T}) =
+  SMatrix{1,1,T}(lyap(a[1,1],c[1,1]))
+
+function lyap{T}(a::SMatrix{2, 2, T}, c::SMatrix{2, 2, T})
+    d = det(a)
+    t = trace(a)
+     -(d*c  + (a - t*I)*c*(a-t*I)')/(2*d*t) # http://www.nber.org/papers/w8956.pdf
+end
+lyap{m,T}(a::SMatrix{m,m,T},c::SMatrix{m,m,T}) =
+  SMatrix(lyap(Matrix(a),Matrix(c)))
 
 #####################
 
-type Ptilde{T} <: ContinuousTimeProcess{T}
+mutable struct Ptilde{T} <: ContinuousTimeProcess{T}
     cs::CSpline{T}
     σ
     a
     Γ
-    Ptilde(cs, σ) = new(cs, σ, σ*σ', inv(σ*σ'))
+    Ptilde{T}(cs, σ) where T = new(cs, σ, σ*σ', inv(σ*σ'))
 end
 b(t, x, P::Ptilde) = P.cs(t) 
 mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
@@ -50,17 +60,17 @@ function H(t, T, P::Ptilde, x)
     P.Γ*x/(T-t)
 end
 
-type LinPro{T} <: ContinuousTimeProcess{T}
+mutable struct LinPro{T} <: ContinuousTimeProcess{T}
     B
     μ
     σ
     a
     Γ
     lambda # stationary covariance
-    LinPro(B, μ, σ) = let 
+    function LinPro{T}(B, μ, σ) where T
         a = σ*σ'
-        new(B, μ, σ, σ*σ', inv(a), symmetrize(lyap(B, a)))
-        end
+        return new(B, μ, σ, σ*σ', inv(a), symmetrize(lyap(B, a)))
+    end
 end
 
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
@@ -77,7 +87,7 @@ constdiff(::LinPro) = true
 Linear diffusion ``dX = B(X - μ)dt + σdW``
     
 """    
-LinPro{T}(B, μ::T, σ) = LinPro{T}(B, μ, σ)
+LinPro(B, μ::T, σ) where T = LinPro{T}(B, μ, σ)
 
 
 function lp{T}(s, x, t, y, P::LinPro{T}) 
@@ -132,11 +142,11 @@ function Mu(t, T, P::LinPro)
 end
 
 #Mu(tt[n-1], T, P)*inv(Mu(0, T, P))*x0
-#Vec(1.1596192644448247,0.9449866351942955)
+#@SVector [1.1596192644448247,0.9449866351942955]
 
 #xx = zeros(n);x = x0;for i in 1:n
 #       x = x + (P.B -  P.a*Bridge.H(tt[i], tt[end], P))*x*(tt[i+1]-tt[i]) 
 #      xx[i] = x[1];end;x
-#Vec(1.1594605378744431,0.9448833540533151)
+#@SVector [1.1594605378744431,0.9448833540533151]
 
 

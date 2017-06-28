@@ -1,10 +1,10 @@
-using FixedSizeArrays
+using StaticArrays
 import Base: *, +, -, /, \, ctranspose, zero, chol, trace, logdet, lyap
 
-logdet(m::FixedSizeArrays.Mat) = log(det(m))
+logdet(m::SMatrix) = log(det(m))
 logdet(x::Real) = log(x)
  
-function sumlogdiag{m,T}(A::Mat{m,m,T}, d=m) 
+function sumlogdiag{m,T}(A::SMatrix{m,m,T}, d=m) 
     t = zero(T)
     for i in 1:m
         t += log(A[i,i])
@@ -12,6 +12,6 @@ function sumlogdiag{m,T}(A::Mat{m,m,T}, d=m)
     t
 end   
  
-zero{T, NDim, SIZE}(_::FixedSizeArrays.FixedArray{T,NDim,SIZE}) = zero(typeof(_))
+zero{T, NDim, SIZE}(prototype::SMatrix{T,NDim,SIZE}) = zero(typeof(prototype))
 
  

@@ -1,14 +1,13 @@
-using Bridge, FixedSizeArrays
+using Bridge, StaticArrays
 using Base.Test
-srand(8)
 
 
 @test begin # functions callable
-    sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}())
-    sample!(SamplePath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)), Wiener{Vec{2,Float64}}())
-    sample(linspace(0,1,100),  WienerBridge{Vec{2,Float64}}(1., Vec(2.,-2.)))
-    sample!(SamplePath{Vec{2,Float64}}(collect(linspace(0,1,100)), zeros(Vec{2,Float64},100)),  WienerBridge{Vec{2,Float64}}(1., Vec(2.,-2.)))
-    euler!(sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}()), Vec(1.1,1.), sample(linspace(0,1,100),  Wiener{Vec{2,Float64}}()), Wiener{Vec{2,Float64}}())
+    sample(linspace(0,1,100),  Wiener{SVector{2,Float64}}())
+    sample!(SamplePath{SVector{2,Float64}}(collect(linspace(0,1,100)), zeros(SVector{2,Float64},100)), Wiener{SVector{2,Float64}}())
+    sample(linspace(0,1,100),  WienerBridge{SVector{2,Float64}}(1., SVector(2.,-2.)))
+    sample!(SamplePath{SVector{2,Float64}}(collect(linspace(0,1,100)), zeros(SVector{2,Float64},100)),  WienerBridge{SVector{2,Float64}}(1., SVector(2.,-2.)))
+    euler!(sample(linspace(0,1,100),  Wiener{SVector{2,Float64}}()), SVector(1.1,1.), sample(linspace(0,1,100),  Wiener{SVector{2,Float64}}()), Wiener{SVector{2,Float64}}())
 
     sample(linspace(0,1,100),  Wiener{Float64}())
     sample(linspace(0,1,100),  WienerBridge{Float64}(1., 1.))
@@ -23,8 +22,8 @@ r = 2.576
 n = 1000
 
 
-varmu(x, mu) = dot(x-mu, x-mu)/length(x)
-var0(x) = dot(x, x)/length(x)
+# varmu(x, mu) = dot(x-mu, x-mu)/length(x)
+# var0(x) = dot(x, x)/length(x)
 
 
 
@@ -42,5 +41,5 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 
 # mean and covariance of vector brownian motion
 
-@test norm(Vec(5.,2.) - mean([sample(linspace(0.0,2.0,5),Wiener{Vec{2,Float64}}(),Vec(5.,2.)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
-@test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{Vec{2,Float64}}(),Vec(5.0,2.0)).yy[end] for i = 1:1000]);vardim=2))  < 0.3
+@test norm(SVector(5.,2.) - mean([sample(linspace(0.0,2.0,5),Wiener{SVector{2,Float64}}(),SVector(5.,2.)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
+@test norm(2I - Base.cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SVector{2,Float64}}(),SVector(5.0,2.0)).yy[end] for i = 1:1000]), 2, true))  < 0.3

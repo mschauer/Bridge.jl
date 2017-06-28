@@ -1,8 +1,7 @@
-using Bridge, FixedSizeArrays, Distributions
+using Bridge, Distributions
 using PyPlot
 using Base.Test
 
-#srand(5)
 h = 1e-7    
 n, m = 10, 10000
 T1 = 1.

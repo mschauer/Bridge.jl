@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/mschauer/Bridge.jl.svg?branch=master)](https://travis-ci.org/mschauer/Bridge.jl)
 # Bridge.jl
  
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
@@ -6,7 +7,7 @@ This package is going to replace my package https://github.com/mschauer/SDE.jl .
 
 ```Julia
 # Define a diffusion process
-immutable OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
+struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
@@ -33,11 +34,14 @@ X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
 - [x] Brownian motion in one and more dimensions
 - [x] Ornstein-Uhlenbeck processes
 - [ ] Geometric Brownian motion 
-- [ ] Fractional Brownian motion
-- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation) 
+- [x] Bessel processes
+- [x] Gamma processes
+- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation)
+- [x] Euler-Scheme and implicit methods (Rungekutta)
 
-The layout/api is written to be compatible with SimonDanisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl
+The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
 
+The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
 
 
 
