@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/mschauer/Bridge.jl.svg?branch=master)](https://travis-ci.org/mschauer/Bridge.jl)
 # Bridge.jl
  
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
