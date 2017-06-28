@@ -1,4 +1,4 @@
-srand("SEED",1)
+srand(joinpath(@__DIR__,"SEED"),1)
 include("wiener.jl")
 include("diffusion.jl")
 include("misc.jl")
