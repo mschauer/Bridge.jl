@@ -33,10 +33,12 @@ X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
 - [x] Brownian motion in one and more dimensions
 - [x] Ornstein-Uhlenbeck processes
 - [ ] Geometric Brownian motion 
-- [ ] Fractional Brownian motion
-- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation) 
+- [x] Bessel processes
+- [x] Gamma processes
+- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation)
+- [x] Euler-Scheme and implicit methods (Rungekutta)
 
-The layout/api was originally written to be compatible with SimonDanisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl).
+The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
 
 The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
 
