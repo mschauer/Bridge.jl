@@ -1,7 +1,7 @@
 using Bridge, StaticArrays, Distributions
 using Base.Test
 #import Bridge: b, σ, a, transitionprob
-const percentile = 20 
+const percentile = 3.
 
 # Define a diffusion process
 if ! @_isdefined(OrnsteinUhlenbeck)
@@ -45,7 +45,7 @@ kernel(x, a=0.001) = 1/sqrt(2pi*a)* exp(-abs2(x)/(2a))
 
 n = 500
 tt = 1.:1/n:2.
-m = 2
+m = 1000
 P = VOrnsteinUhlenbeck{2}(2., 1.)
 P1 = OrnsteinUhlenbeck(2., 1.)
 
@@ -116,7 +116,7 @@ C = []
 # BridgeProp
 push!(Cnames, "BridgeProp")
 srand(5)
-n, m = 200, 20000
+n, m = 200, 1000
 T = 2.
 ss = linspace(0, T, n)
 tau(s, T) = s.*(2-s/T)
@@ -254,4 +254,4 @@ push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 println(Cnames)
 println(C)
 
-#@test  all(C .< percentile)
+@test  all(C .< percentile)
