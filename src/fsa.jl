@@ -1,5 +1,5 @@
 using StaticArrays
-import Base: *, +, -, /, \, ctranspose, zero, chol, trace, logdet, lyap
+import Base: *, +, -, /, \, ctranspose, zero, trace, logdet, lyap
 
 logdet(m::SMatrix) = log(det(m))
 logdet(x::Real) = log(x)

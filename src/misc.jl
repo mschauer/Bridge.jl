@@ -1,4 +1,3 @@
-import Base: dot, randn, rand
 export supnorm, @_isdefined
 """
     cumsum0
