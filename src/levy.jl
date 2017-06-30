@@ -1,5 +1,17 @@
 abstract type LevyProcess{T} <: ContinuousTimeProcess{T} end
 
+
+"""
+    GammaProcess
+
+A *GammaProcess* with jump rate `γ` and inverse jump size `λ` has increments `Gamma(t*γ, 1/λ)` and Levy measure
+
+```math
+ν(x)=γ x^{-1}\\exp(-λ x), 
+```
+
+Here `Gamma(α,θ)` is the Gamma distribution in julia's parametrization with shape parameter `α` and scale `θ`
+"""
 struct GammaProcess <: LevyProcess{Float64}
     γ::Float64
     λ::Float64
@@ -40,7 +52,10 @@ function sample{T}(tt::AbstractVector{Float64}, P::LevyProcess{T}, x1=zero(T))
 end
 
 
-increment(t, P::GammaProcess) = Gamma(t*P.γ, P.λ)
+increment(t, P::GammaProcess) = Gamma(t*P.γ, 1/P.λ)
+
+lp(s, x, t, y, P::GammaProcess) = logpdf(increment(t-s, P), y-x)
+
 increment(t, P::VarianceGammaProcess) = VarianceGamma(P.θ, P.σ, t, P.ν)
 
 function rand(P::VarianceGamma) 
@@ -66,3 +81,53 @@ function sample(tt::AbstractVector{Float64}, P::GammaBridge, x1::Float64 = 0.)
     end             
     SamplePath{Float64}(tt, yy)
 end
+
+
+"""
+LocalGammaProcess
+"""
+struct LocalGammaProcess
+    P::GammaProcess
+    ϵ
+    alpha
+    x
+    k
+end
+
+"""
+inverse jump size compared to gamma process
+"""
+function bigλ(x, P::LocalGammaProcess)
+    
+    x <= P.ϵ && return 0.
+    x >= P.x && return -alpha[i]
+    
+    i = floor(Int, P.k*(x-P.ϵ)/(P.x-P.ϵ))
+    -alpha[i]
+end
+
+function comp(P::LocalGammaProcess)
+    s = 0.0
+    for k in 1:P.k-1
+        dx = (P.x- P.ϵ)/(k-1)
+        s = s + P.γ*(expint(1, P.alpha[k]*( P.ϵ + (k-1)*dx)) - expint(1, P.alpha[k+1]*( P.ϵ + k*dx)))
+    end
+    s = s + P.γ*(expint(1, P.alpha[P.k]*(P.x))) # might be removed
+end
+
+
+"""
+Up to proportionality
+"""
+function llikelihood(X::SamplePath, P::LocalGammaProcess)
+    ll = 0.
+    for i in 2:length(X.tt)
+        dt = X.tt[i]-X.tt[i]
+        ll += bigλ(X.yy-X.xx, P)
+    end
+    ll - (X.tt[end]-X.tt[1])*comp(P)
+end
+
+export LocalGamma
+
+
