@@ -1,4 +1,7 @@
 using Bridge, Distributions
+import Bridge: lp
+
+
 
 PLOT = false
 include("plot.jl")
@@ -124,7 +127,7 @@ assert(endof(Yobs) == n+1)
 
 
 Y2 = SamplePath(tt, copy(Y.yy[1:mextra:end])) #subsample 
-normalize(tt) = (tt - tt[1])/(tt[end]-tt[1])
+normalizetime(tt) = (tt - tt[1])/(tt[end]-tt[1])
 
 θs = Float64[]
 iter = 0
@@ -182,7 +185,7 @@ Alpha = 1/500
 Beta= 1/500
 
 piσ²(s2) = pdf(InverseGamma(Alpha,Beta), s2[1])
-lq(x, si) = Bridge.logpdfnormal(x, si^2)
+lp(x, si) = Bridge.logpdfnormal(x, si^2)
 PiError = InverseGamma(Alpha,Beta)
 
 xi = 1./[5., 5.] #prior prec

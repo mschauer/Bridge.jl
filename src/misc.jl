@@ -15,17 +15,8 @@ function cumsum0(dx::Vector)
         x
 end
 
-
 supnorm(x) = sum(abs.(x))
 
-dot(J::Base.LinAlg.UniformScaling{Float64}, b::Float64) = J.λ*b
-dot(b::Float64, J::Base.LinAlg.UniformScaling{Float64}) = J.λ*b
-dot(x::Float64, y::Float64) = x*y
-
-
-randn(::Type{Float64}) = randn()
-randn{T}(::Type{Complex{T}}) = Complex(randn(T), randn(T))
- 
 macro _isdefined(var)
     quote
         try local _ = $(esc(var))
