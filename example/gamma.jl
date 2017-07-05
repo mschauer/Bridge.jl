@@ -21,3 +21,5 @@ plot(X, "-")
 #plot(tt)
 
 
+X = sample(linspace(0,1,500),Bridge.GammaBridge(1,1, GammaProcess(10,10)))
+X = sample(linspace(0,1,500), GammaProcess(10,10))

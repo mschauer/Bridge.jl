@@ -1,5 +1,17 @@
+
+"""
+lp(s, x, t, y, P)
+
+Log-transition density, shorthand for `logpdf(transitionprob(s,x,t,P),y)`.
+"""
 lp(s, x, t, y, P) = logpdf(transitionprob(s,x,t,P),y)
 
+
+"""
+     llikelihood(X::SamplePath, P::ContinuousTimeProcess)
+
+Log-likelihood of observations `X` using transition density `lp`
+"""
 function llikelihood(X::SamplePath, P::ContinuousTimeProcess)
     ll = 0.
     for i in 2:length(X.tt)
@@ -9,6 +21,12 @@ function llikelihood(X::SamplePath, P::ContinuousTimeProcess)
 end
 
 
+"""
+     sample(tt, P, x1=zero(T))
+
+Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
+starting in `x1`.
+"""
 function sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T))
     tt = collect(tt)
     yy = zeros(T,length(tt))
@@ -22,13 +40,10 @@ function sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T))
 end
 
 
-
-
-
 """
     quvar(X)
              
-Computes quadratic variation of ``X``.
+Computes quadratic variation of `X`.
 """
 function quvar{T}(X::SamplePath{T})
         s = zero(T)*zero(T)'
@@ -39,12 +54,11 @@ function quvar{T}(X::SamplePath{T})
 end
 
 
-
 """
     bracket(X)
     bracket(X,Y)
   
-Computes quadratic variation process of ``x`` (of ``x`` and ``y``).
+Computes quadratic variation process of `X` (of `X` and `Y`).
 """     
 function bracket(X::SamplePath)
         cumsum0(diff(X.yy).^2)
@@ -53,6 +67,7 @@ end
 function bracket(X::SamplePath,Y::SamplePath)
         cumsum0(diff(X.yy).*diff(X.yy))
 end
+
 
 """
     ito(Y, X)
@@ -71,10 +86,11 @@ function ito{T}(X::SamplePath, W::SamplePath{T})
         SamplePath{T}(X.tt,yy) 
 end
 
+
 """
     girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
 
-log likelihood      
+Girsanov log likelihood ``dP/dPt(X)``    
 """    
 function girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
     tt = X.tt

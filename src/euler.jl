@@ -1,7 +1,19 @@
-euler(u, W, P) = euler!(copy(W), u, W, P)
 _scale(w,σ) = σ*w
 _scale(w::Number, σ::UniformScaling) = σ.λ*w
 
+"""
+    euler(u, W, P) -> X
+  
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` using the Euler scheme.
+"""
+euler(u, W, P) = euler!(copy(W), u, W, P)
+
+"""
+    euler!(Y, u, W, P) -> X
+  
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+using the Euler scheme in place.
+"""
 function euler!(Y, u, W::SamplePath, P)
 
     N = length(W)
@@ -46,7 +58,7 @@ function heun!(Y, u, W::SamplePath, P)
 end
 
 """
-    thetamethod
+    thetamethod(u, W, P, theta=0.5) 
   
 Solve stochastic differential equation using the theta method and Newton-Raphson steps
 """
@@ -95,8 +107,14 @@ function thetamethod!(Y, u, W::SamplePath, P, theta=0.5)
     Y
 end
 
+"""
+    mdb(u, W, P)
+    mdb!(copy(W), u, W, P)
 
+Euler scheme with the diffusion coefficient correction of the modified diffusion bridge.
+"""
 mdb(u, W, P) = mdb!(copy(W), u, W, P)
+@doc (@doc mdb) ->
 function mdb!(Y, u, W::SamplePath, P)
 
     N = length(W)
@@ -116,7 +134,11 @@ function mdb!(Y, u, W::SamplePath, P)
     yy[.., N] = y
     Y
 end
+"""
+    bridge(W, P, scheme! = euler!) -> Y
 
+Integrate with ``scheme!`` and set ``Y[end] = P.v1``.
+"""
 bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
 function bridge!(Y, W::SamplePath, P, scheme! = euler!)
     !(W.tt[1] == P.t0 && W.tt[end] == P.t1) && error("Time axis mismatch between bridge P and driving W.") # not strictly an error

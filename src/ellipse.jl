@@ -1,13 +1,14 @@
-import Base.getindex, Base.setindex!
-const .. = Val{:...}
 
-setindex!{T<:Any, Ti<:Integer}(A::AbstractArray{T,Ti}, x, ::Type{Val{:...}}, ::Base.Colon) = throw( ArgumentError("cannot combine ellipse with colon this way"))
-getindex(::Base.SparseArrays.SparseMatrixCSC, ::Type{Val{:...}}, ::Base.Colon) = throw( ArgumentError("cannot combine ellipse with colon this way"))
+  import Base.getindex, Base.setindex!
+  const ..   = Val{:..}
 
-setindex!{T}(A::AbstractArray{T,1}, x, ::Type{Val{:...}}, n) = A[n] = x
-setindex!{T}(A::AbstractArray{T,2}, x, ::Type{Val{:...}}, n) = A[ :, n] = x
-setindex!{T}(A::AbstractArray{T,3}, x, ::Type{Val{:...}}, n) = A[ :, :, n] =x
+  setindex!{T,N,N2}(A::AbstractArray{T,N}, x, ::Type{Val{:..}}, n::Vararg{Int,N2}) = A[(Colon() for i in 1:N-N2)..., n...] = x
+  getindex{T,N,N2}(A::AbstractArray{T,N}, ::Type{Val{:..}}, n::Vararg{Int,N2}) = A[(Colon() for i in 1:N-N2)..., n...]
 
-getindex{T}(A::AbstractArray{T,1}, ::Type{Val{:...}}, n) = A[n]
-getindex{T}(A::AbstractArray{T,2}, ::Type{Val{:...}}, n) = A[ :, n]
-getindex{T}(A::AbstractArray{T,3}, ::Type{Val{:...}}, n) = A[ :, :, n]
+  setindex!{T,N}(A::AbstractArray{T,N}, x, n::Int, ::Type{Val{:..}}) = A[n, (Colon() for i in 1:N-1)...] = x
+  #setindex!{T,N,N2}(A::AbstractArray{T,N}, x, n::Vararg{Int,N2}, ::Type{Val{:..}}) = A[n, (Colon() for i in 1:N-N2-1)...] = x
+
+  getindex{T,N}(A::AbstractArray{T,N}, n::Int, ::Type{Val{:..}}) = A[n,(Colon() for i in 1:N-1)...]
+  #getindex{T,N,N2}(A::AbstractArray{T,N}, n::Vararg{Int,N2}, ::Type{Val{:..}}) = A[n,(Colon() for i in 1:N-N2-1)...]
+
+  export .., getindex, setindex!
