@@ -25,4 +25,7 @@ macro _isdefined(var)
         end
     end
 end
- 
+
+if isempty(methods(chol, (UniformScaling,)))
+    include("chol.jl")
+end

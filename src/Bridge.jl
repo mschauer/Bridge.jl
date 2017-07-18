@@ -16,7 +16,6 @@ import Distributions: sample, sample!
 using StaticArrays
 
 include("misc.jl")
-include("diagonal.jl")
 
 include("fsa.jl")
 include("gaussian.jl")
