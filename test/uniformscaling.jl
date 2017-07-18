@@ -1,6 +1,6 @@
 # Define a diffusion process
 using Bridge
-immutable OU2696197128  <: ContinuousTimeProcess{Float64}
+struct OU2696197128  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::UniformScaling{Float64} # diffusion parameter
     function OU2696197128(β::Float64, σ::UniformScaling{Float64})
