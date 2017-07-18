@@ -1,7 +1,7 @@
 """ 
     r(t, x, T, v, P)
 
-Returns ``r(t,x) = \operatorname{grad}_x \log p(t,x; T, v)`` where
+Returns ``r(t,x) = \\operatorname{grad}_x \\log p(t,x; T, v)`` where
 ``p`` is the transition density of the process ``P``.
 """ 
 function r(t, x, T, v, P)
