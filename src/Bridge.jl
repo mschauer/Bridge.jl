@@ -11,9 +11,11 @@ export thetamethod, thetamethod!, thetainnovations!, thetainnovations, heun, heu
 export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 
 using Distributions
+using StaticArrays
+using Compat
+
 import Base.rand
 import Distributions: sample, sample!
-using StaticArrays
 
 include("misc.jl")
 include("expint.jl")
@@ -32,6 +34,5 @@ include("levy.jl")
 include("linpro.jl")
 include("timechange.jl")
 
-export SDiagonal
 
 end

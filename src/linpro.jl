@@ -1,16 +1,4 @@
 symmetrize(A) = (A + A')/2
-
-lyap{T}(a::SMatrix{1, 1, T}, c::SMatrix{1, 1, T}) =
-  SMatrix{1,1,T}(lyap(a[1,1],c[1,1]))
-
-function lyap{T}(a::SMatrix{2, 2, T}, c::SMatrix{2, 2, T})
-    d = det(a)
-    t = trace(a)
-     -(d*c  + (a - t*I)*c*(a-t*I)')/(2*d*t) # http://www.nber.org/papers/w8956.pdf
-end
-lyap{m,T}(a::SMatrix{m,m,T},c::SMatrix{m,m,T}) =
-  SMatrix(lyap(Matrix(a),Matrix(c)))
-
 #####################
 
 mutable struct Ptilde{T} <: ContinuousTimeProcess{T}
