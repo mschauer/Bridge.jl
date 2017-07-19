@@ -1,3 +1,4 @@
+using StaticArrays
 
 if PLOT == :winston
 

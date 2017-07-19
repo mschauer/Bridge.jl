@@ -1,5 +1,5 @@
 using StaticArrays
-import Base: *, +, -, /, \, ctranspose, zero, trace, logdet, lyap
+import Base: logdet
 
 logdet(m::SMatrix) = log(det(m))
 logdet(x::Real) = log(x)
@@ -11,7 +11,6 @@ function sumlogdiag{m,T}(A::SMatrix{m,m,T}, d=m)
     end
     t
 end   
- 
-zero{T, NDim, SIZE}(prototype::SMatrix{T,NDim,SIZE}) = zero(typeof(prototype))
+
 
  
