@@ -88,44 +88,70 @@ LocalGammaProcess
 """
 struct LocalGammaProcess
     P::GammaProcess
-    ϵ
-    alpha
-    x
-    k
+    θ # parameter vector
+    b1 # grid points b1*0, ..., b1*length(θ), Inf
 end
 
 """
-inverse jump size compared to gamma process
+Inverse jump size compared to gamma process
 """
-function bigλ(x, P::LocalGammaProcess)
+function θ(x, P::LocalGammaProcess)
+    N = length(P.θ)
+    x <= P.b1 && return 0.
+    x >= N*P.b1 && return θ[N]*x
     
-    x <= P.ϵ && return 0.
-    x >= P.x && return -alpha[i]
-    
-    i = floor(Int, P.k*(x-P.ϵ)/(P.x-P.ϵ))
-    -alpha[i]
+    k = Int(div(x,P.b1))
+    θ[k]*x
 end
 
-function comp(P::LocalGammaProcess)
-    s = 0.0
-    for k in 1:P.k-1
-        dx = (P.x- P.ϵ)/(k-1)
-        s = s + P.γ*(expint(1, P.alpha[k]*( P.ϵ + (k-1)*dx)) - expint(1, P.alpha[k+1]*( P.ϵ + k*dx)))
+"""
+(Bin-wise) integral of the Levy measure
+"""
+function nu(k,P)
+    if k == 0
+        P.P.γ*(-log(P.P.λ) - expint(1, (P.P.λ)*P.b1))
+    elseif k == length(P.θ) 
+        P.P.γ*(expint(1, (P.P.λ + P.θ[k])*k*P.b1))
+    else
+        P.P.γ*(expint(1, (P.P.λ + P.θ[k])*(k)*P.b1) - expint(1, (P.P.λ + P.θ[k])*(k+1)*P.b1))
     end
-    s = s + P.γ*(expint(1, P.alpha[P.k]*(P.x))) # might be removed
+end
+
+"""
+Compensator of LocalGammaProcess 
+
+for kstart = 1, this is sum_k=1^N nu(B_k)
+for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant)
+"""
+function compensator(kstart, P::LocalGammaProcess)
+    s = 0.0
+    for k in kstart:length(P.θ)
+        s = s + nu(k,P)
+    end
 end
 
 
+
 """
+Log-likelihood with respect to reference measure P.P
+
 Up to proportionality
 """
-function llikelihood(X::SamplePath, P::LocalGammaProcess)
-    ll = 0.
-    for i in 2:length(X.tt)
-        dt = X.tt[i]-X.tt[i]
-        ll += bigλ(X.yy-X.xx, P)
+function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)::Float64
+    if Pº.P.λ == P.P.λ # same on the first bin
+        ll = 0.
+        for i in 2:length(X.tt)
+            x = X.yy[i]-X.yy[i-1]
+            ll = ll - (θ(x, Pº)-θ(x, P)) # θ(x, P) ≈ θ_k x
+        end
+        ll = ll - (X.tt[end]-X.tt[1])*(compensator(1, Pº)-compensator(1, P))
+        return ll
+    elseif Pº.θ === P.θ
+        ll = -(Pº.P.λ-(P.P.λ))*(X.yy[end]-X.yy[1])
+        return ll - (X.tt[end]-X.tt[1])*(compensator(0, Pº)-compensator(0, P))
+    else
+        throw(ArgumentError(""))
     end
-    ll - (X.tt[end]-X.tt[1])*comp(P)
 end
 
 export LocalGamma
