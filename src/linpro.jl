@@ -64,7 +64,7 @@ end
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
 bderiv(t, x, P::LinPro) = P.B
-σderiv(t, x, P::LinPro) = 0.*P.σ
+σderiv(t, x, P::LinPro) = 0*(P.σ)
 
 a(t, x, P::LinPro) = P.a
 constdiff(::LinPro) = true

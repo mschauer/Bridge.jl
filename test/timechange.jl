@@ -13,8 +13,8 @@ u = 0.5
 v = 0.3
 a = .7
 a2 = 0.4
-P = LinPro(-0.8, 0., sqrt(a))
-P2 = LinPro(-0.8, 0., sqrt(a2))
+P = LinPro(-0.8, 0.0, sqrt(a))
+P2 = LinPro(-0.8, 0.0, sqrt(a2))
 
 la = 1
 cs = Bridge.CSpline(T1, T2, la*P.B*u, la*P.B*v)

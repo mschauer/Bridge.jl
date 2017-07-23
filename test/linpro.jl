@@ -3,7 +3,7 @@ using Base.Test
 #import Bridge: b, σ, a, transitionprob
 n = 1000
 TT = 5
-tt = 0.:TT/n:TT
+tt = 0.0:TT/n:TT
 m = 1000
 S = SVector{2,Float64}
 B = SMatrix{2,2,Float64}([-1 0.1; -0.2 -1])
@@ -14,8 +14,8 @@ a = sigma*sigma'
   
 P = LinPro{S}(B, mu, sigma)
 
-u = S([1., 0.])
-v = S([.5, 0.])
+u = S([1.0, 0.0])
+v = S([.5, 0.0])
 
 @test (norm(Matrix(-P.lambda*B' - B*P.lambda - a))) < eps()
 
@@ -27,7 +27,7 @@ println("Fixme: supnorm(cov(X,2) - Matrix(P.lambda)) < .1")
 
 n = 1000
 TT = 0.5
-tt = 0.:TT/n:TT
+tt = 0.0:TT/n:TT
 
 X = euler(mu, sample(tt, Wiener{S}()),P)
 @test supnorm(quvar(X)-TT*a) < 0.06

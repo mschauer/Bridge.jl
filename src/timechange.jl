@@ -4,7 +4,7 @@
   
     Time change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).
 """      
-tofs(s, T1, T2) = T1 + (s - T1).*(2. - (s-T1)/(T2-T1))
+tofs(s, T1, T2) = T1 + (s - T1).*(2.0 - (s-T1)/(T2-T1))
 
 
 """
@@ -24,7 +24,7 @@ txofsu(s, u, T1, T2, v, P) = (tofs(s, T1, T2), xofu(s, u, T1, T2, v, P))
 
 Time changed V for generation of U
 """
-function Vs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1. - (s-T1)/(T2-T1))^2))
+function Vs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( v .- P.μ) .-  P.μ
 end
 Vs(s, T1, T2, v, P::Ptilde) = V(tofs(s, T1, T2), T2, v, P)
@@ -35,12 +35,12 @@ Vs(s, T1, T2, v, P::Ptilde) = V(tofs(s, T1, T2), T2, v, P)
 
 Time changed time derivative of V for generation of U
 """
-function dotVs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1. - (s-T1)/(T2-T1))^2))
+function dotVs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( P.B*v .+ P.beta) 
 end
 dotVs(s, T1, T2, v, P::Ptilde) = dotV(tofs(s, T1, T2), T2, v, P)
 
-function Ju(s, T1, T2, P::LinPro, x, phim = expm(-P.B*(T2-T1)*(1. - (s-T1)/(T2-T1))^2))
+function Ju(s, T1, T2, P::LinPro, x, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
      sl = P.lambda*(T2-T1)/(T2-s)^2
     ( phim*sl*phim'-sl)\x
 end
@@ -74,7 +74,7 @@ function ubridge!{T}(X, W::SamplePath{T}, Po)
         s = ss[i]
         t, x = txofsu(s, u, T1, T2, v, Pt)
         tt[i], xx[.., i] = t, x
-        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )
+        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )
         σUdW = (-sqrt(2.0/((T2-T1)*(T2-s))))*(σ(t, x, Po)*(ww[.., i+1]-ww[..,i]))
         u += bU*(ss[i+1]-s) + σUdW
     end
@@ -108,15 +108,15 @@ function uthetamethod!(Y, u, W::SamplePath, Po, theta=0.5)
         tt[i], xx[.., i] = t, x
         x2 = x
         dw = (ww[.., i+1]-ww[..,i])
-        delta1 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )*(ss[i+1]-s) 
+        delta1 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )*(ss[i+1]-s) 
         local delta2
        
         const eps2 = 5e-6
         const MM = 8
         for mm in 1:MM
             
-            delta2 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x2, Po.Target) +   1/(T2-s)*(u2 - 2.*a(t, x2, Po)*Ju(s, T1, T2, Pt, u2) )*(ss[i+1]-s) 
-            buderiv = -2/(T2-T1)*bderiv(t, x2, Po.Target) + 1/(T2-s)*(I - 2.*a(t, x, Po)*J(s, T1, T2, Pt))*(ss[i+1]-s) 
+            delta2 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x2, Po.Target) +   1/(T2-s)*(u2 - 2.0*a(t, x2, Po)*Ju(s, T1, T2, Pt, u2) )*(ss[i+1]-s) 
+            buderiv = -2/(T2-T1)*bderiv(t, x2, Po.Target) + 1/(T2-s)*(I - 2.0*a(t, x, Po)*J(s, T1, T2, Pt))*(ss[i+1]-s) 
             bderiv(tt[i+1], y2, P)
             dy2 = -inv(I - theta*(buderiv*(s[i+1]-s)))*(u2 - u - (1-theta)*delta1 - theta*delta2 - σ(tt[i], y, P)*dw)
             
@@ -155,11 +155,11 @@ function ullikelihood{T}(Y::SamplePath{T}, Po)
       
         j = J(s, T1, T2, Pt)
         ju = j*uofx(s, yy[.., i], T1, T2, v, Pt) 
-        som += 2.*dot(b(t, x, P)  - b(t,x, Pt),ju)*(s2-s)
+        som += 2.0*dot(b(t, x, P)  - b(t,x, Pt),ju)*(s2-s)
         
         if !constdiff(Po)
             ad = a(t,x, P) - a(t,x, Pt)
-            som += -1./(T2-s)*(trace(j*ad) - T*dot(ju,ad*ju))*(s2-s)
+            som += -1.0/(T2-s)*(trace(j*ad) - T*dot(ju,ad*ju))*(s2-s)
         end
     end
     som
@@ -226,7 +226,7 @@ function uinnovations!{T}(W, Y::SamplePath{T}, Po)
         u2 = uofx(s2, yy[.., i+1], T1, T2, v, Pt) 
         
         
-        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t,  yy[.., i], Po.Target) +   1/(T2-s)*(u - 2.*a(t,  yy[.., i], Po)*Ju(s, T1, T2, Pt, u) )
+        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t,  yy[.., i], Po.Target) +   1/(T2-s)*(u - 2.0*a(t,  yy[.., i], Po)*Ju(s, T1, T2, Pt, u) )
         σU = -sqrt(2.0/((T2-T1)*(T2-s)))*σ(t, yy[.., i], Po)
         
         w = w + inv(σU)*(u2 - u - bU*(s2 - s)) 

@@ -1,7 +1,7 @@
 using Bridge, StaticArrays, Distributions
 using Base.Test
 #import Bridge: b, σ, a, transitionprob
-const percentile = 3.
+const percentile = 3.0
 
 # Define a diffusion process
 if ! @_isdefined(OrnsteinUhlenbeck)
@@ -9,8 +9,8 @@ struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
-        isnan(β) || β > 0. || error("Parameter λ must be positive.")
-        isnan(σ) || σ > 0. || error("Parameter σ must be positive.")
+        isnan(β) || β > 0.0 || error("Parameter λ must be positive.")
+        isnan(σ) || σ > 0.0 || error("Parameter σ must be positive.")
         new(β, σ)
     end
 end
@@ -37,22 +37,22 @@ end
 Bridge.b(t, x, P::VOrnsteinUhlenbeck) = -P.β*x
 Bridge.σ(t, x, P::VOrnsteinUhlenbeck) = P.σ*I
 Bridge.bderiv(t, x, P::VOrnsteinUhlenbeck) = -P.β*I
-Bridge.σderiv(t, x, P::VOrnsteinUhlenbeck) = 0.*I
+Bridge.σderiv(t, x, P::VOrnsteinUhlenbeck) = 0.0*I
 Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
 Bridge.constdiff(::VOrnsteinUhlenbeck) = true
 
 kernel(x, a=0.001) = 1/sqrt(2pi*a)* exp(-abs2(x)/(2a))
 
 n = 500
-tt = 1.:1/n:2.
+tt = 1.0:1/n:2.0
 m = 1000
-P = VOrnsteinUhlenbeck{2}(2., 1.)
-P1 = OrnsteinUhlenbeck(2., 1.)
+P = VOrnsteinUhlenbeck{2}(2.0, 1.0)
+P1 = OrnsteinUhlenbeck(2.0, 1.0)
 
-u = @SVector [0., 0.]
-v = @SVector [.5, 0.]
-L = @SMatrix [1. 0.]
-S = @SMatrix [1.]
+u = @SVector [0.0, 0.0]
+v = @SVector [0.5, 0.0]
+L = @SMatrix [1.0 0.0]
+S = @SMatrix [1.0]
 
 convolution(N1::Normal,N2::Normal) = Normal(mean(N1)+mean(N2), sqrt(var(N1)+var(N2)))
 EXgivenXpY(X, Y, z) = (z) * var(X) / (var(X) + var(Y))
@@ -61,14 +61,14 @@ X = [euler(u, sample(tt, Wiener{SVector{2,Float64}}()),P).yy[end][1] for i in 1:
 Xstat = mean(X),var(X)
 p1(s, x, t, P::VOrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s)), sqrt((0.5P.σ^2/P.β) *(1-exp(-2*P.β*(t-s)))))
 PX1 = p1(tt[1],u[1], tt[end], P)
-Peta = Normal(0,1.)
+Peta = Normal(0,1.0)
 Pobs = convolution(PX1, Peta)
 p = pdf(PX1,v[1])
-pt= pdf(Normal(0., 1.),v[1])
+pt= pdf(Normal(0.0, 1.0),v[1])
 p2 = pdf(Pobs,v[1])
-pt2 = pdf(Normal(0., sqrt(2.)),v[1])
+pt2 = pdf(Normal(0.0, sqrt(2.0)),v[1])
 
-X = euler(0., sample(tt, Wiener{Float64}()),P1)
+X = euler(0.0, sample(tt, Wiener{Float64}()),P1)
 @test abs(girsanov(X, P1, Wiener{Float64}()) - llikelihood(X, P1) + llikelihood(X,Wiener{Float64}())) < 0.5
 
 
@@ -80,7 +80,7 @@ Po3 = PBridgeProp(P, tt[1], u, (tt[end]-tt[1])/2, 1.2v,tt[end], v, L, S, Bridge.
 
 Y = Float64[
 begin
- X = euler((@SVector [0., 0.]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
+ X = euler((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  X.yy[end][1]*exp(llikelihood(X, Po))*pt2/p2
  end
  
@@ -89,7 +89,7 @@ begin
  
 Z = Float64[
 begin
- X = euler((@SVector [0., 0.]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
+ X = euler((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  exp(llikelihood(X, Po))*pt2/p2
  end
  for i in 1:m]
@@ -101,7 +101,7 @@ begin
 # thetamethod 
 Z = Float64[
 begin
- X = thetamethod((@SVector [0., 0.]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
+ X = thetamethod((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  exp(llikelihood(X, Po))*pt2/p2
  end
  for i in 1:m]
@@ -124,8 +124,8 @@ tau(s, T) = s.*(2-s/T)
 tt = ss
 
 u = 0.5
-v = 0*0.5
-a = .7
+v = 0.0
+a = 0.7
 P1 = OrnsteinUhlenbeck(0.8, sqrt(a))
 #cs = Bridge.CSpline(tt[1], tt[end], u, u*exp(-P1.β*T), -P1.β*u, -exp(-P1.β*T)*P1.β*u)
 #cs = Bridge.CSpline(tt[1], tt[end],  -P1.β*u, -exp(-P1.β*T)*P1.β*u)
@@ -146,10 +146,10 @@ Z = Float64[
     end
     for i in 1:m]
 
-p = pdf(transitionprob(0., u, T, P1), v)
+p = pdf(transitionprob(0.0, u, T, P1), v)
 
 Pt = Bridge.Ptilde(cs, sqrt(a))
-pt = exp(lp(0., u, T, v, Pt))
+pt = exp(lp(0.0, u, T, v, Pt))
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
 
@@ -162,7 +162,7 @@ Z = Float64[
     end
     for i in 1:m]
 
-p = pdf(transitionprob(0., u, T, P1), v)
+p = pdf(transitionprob(0.0, u, T, P1), v)
 
 Pt = Bridge.ptilde(Po)
 pt = exp(lptilde(Po))
@@ -172,7 +172,7 @@ push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
 # GuidedProp
 push!(Cnames, "GuidedProp")
 β = 0.8
-Ptarget = LinPro(-β, 0., sqrt(a))
+Ptarget = LinPro(-β, 0.0, sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
 z = Float64[
@@ -183,9 +183,9 @@ z = Float64[
     end
     for i in 1:m]
 
-p2 = pdf(transitionprob(0., u, T, Ptarget), v)
-p = exp(lp(0., u, T, v, Ptarget))
-pt = exp(lp(0., u, T, v, Pt))
+p2 = pdf(transitionprob(0.0, u, T, Ptarget), v)
+p = exp(lp(0.0, u, T, v, Ptarget))
+pt = exp(lp(0.0, u, T, v, Pt))
 @test p == p2
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
@@ -202,7 +202,7 @@ Z = Float64[
     end
     for i in 1:m]
 
-p = pdf(transitionprob(0., u, T, P1), v)    
+p = pdf(transitionprob(0.0, u, T, P1), v)    
 pt = exp(lptilde(Po3))
 @test lptilde(Po3) ≈ Bridge.logpdfnormal(v-u, T*a)
 push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
@@ -221,8 +221,8 @@ Z2 = Float64[
     end
     for i in 1:m]
 
-f(x) = pdf(transitionprob(0., u, tm, P1), x)*pdf(transitionprob(tm,x,T, P1), v)*kernel.(x-vm,si^2)
-ft(x) = exp(Bridge.lp(0., u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel.(x-vm,si^2)
+f(x) = pdf(transitionprob(0.0, u, tm, P1), x)*pdf(transitionprob(tm,x,T, P1), v)*kernel.(x-vm,si^2)
+ft(x) = exp(Bridge.lp(0.0, u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel.(x-vm,si^2)
 p2 = sum(map(f,linspace(-20,20,1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
 @test pt2 ≈ sum(map(ft,linspace(-20,20,1001)))*40/1000
@@ -243,9 +243,9 @@ z = Float64[
     end
     for i in 1:m]
 
-p2 = pdf(transitionprob(0., u, T, Ptarget), v)
-p = exp(lp(0., u, T, v, Ptarget))
-pt = exp(lp(0., u, T, v, Pt))
+p2 = pdf(transitionprob(0.0, u, T, Ptarget), v)
+p = exp(lp(0.0, u, T, v, Ptarget))
+pt = exp(lp(0.0, u, T, v, Pt))
 @test p == p2
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))

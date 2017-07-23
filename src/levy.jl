@@ -66,7 +66,7 @@ function rand(P::VarianceGamma)
 end
 
 
-function sample(tt::AbstractVector{Float64}, P::GammaBridge, x1::Float64 = 0.)
+function sample(tt::AbstractVector{Float64}, P::GammaBridge, x1::Float64 = 0.0)
     tt = collect(tt) 
     t = P.t
     r = searchsorted(tt, t)
