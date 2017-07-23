@@ -1,5 +1,5 @@
 julia 0.6
-Distributions
-StaticArrays
 Polynomials
-Compat
+Distributions 0.14.2
+StaticArrays 0.6.1
+Compat 0.28.0
