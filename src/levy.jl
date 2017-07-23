@@ -33,7 +33,8 @@ end
 
 
 struct GammaBridge  <: ContinuousTimeProcess{Float64}
-    t::Float64;v::Float64
+    t::Float64
+    v::Float64
     P::GammaProcess
 end
 
@@ -69,16 +70,17 @@ function sample(tt::AbstractVector{Float64}, P::GammaBridge, x1::Float64 = 0.)
     tt = collect(tt) 
     t = P.t
     r = searchsorted(tt, t)
-    if isempty(r)
-       tt = Float64[tt[1:last(r)]; t; tt[first(r):end]]
+    if isempty(r) # add t between n = last(r) and first(r)=n+1
+       tt = Float64[tt[1:last(r)]; t; tt[first(r):end]] # t now at first(r)
     end
-    X = sample(tt, P.P, x1)    
+    X = sample(tt, P.P, zero(x1))    
+    dx = P.v - x1
     yy = X.yy
-    yy[:] = yy ./ yy[first(r)]
-    if isempty(r)
+    yy[:] =  yy .* (dx/yy[first(r)]) .+ x1
+    if isempty(r) # remove (t,x1)
         tt = [tt[1:last(r)]; tt[first(r)+1:end]]                
         yy = [yy[1:last(r)]; yy[first(r)+1:end]]   
-    end             
+    end
     SamplePath{Float64}(tt, yy)
 end
 
