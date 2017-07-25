@@ -1,6 +1,8 @@
 import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof
 abstract type ContinuousTimeProcess{T} end
 
+statetype(::ContinuousTimeProcess{T}) where {T} = T
+
 struct SamplePath{T}
     tt :: Vector{Float64}
     yy :: Vector{T}

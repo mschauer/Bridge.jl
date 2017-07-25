@@ -27,11 +27,12 @@ end
 Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
 starting in `x1`.
 """
-function sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T))
+sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) = sample(tt, P, x1)
+function _sample{T}(tt, P::ContinuousTimeProcess{T}, x1)
     tt = collect(tt)
     yy = zeros(T,length(tt))
-    
-    yy[1] = x = x1
+    x = convert(T, x1)
+    yy[1] = x
     for i in 2:length(tt)
         x = rand(transitionprob(tt[i-1], x, tt[i], P))
         yy[i] = x
@@ -61,11 +62,11 @@ end
 Computes quadratic variation process of `X` (of `X` and `Y`).
 """     
 function bracket(X::SamplePath)
-        cumsum0(diff(X.yy).^2)
+        cumsum0(outer.(diff(X.yy)))
 end
 
 function bracket(X::SamplePath,Y::SamplePath)
-        cumsum0(diff(X.yy).*diff(X.yy))
+        cumsum0(outer.(diff(X.yy),diff(X.yy)))
 end
 
 

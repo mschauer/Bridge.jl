@@ -29,3 +29,10 @@ end
 if isempty(methods(chol, (UniformScaling,)))
     include("chol.jl")
 end
+
+"""
+    outer(x[, y])
+Short-hand for quadratic form xx' (or xy').
+"""
+outer(x) = x*x'
+outer(x,y) = x*y'

@@ -14,8 +14,13 @@ var0(x) = dot(x, x)/length(x)
 brown1(s, t, n) = sample(linspace(s, t, n), Wiener{Float64}())
 bb(u,v,t,n) = sample(linspace(0, t, n), WienerBridge{Float64}(t,v), u)
 
+@test abs(mean(Bridge._sample([0.0, 1.0, 3.0],  Wiener{Float64}(), 0.0).yy[end] for i in 1:n) -  
+    mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener{Float64}()))) < 
+    3*std(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener{Float64}()))/sqrt(n)
+
+
 X = sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())
-@test bracket(X,X)[end] == quvar(X)
+@test bracket(X)[end] == bracket(X,X)[end] == quvar(X)
 
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
 quv = [quvar(sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())) for j in 1:1000]
