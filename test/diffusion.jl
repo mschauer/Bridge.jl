@@ -14,6 +14,9 @@ var0(x) = dot(x, x)/length(x)
 brown1(s, t, n) = sample(linspace(s, t, n), Wiener{Float64}())
 bb(u,v,t,n) = sample(linspace(0, t, n), WienerBridge{Float64}(t,v), u)
 
+X = sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())
+@test bracket(X,X)[end] == quvar(X)
+
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
 quv = [quvar(sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())) for j in 1:1000]
 s2 = var(quv)
