@@ -1,14 +1,22 @@
 module Bridge
 export ContinuousTimeProcess, SamplePath
-export LinPro, PTilde, Wiener, WienerBridge, CSpline
-export sample, sample!, .., euler, euler!, rungekuttab, rungekuttab!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
+export LinPro, Wiener, WienerBridge, CSpline
+export sample, sample!, .., euler, euler!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
 export bridge!, bridge
-export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess
-export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, UProp, innovations, innovations!, lptilde
+
+export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, innovations, innovations!, lptilde
 export ubridge!, ubridge
 export thetamethod, thetamethod!, thetainnovations!, thetainnovations, heun, heun!
 
 export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
+
+# Levy
+export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaProcess
+
+# mclog
+export mcstart, mcnext, mcband, mcbandste
+
+
 
 using Distributions
 using StaticArrays
@@ -33,6 +41,6 @@ include("guip.jl")
 include("levy.jl")
 include("linpro.jl")
 include("timechange.jl")
-
+include("mclog.jl")
 
 end
