@@ -40,16 +40,20 @@ end
 
 
 
-function sample{T}(tt::AbstractVector{Float64}, P::LevyProcess{T}, x1=zero(T))
-    tt = collect(tt)
-    yy = zeros(T,length(tt))
+sample(tt::AbstractVector{Float64}, P::LevyProcess{T}, x1=zero(T)) where {T} =  
+    sample!(SamplePath{T}(collect(tt), zeros(T, length(tt))), P, x1)
+ 
+
+function sample!(X, P::LevyProcess{T}, x1=zero(T)) where {T}
+    tt = X.tt
+    yy = X.yy
 
     yy[1] = x = x1
     for i in 2:length(tt)
         x = x + rand(increment(tt[i]-tt[i-1], P))
         yy[i] = x
     end
-    SamplePath{T}(tt, yy)
+    X
 end
 
 
@@ -84,26 +88,45 @@ function sample(tt::AbstractVector{Float64}, P::GammaBridge, x1::Float64 = 0.0)
     SamplePath{Float64}(tt, yy)
 end
 
+function sample!(X, P::GammaBridge, x1::Float64 = 0.0)
+    tt = X.tt 
+    t = P.t
+    r = searchsorted(tt, t)
+    if isempty(r) 
+        throw(BoundsError("$tt $t"))
+    end
+    sample!(X, P.P, zero(x1))    
+    dx = P.v - x1
+    yy = X.yy
+    yy[:] =  yy .* (dx/yy[first(r)]) .+ x1
+    X
+end
+
 
 """
 LocalGammaProcess
 """
 struct LocalGammaProcess
     P::GammaProcess
-    θ # parameter vector
-    b1 # grid points b1*0, ..., b1*length(θ), Inf
+    θ::Vector{Float64} # parameter vector
+    b::Vector{Float64} # grid points b1, ..., bn where n = length(θ)
+    LocalGammaProcess(P, θ, b) = length(θ) != length(b) ? 
+        throw(ArgumentError("θ and b differ in length")) : new(P, θ, b)
+
 end
 
 """
-Inverse jump size compared to gamma process
+Inverse jump size compared to gamma process with same alpha and beta
 """
 function θ(x, P::LocalGammaProcess)
     N = length(P.θ)
-    x <= P.b1 && return 0.
-    x >= N*P.b1 && return θ[N]*x
+    N == 0 && return 0
+    x <= P.b[1] && return 0.
+    x > P.b[N] && return P.θ[N] * x
     
-    k = Int(div(x,P.b1))
-    θ[k]*x
+    #k = Int(div(x, P.b1))
+    k = first(searchsorted(P.b, x)) - 1
+    P.θ[k] * x
 end
 
 """
@@ -111,15 +134,18 @@ end
 """
 function nu(k,P)
     if k == 0
-        P.P.γ*(-log(P.P.λ) - expint(1, (P.P.λ)*P.b1))
+        P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to constant
     elseif k == length(P.θ) 
-        P.P.γ*(expint(1, (P.P.λ + P.θ[k])*k*P.b1))
+        assert((P.P.λ + P.θ[k]) > 0.0)
+        P.P.γ*(expint1((P.P.λ + P.θ[k])*P.b[k])) # - 0
     else
-        P.P.γ*(expint(1, (P.P.λ + P.θ[k])*(k)*P.b1) - expint(1, (P.P.λ + P.θ[k])*(k+1)*P.b1))
+        P.P.γ*(expint1((P.P.λ + P.θ[k])*P.b[k]) - expint1((P.P.λ + P.θ[k])*P.b[k+1]))
     end
 end
 
 """
+    compensator(kstart, P::LocalGammaProcess)
+
 Compensator of LocalGammaProcess 
 
 for kstart = 1, this is sum_k=1^N nu(B_k)
@@ -128,7 +154,22 @@ for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant)
 function compensator(kstart, P::LocalGammaProcess)
     s = 0.0
     for k in kstart:length(P.θ)
-        s = s + nu(k,P)
+        s = s + nu(k, P)
+    end
+    s
+end
+
+"""
+    compensator0(kstart, P::LocalGammaProcess)
+
+Compensator of GammaProcess approximating the LocalGammaProcess.
+For kstart == 1 (only choice) this is nu([b1,Inf], P0)
+"""
+function compensator0(kstart, P::LocalGammaProcess)
+    if kstart == 1
+        return P.P.γ*(expint1(P.P.λ*P.b[1]))
+    else
+        throw(ArgumentError("k != 1 or 2"))
     end
 end
 
@@ -139,11 +180,12 @@ Log-likelihood with respect to reference measure P.P
 
 Up to proportionality
 """
-function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)::Float64
+function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess, c = 0.0)::Float64
+    assert(Pº.P.γ == P.P.γ)
     if Pº.P.λ == P.P.λ # same on the first bin
         ll = 0.
         for i in 2:length(X.tt)
-            x = X.yy[i]-X.yy[i-1]
+            x = X.yy[i]-X.yy[i-1] - c
             ll = ll - (θ(x, Pº)-θ(x, P)) # θ(x, P) ≈ θ_k x
         end
         ll = ll - (X.tt[end]-X.tt[1])*(compensator(1, Pº)-compensator(1, P))
@@ -156,6 +198,21 @@ function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess
     end
 end
 
-export LocalGamma
+
+"""
+Bridge log-likelihood with respect to reference measure P.P
+
+Up to proportionality
+"""
+function llikelihood(X::SamplePath, P::LocalGammaProcess, c = 0.0)::Float64
+    ll = 0.
+    for i in 2:length(X.tt)
+        x = X.yy[i]-X.yy[i-1] - c
+        ll = ll - θ(x, P)
+    end
+    ll = ll - (X.tt[end]-X.tt[1])*(compensator(1, P)-compensator0(1, P))
+    return ll
+end
+
 
 

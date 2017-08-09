@@ -107,3 +107,5 @@ function expint(n::Integer, z)
         return Eᵢ
     end
 end
+
+expint1(x) = x >= 0 ? expint(x) : real(expint(complex(x)))
