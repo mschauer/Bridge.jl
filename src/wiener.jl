@@ -1,6 +1,9 @@
-struct Wiener{T}  <: ContinuousTimeProcess{T}
+struct Wiener{T} <: ContinuousTimeProcess{T}
 end
-struct WienerBridge{T}  <: ContinuousTimeProcess{T}
+Wiener() = Wiener{Float64}()
+
+
+struct WienerBridge{T} <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
 end

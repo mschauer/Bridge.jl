@@ -4,18 +4,18 @@
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
 See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am personally interested in simulating diffusion bridges and doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome. 
 
-The key objects introduced are the abstract type ``ContinuousTimeProcess{T}`` parametrised by the state space of the path, for example ``T == Float64`` and various ``structs`` suptyping it, for example ``Wiener{Float64}`` for a real Brownian motion. These play roughly a similar role as types subtyping ``Distribution`` in the Distributions.jl package.
+The key objects introduced are the abstract type `ContinuousTimeProcess{T}` parametrised by the state space of the path, for example `T == Float64` and various `structs` suptyping it, for example `Wiener{Float64}` for a real Brownian motion. These play roughly a similar role as types subtyping `Distribution` in the Distributions.jl package.
 
 Secondly, the struct 
 ```julia
 struct SamplePath{T}
-    tt :: Vector{Float64}
-    yy :: Vector{T}
-    SamplePath{T}(tt, yy) where T = new(tt, yy)
+    tt::Vector{Float64}
+    yy::Vector{T}
+    SamplePath{T}(tt, yy) where {T} = new(tt, yy)
 end
 ```
-serves as container for sample path returned by direct and approximate samplers (``sample``, ``euler``, ...).
-``tt`` is the vector of the grid points of the simulation and ``yy`` the corresponding vector of states.
+serves as container for sample path returned by direct and approximate samplers (`sample`, `euler`, ...).
+`tt` is the vector of the grid points of the simulation and `yy` the corresponding vector of states.
 
 Help is available at the REPL:
 ```
@@ -24,12 +24,12 @@ search: euler euler! eulergamma default_worker_pool schedule @schedule
 
   euler(u, W, P) -> X
 
-  Solve stochastic differential equation dX_t = b(t,X_t)dt + σ(t,X_t)dW_t, X_0 = u
+  Solve stochastic differential equation ``dX_t = b(t, X_t)dt + σ(t, X_t)dW_t, X_0 = u``
   using the Euler scheme.
 ```
 
 Pre-defined processes defined are
-``Wiener``, ``WienerBridge``, ``Gamma``, ``LinPro`` (linear diffusion/generalized Ornstein-Uhlenbeck) and others.
+`Wiener`, `WienerBridge`, `Gamma`, `LinPro` (linear diffusion/generalized Ornstein-Uhlenbeck) and others.
 
 
 It is also quite transparent how to add a new process:
@@ -53,8 +53,8 @@ Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
 Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 # simulate OrnsteinUhlenbeck using Euler scheme
-W = sample(0:0.01:10, Wiener{Float64}()) 
-X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
+W = sample(0:0.01:10, Wiener()) 
+X = euler(0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
 ```
 
 - [x] Define and simulate diffusion processes in one or more dimension
