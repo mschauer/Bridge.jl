@@ -187,5 +187,5 @@ z = Float64[
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 display([Cnames C Co])
-println("  Method                   rel error  mean")
+println("\n  Method                   rel error  mean")
 println("Remark: Change of measure is successfull if mean is close to 1")

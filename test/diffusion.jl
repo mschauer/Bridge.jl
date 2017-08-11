@@ -31,11 +31,11 @@ s2 = var(quv)
 # int0^T w_t dw_t = w_T^2/2 - T/2
 @test abs((b -> (ito(b, b).yy[end] - (0.5b.yy[end]^2 - 1)))(brown1(0, 2, 10000))) < 0.1
 
-mutable struct Diff
+mutable struct Diff <: Bridge.ContinuousTimeProcess{Float64}
 end
 import Bridge: b, σ
-Bridge.b(t,x, _::Diff) = -5x
-Bridge.σ(t, x, _::Diff) = 1.
+Bridge.b(t,x, ::Diff) = -5x
+Bridge.σ(t, x, ::Diff) = 1.
 
 
 X = [euler(0.0, brown1(0.0,1.0,1000), WienerBridge(2.0, 1.0)).yy[end] for i in 1:1000]
