@@ -12,10 +12,10 @@ PYPLOT && using PyPlot
 import Bridge: increment, expint
 import Distributions.pdf
 
-N = 1 # number of thetas
-T = 10000.0
+N = 3 # number of thetas
+T = 2000.0
 n = 10000 # number of increments
-m = 100 # number of augmentation points per bridge exluding the left endpoint
+m = 20 # number of augmentation points per bridge exluding the left endpoint
 beta0 = 0.4
 alpha0 = 2.0
 
@@ -216,18 +216,18 @@ if PYPLOT
 end
 
 # prior
-vpi = 10.0
+vpi = 2.0
 epi = 2.0
 
 Pi = Gamma(epi^2/vpi, vpi/epi)
-Nrm = Normal(0., 1.)
+Pi2 = Normal(0., 1/2)
 
 assert(mean(Pi) ≈ epi)
 assert(var(Pi) ≈ vpi)
 
 
 
-lpi(alpha, theta) = logpdf(Pi, alpha) + sum(logpdf.(Nrm,theta))
+lpi(alpha, theta) = logpdf(Pi, alpha) + sum(logpdf.(Pi2,theta))
 
 #initialize 
 
@@ -250,12 +250,9 @@ try # save cp of this file as documentation
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
-open(joinpath("output",simname,"truth.txt"), "w") do f
-    println(f, "alpha0 beta0 theta1 T n ") 
-    println(f, join(round.([alpha0, beta0, T, n ],3)," ")) 
-end
 
-c = beta0*(T/(n*m*alpha0)) *(1-exp(-alpha0*b[1]/3)) # compensator for small jumps
+beps = b[1]/5
+c = beta0*(T/(n*m*alpha0)) *(1-exp(-alpha0*beps)) # compensator for small jumps
 #yy = diff(vcat(B...).yy)
 #var(yy[yy.< b[1]/4])
 
@@ -269,6 +266,15 @@ theta = zeros(N)
 #theta = [0.0]
 alphasigma = 0.15
 thsigma = 0.15
+
+
+open(joinpath("output", simname,"truth.txt"), "w") do f
+    bn = join(["b$i" for i in 1:length(b)], " ")
+    println(f, "alpha0 beta0 T n $bn beps prior1 prior2 ") 
+    println(f, join(round.([alpha0, beta0, T, n, b... ],3)," "), " $beps \"$Pi\" \"$Pi2\" ") 
+
+
+end
 
 # initial augmentation
 
@@ -289,7 +295,7 @@ end
 
 open(joinpath("output",simname,"params.txt"), "w") do f
     thn = join(["theta$i" for i in 1:length(theta)], " ")
-    println(f, "n alpha thn") 
+    println(f, "n alpha $thn") 
 end
 
 P0 = GammaProcess(beta0, alpha0) 
@@ -304,6 +310,8 @@ for iter in 1:iterations
     mc = mcnext(mc, [alpha;theta])
     open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([alpha; theta],8)," ")) end
    
+    # compensator for small jumps
+    c = beta0*(T/(n*m*alpha)) *(1-exp(-alpha*beps))
 
     # sample bridges
 
@@ -340,7 +348,7 @@ for iter in 1:iterations
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P, c)
             end
-            print("$iter \t thetaº: ", round(ll, 5), " ", round.(thetaº, 3))
+            print("$iter \t\t\t\t thetaº: ", round(ll, 5), " ", round.(thetaº, 3))
             if rand() < exp(ll + lpi(alpha, thetaº) - lpi(alpha, theta))
                 print("✓")
                 theta = thetaº
@@ -367,7 +375,7 @@ for iter in 1:iterations
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P)
             end
-            print("$iter \t\t\t\t\talphaº: ", round(ll, 5), " [", round(alphaº, 3), "]")
+            print("$iter \t alphaº: ", round(ll, 5), " [", round(alphaº, 3), "]")
             if rand() < exp(ll + lpi(alphaº, theta) - lpi(alpha, theta))
                 alpha = alphaº
                 alphaacc += 1
@@ -387,4 +395,14 @@ display(hcat(mcband(mc)...))
 println("posterior band for mean")
 display(hcat(mcbandmean(mc)...))
 
-params = readdlm("output/gammap/params.txt",Float64;skipstart=1)[:,2:end];
+params = readdlm(joinpath("output", simname, "params.txt"), Float64; skipstart=1)[:,2:end];
+
+function plotparams(simname = "gammap") 
+    params = readdlm(joinpath("output", simname, "params.txt"), Float64; skipstart=1)[:,2:end];
+    clf();plot(params[:,1], color=:blue , lw = 0.5)
+
+    plot(params[:,2:end], color=:lightblue , lw = 0.2)
+    plot(runmean(params), color=:grey, lw = 0.2)
+
+    params
+end
