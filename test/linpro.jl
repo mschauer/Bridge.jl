@@ -30,15 +30,17 @@ V = SamplePath(tt, zeros(S, length(tt)))
 Bridge.gpK!(K, P) # warm up
 Bridge.gpV!(V, v, P)
 Mu = SamplePath(tt, zeros(S, length(tt)))
+Mu2 = SamplePath(tt, zeros(S, length(tt)))
 
-Bridge.solve!(Bridge._F, Mu, u, P)
+Bridge.solve!(Bridge.R3(), Bridge._F, Mu, u, P)
+Bridge.solve!(Bridge.BS3(), Bridge._F, Mu2, u, P)
 @test (@allocated Bridge.gpK!(K, P)) == 0
 @test (@allocated Bridge.gpV!(V, v, P)) == 0
 @test norm(K.yy[1]*Bridge.H(t, T, P) - I) < 10/n2^3
 @test norm(V.yy[1] - Bridge.V(t, T, v, P)) < 10/n2^3
 
 @test norm(Mu.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
-
+@test norm(Mu2.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
 
 
 # Normal(mu, lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
