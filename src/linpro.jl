@@ -48,25 +48,28 @@ function H(t, T, P::Ptilde, x)
     P.Γ*x/(T-t)
 end
 
-mutable struct LinPro{T} <: ContinuousTimeProcess{T}
-    B
-    μ
-    σ
-    a
-    Γ
-    lambda # stationary covariance
-    function LinPro{T}(B, μ, σ) where T
+mutable struct LinPro{S,T,U} <: ContinuousTimeProcess{T}
+    B::S
+    μ::T
+    σ::U
+    a::U
+    Γ::U
+    lambda::S # stationary covariance
+    function LinPro(B::S, μ::T, σ::U) where {S,T,U}
         a = σ*σ'
-        return new(B, μ, σ, σ*σ', inv(a), symmetrize(lyap(B, a)))
+        return new{S,T,U}(B, μ, σ, a, inv(a), symmetrize(lyap(B, a)))
     end
 end
 
+B(t, P::LinPro) = P.B
+β(t, P::LinPro) = P.B*P.μ
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
 bderiv(t, x, P::LinPro) = P.B
 σderiv(t, x, P::LinPro) = 0*(P.σ)
 
 a(t, x, P::LinPro) = P.a
+a(t, P::LinPro) = P.a
 constdiff(::LinPro) = true
 
 """
@@ -75,7 +78,7 @@ constdiff(::LinPro) = true
 Linear diffusion ``dX = B(X - μ)dt + σdW``
     
 """    
-LinPro(B, μ::T, σ) where T = LinPro{T}(B, μ, σ)
+LinPro
 
 
 function lp{T}(s, x, t, y, P::LinPro{T}) 

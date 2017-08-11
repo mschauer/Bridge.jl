@@ -1,4 +1,4 @@
-_scale(w,σ) = σ*w
+_scale(w, σ) = σ*w
 _scale(w::Number, σ::UniformScaling) = σ.λ*w
 
 """
@@ -14,7 +14,7 @@ euler(u, W, P) = euler!(copy(W), u, W, P)
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using the Euler scheme in place.
 """
-function euler!(Y, u, W::SamplePath, P)
+function euler!(Y, u, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -24,11 +24,11 @@ function euler!(Y, u, W::SamplePath, P)
     yy = Y.yy
     tt[:] = W.tt
 
-    y = u
+    y::T = u
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]),σ(tt[i], y, P))
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = y
     Y
@@ -55,6 +55,10 @@ function heun!(Y, u, W::SamplePath, P)
     end
     yy[.., N-1] = y
     Y
+end
+
+function proposal!(Y, u, V, K, W::SamplePath, P)
+
 end
 
 """

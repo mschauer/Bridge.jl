@@ -14,9 +14,10 @@ export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaProcess
 
 # mclog
-export mcstart, mcnext, mcband, mcbandste
+export mcstart, mcnext, mcbandmean, mcband
 
-
+# ode
+export solve!, solvebackward!
 
 using Distributions
 using StaticArrays
@@ -35,6 +36,7 @@ include("types.jl")
 include("cspline.jl")
 include("wiener.jl")
 include("ellipse.jl")
+include("ode.jl")
 include("euler.jl")
 include("diffusion.jl")
 include("guip.jl")
