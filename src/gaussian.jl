@@ -5,7 +5,7 @@ import Distributions: pdf, logpdf
 
 sumlogdiag(a::Float64, d=1) = log(a)
 sumlogdiag(A,d) = sum(log.(diag(A)))
-sumlogdiag{T}(J::UniformScaling{T},d) = log(J.λ)*d
+sumlogdiag(J::UniformScaling{T},d) where {T} = log(J.λ)*d
  
 
 
@@ -16,10 +16,10 @@ mutable struct Gaussian{T}
     sigma
     Gaussian{T}(mu, a) where T = new(mu, a, chol(a)')
 end
-Gaussian{T}(mu::T, a) = Gaussian{T}(mu, a)
+Gaussian(mu::T, a) where {T} = Gaussian{T}(mu, a)
 
 rand(P::Gaussian) = P.mu + P.sigma*randn(typeof(P.mu))
-rand{T}(P::Gaussian{Vector{T}}) = P.mu + P.sigma*randn(T, length(P.mu))
+rand(P::Gaussian{Vector{T}}) where {T} = P.mu + P.sigma*randn(T, length(P.mu))
 function logpdf(P::Gaussian, x)
     S = P.sigma
     x = x - P.mu

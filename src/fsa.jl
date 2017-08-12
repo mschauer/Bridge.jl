@@ -1,6 +1,6 @@
 using StaticArrays
 
-function sumlogdiag{m,T}(A::SMatrix{m,m,T}, d=m) 
+function sumlogdiag(A::SMatrix{m,m,T}, d=m) where {m,T} 
     t = zero(T)
     for i in 1:m
         t += log(A[i,i])

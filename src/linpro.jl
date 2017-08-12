@@ -22,10 +22,10 @@ Affine diffusion ``dX = cs(t) dt + σdW``
 with cs a 
     
 """    
-Ptilde{T}(cs::CSpline{T}, σ) = Ptilde{T}(cs, σ)
+Ptilde(cs::CSpline{T}, σ) where {T} = Ptilde{T}(cs, σ)
 
 
-function lp{T}(s, x, t, y, P::Ptilde{T}) 
+function lp(s, x, t, y, P::Ptilde{T}) where T 
     logpdfnormal(y - mu(s,x,t,P), (t-s)*P.a)
 end
 
@@ -81,7 +81,7 @@ Linear diffusion ``dX = B(X - μ)dt + σdW``
 LinPro
 
 
-function lp{T}(s, x, t, y, P::LinPro{T}) 
+function lp(s, x, t, y, P::LinPro{T}) where T 
     logpdfnormal(y - mu(s,x,t,P), K(s, t, P::LinPro))
 end
 

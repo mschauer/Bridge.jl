@@ -27,7 +27,7 @@ end
 
 Cubic spline parametrized by f(s) = x and f(t) = y, f'(x) = m0, f'(t) = m1
 """
-CSpline{T}(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) = CSpline{T}(s, t, x, y, mx, my)
+CSpline(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) where {T} = CSpline{T}(s, t, x, y, mx, my)
 (cs::CSpline)(t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
 
 """ 

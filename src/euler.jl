@@ -152,7 +152,7 @@ function bridge!(Y, W::SamplePath, P, scheme! = euler!)
 end
 
 rungekutta(W, P) = rungekutta!(copy(W), W, P)
-function rungekutta!{T<:Number}(Y, u, W::SamplePath{T}, P)
+function rungekutta!(Y, u, W::SamplePath{T}, P) where T<:Number
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
