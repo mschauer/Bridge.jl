@@ -27,8 +27,8 @@ end
 Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
 starting in `x1`.
 """
-sample{T}(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) = sample(tt, P, x1)
-function _sample{T}(tt, P::ContinuousTimeProcess{T}, x1)
+sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = sample(tt, P, x1)
+function _sample(tt, P::ContinuousTimeProcess{T}, x1) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     x = convert(T, x1)
@@ -46,7 +46,7 @@ end
              
 Computes quadratic variation of `X`.
 """
-function quvar{T}(X::SamplePath{T})
+function quvar(X::SamplePath{T}) where T
         s = zero(T)*zero(T)'
         for u in diff(X.yy)
             s += u*u'
@@ -75,7 +75,7 @@ end
 
 Integrate a valued stochastic process with respect to a stochastic differential.
 """
-function ito{T}(X::SamplePath, W::SamplePath{T})
+function ito(X::SamplePath, W::SamplePath{T}) where T
         assert(X.tt[1] == W.tt[1])
         n = length(X)
         yy = similar(W.yy, n)
@@ -93,7 +93,7 @@ end
 
 Girsanov log likelihood ``dP/dPt(X)``    
 """    
-function girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
+function girsanov(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T}) where T
     tt = X.tt
     xx = X.yy
 

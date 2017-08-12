@@ -24,7 +24,7 @@ struct BridgeProp{T} <: ContinuousTimeProcess{T}
     BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs) where T = 
         new(Target, t0, v0, t1, v1, cs, a, inv(a))
 end
-BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs=CSpline(t0, t1, zero(T))) = BridgeProp{T}(Target, t0, v0, t1, v1, a, cs)
+BridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs=CSpline(t0, t1, zero(T))) where {T} = BridgeProp{T}(Target, t0, v0, t1, v1, a, cs)
 
 h(t,x, P::BridgeProp) = P.v1 - x -  integrate(P.cs, t,  P.t1)
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P) 
@@ -50,7 +50,7 @@ function H(t, x, P::BridgeProp)
     P.Γ/(P.t1 - t)
 end
 
-function lptilde{T}(P::BridgeProp{T}) 
+function lptilde(P::BridgeProp{T}) where T 
     logpdfnormal(P.v1 - (P.v0 + integrate(P.cs, P.t0, P.t1)), (P.t1 -P.t0)*P.a)
 end
 
@@ -68,7 +68,7 @@ struct GuidedProp{T} <: ContinuousTimeProcess{T}
         new(Target, t0, v0, t1, v1, Pt)
 end
 
-GuidedProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt::ContinuousTimeProcess{T}) = GuidedProp{T}(Target, t0, v0, t1, v1, Pt)
+GuidedProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt::ContinuousTimeProcess{T}) where {T} = GuidedProp{T}(Target, t0, v0, t1, v1, Pt)
 
 
 V(t, P::GuidedProp) = V(t, P.t1, P.v1, P.Pt) 
@@ -84,7 +84,7 @@ btilde(t, x, P::GuidedProp) = b(t,x,P.Pt)
 atilde(t, x, P::GuidedProp) = a(t,x,P.Pt)
 ptilde(P::GuidedProp) = P.Pt
 
-function lptilde{T}(P::GuidedProp{T}) 
+function lptilde(P::GuidedProp{T}) where T 
      lp( P.t0, P.v0, P.t1, P.v1, P.Pt) 
 end
 
@@ -104,7 +104,7 @@ struct PBridgeProp{T} <: ContinuousTimeProcess{T}
     PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs) where T = 
         new(Target, t0, v0, tm, vm, t1, v1, L, L', Σ, cs, a, inv(a))
 end
-PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
+PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) where {T} = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
         
 h1(t,x, P::PBridgeProp) = P.vm - x - integrate(P.cs, t,  P.tm) 
 h2(t,x, P::PBridgeProp) = P.v1 - x - integrate(P.cs, t,  P.t1) 
@@ -164,7 +164,7 @@ struct FilterProp{T} <: ContinuousTimeProcess{T}
     FilterProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs) where T = 
         new(Target, t0, v0, t1, v1, L, L', Σ, cs, a, inv(a))
 end
-FilterProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) = FilterProp{T}(Target, t0, v0, t1, v1,  L, Σ, a, cs)
+FilterProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) where {T} = FilterProp{T}(Target, t0, v0, t1, v1,  L, Σ, a, cs)
         
 h(t,x, P::FilterProp) = P.v1 - x - integrate(P.cs, t, P.t1)
 
@@ -198,7 +198,7 @@ struct DHBridgeProp{T} <: ContinuousTimeProcess{T}
         new(Target, t0, v0, t1, v1)
 
 end
-DHBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) = DHBridgeProp{T}(Target, t0, v0, t1, v1)
+DHBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1) where {T} = DHBridgeProp{T}(Target, t0, v0, t1, v1)
 
 b(t, x, P::DHBridgeProp) = (P.v1 - x )/(P.t1 - t)
 σ(t, x, P::DHBridgeProp) = σ(t, x, P.Target)
@@ -206,7 +206,7 @@ a(t, x, P::DHBridgeProp) = a(t, x, P.Target)
 Γ(t, x, P::DHBridgeProp) = Γ(t, x, P.Target)
 constdiff(P::DHBridgeProp) = constdiff(P.Target)
 
-function llikelihood{T}(Xcirc::SamplePath{T}, P::DHBridgeProp{T})
+function llikelihood(Xcirc::SamplePath{T}, P::DHBridgeProp{T}) where T
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -230,7 +230,7 @@ function llikelihood{T}(Xcirc::SamplePath{T}, P::DHBridgeProp{T})
     som
 end
 
-function lptilde{T}(P::DHBridgeProp{T}) 
+function lptilde(P::DHBridgeProp{T}) where T 
     dv = P.v1-P.v0
     -length(P.v1)/2*log(2pi*(P.t1-P.t0)) -0.5*logdet(a(P.t1,P.v1,P)) - (0.5/(P.t1-P.t0))*dot(dv, Γ(P.t0,P.v0,P)*dv)
 end
@@ -241,7 +241,7 @@ end
 ################################################################
 
 # using left approximation
-function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}})
+function llikelihoodleft(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) where T
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -259,7 +259,7 @@ function llikelihoodleft{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Bridge
 end
 
 #using trapezoidal rule
-function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}})
+function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) where T
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -284,6 +284,6 @@ function llikelihoodtrapez{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},Brid
     end
     som
 end
-llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) = llikelihoodleft(Xcirc, Po)
+llikelihood(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) where {T} = llikelihoodleft(Xcirc, Po)
 #llikelihood{T}(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) = llikelihoodtrapez(Xcirc, Po) 
 

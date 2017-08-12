@@ -35,7 +35,7 @@ end
 import Polynomials
 # return (p,q): the polynomials p(x) / q(x) corresponding to E₁_cf(x, a...),
 # but without the exp(-x) term
-function E₁_cfpoly{T<:Real}(n::Integer, ::Type{T}=BigInt)
+function E₁_cfpoly(n::Integer, ::Type{T}=BigInt) where T<:Real
     q = Polynomials.Poly(T[1])
     p = x = Polynomials.Poly(T[0,1])
     for i = n:-1:1
@@ -80,7 +80,7 @@ function expint(z::Union{Float64,Complex{Float64}})
                           @E₁_taylor64(z,37)
     end
 end
-expint{T<:Integer}(z::Union{T,Complex{T},Rational{T},Complex{Rational{T}}}) = expint(float(z))
+expint(z::Union{T,Complex{T},Rational{T},Complex{Rational{T}}}) where {T<:Integer} = expint(float(z))
 
 ######################################################################
 # exponential integral Eₙ(z)

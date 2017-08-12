@@ -8,20 +8,20 @@ struct WienerBridge{T} <: ContinuousTimeProcess{T}
     v::T        # end point
 end
 
-function sample{T}(tt, P::Wiener{T})
+function sample(tt, P::Wiener{T}) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P)
 end
 
-function sample{T}(tt, P::Wiener{T},y1)
+function sample(tt, P::Wiener{T},y1) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
 
-function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = W.yy[1])
+function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = W.yy[1]) where {d,T}
     sz = d
     W.yy[1] = y1
     yy = mat(W.yy) 
@@ -34,7 +34,7 @@ function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 =
     SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
 end
 
-function sample!{T}(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1])
+function sample!(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1]) where T
     W.yy[1] = y1
     yy = W.yy
     for i = 2:length(W.tt)
@@ -44,19 +44,19 @@ function sample!{T}(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1])
     SamplePath{T}(W.tt, yy)
 end
 
-function sample{T}(tt, P::WienerBridge{T})
+function sample(tt, P::WienerBridge{T}) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P)
 end
 
-function sample{T}(tt, P::WienerBridge{T},y1)
+function sample(tt, P::WienerBridge{T},y1) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
-function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 = W.yy[1])
+function sample!(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 = W.yy[1]) where {d,T}
     
     TT = P.t - W.tt[1]
     sz = d
@@ -93,7 +93,7 @@ function sample!{d,T}(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}
     SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
 end
 
-function sample!{T}(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1])
+function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
     
     TT = P.t - W.tt[1]
     W.yy[1] = y1
@@ -128,7 +128,7 @@ end
 
 ## drift and dispersion coefficients
 
-function b{T}(s, x, P::Wiener{T})
+function b(s, x, P::Wiener{T}) where T
     zero(T)
 end
 
@@ -150,8 +150,8 @@ end
 # transition density
 transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
 
-transitionprob{N}(s, x, t, P::Wiener{SVector{N,Float64}}) = MvNormal(Vector(x),(t-s))
-lp{N}(s, x, t, y, P::Wiener{SVector{N,Float64}}) = logpdf(transitionprob(s, x, t, P), Vector(y))
+transitionprob(s, x, t, P::Wiener{SVector{N,Float64}}) where {N} = MvNormal(Vector(x),(t-s))
+lp(s, x, t, y, P::Wiener{SVector{N,Float64}}) where {N} = logpdf(transitionprob(s, x, t, P), Vector(y))
 
 
 function b(s, x, P::WienerBridge)

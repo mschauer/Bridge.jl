@@ -53,7 +53,7 @@ function J(s, T1, T2, P::Ptilde)
 end
 
 ubridge(W, Po) = ubridge!(copy(W), W, Po)
-function ubridge!{T}(X, W::SamplePath{T}, Po)
+function ubridge!(X, W::SamplePath{T}, Po) where T
     T1 = Po.t0
     T2 = Po.t1
     v = Po.v1
@@ -137,7 +137,7 @@ function uthetamethod!(Y, u, W::SamplePath, Po, theta=0.5)
 end
 
 # using left approximation
-function ullikelihood{T}(Y::SamplePath{T}, Po)
+function ullikelihood(Y::SamplePath{T}, Po) where T
     yy = Y.yy
     tt = Y.tt
     T1 = Po.t0
@@ -164,7 +164,7 @@ function ullikelihood{T}(Y::SamplePath{T}, Po)
     end
     som
 end
-function ullikelihoodtrapez{T}(Y::SamplePath{T}, Po)
+function ullikelihoodtrapez(Y::SamplePath{T}, Po) where T
     yy = Y.yy
     tt = Y.tt
     T1 = Po.t0
@@ -197,7 +197,7 @@ function ullikelihoodtrapez{T}(Y::SamplePath{T}, Po)
 end
 
 uinnovations(Y, Po) = uinnovations!(copy(Y), Y, Po)
-function uinnovations!{T}(W, Y::SamplePath{T}, Po)
+function uinnovations!(W, Y::SamplePath{T}, Po) where T
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
