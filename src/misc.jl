@@ -36,3 +36,16 @@ Short-hand for quadratic form xx' (or xy').
 """
 outer(x) = x*x'
 outer(x,y) = x*y'
+
+
+"""
+    mat(X::SamplePath{SVector}) 
+    mat(yy::Vector{SVector})
+
+Reinterpret `X` or `yy` to an array without change in memory.
+"""
+mat(X::SamplePath{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, X.yy), d, length(X.yy))
+mat(yy::Vector{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, yy), d, length(yy))
+
+unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1),T}, A[:])
+unmat(::Type{SVector{d,T}}, A::Matrix{T}) where {d,T} = reinterpret(SVector{d,T}, A[:])

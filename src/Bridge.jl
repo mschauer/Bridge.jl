@@ -26,13 +26,14 @@ using Compat
 import Base.rand
 import Distributions: sample, sample!
 
-include("misc.jl")
 include("expint.jl")
 
 include("fsa.jl")
 include("gaussian.jl")
 
 include("types.jl")
+include("misc.jl")
+
 include("cspline.jl")
 include("wiener.jl")
 include("ellipse.jl")
@@ -44,5 +45,6 @@ include("levy.jl")
 include("linpro.jl")
 include("timechange.jl")
 include("mclog.jl")
+include("deprecated.jl")
 
 end

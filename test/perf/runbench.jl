@@ -49,7 +49,7 @@ else
     BenchmarkTools.loadparams!(suite, BenchmarkTools.load(joinpath("test","perf","params.jld"), "suite"), :evals, :samples);
 end
 
-results = run(suite["solver"], verbose = true, seconds = 2) #  _ seconds per benchmark
+results = run(suite["solver"], verbose = true, seconds = 5) #  _ seconds per benchmark
 
 
 ##############
