@@ -4,7 +4,7 @@ import Base: valtype
 """
     ContinuousTimeProcess{T}
 
-Types inheriting from the abstract type ContinuousTimeProcess{T} characterize 
+Types inheriting from the abstract type `ContinuousTimeProcess{T}`` characterize 
 the properties of a `T`-valued stochastic process, play
 a similar role as distribution types like `Exponential` in the package
 `Distributions`.
@@ -32,7 +32,7 @@ struct SamplePath{T}
 end
 ```
 serves as container for discretely observed `ContinuousTimeProcess`es and for the sample path returned
-by direct and approximate samplers. `tt`` is the vector of the grid points of the observation/simulation 
+by direct and approximate samplers. `tt` is the vector of the grid points of the observation/simulation 
 and `yy` is the corresponding vector of states.
 
 It supports `getindex, setindex!, length, copy, vcat, start, next, done, endof`.
@@ -63,7 +63,7 @@ end
 """
     endpoint!(X::SamplePath, v)
 
-Convenience functions setting the endpoint of `X`` to `v`.
+Convenience functions setting the endpoint of `X to `v`.
 """
 function endpoint!(X::SamplePath, v)
     X.yy[end] = v
