@@ -1,6 +1,6 @@
 
 """
-lp(s, x, t, y, P)
+    lp(s, x, t, y, P)
 
 Log-transition density, shorthand for `logpdf(transitionprob(s,x,t,P),y)`.
 """
@@ -8,7 +8,7 @@ lp(s, x, t, y, P) = logpdf(transitionprob(s,x,t,P),y)
 
 
 """
-     llikelihood(X::SamplePath, P::ContinuousTimeProcess)
+    llikelihood(X::SamplePath, P::ContinuousTimeProcess)
 
 Log-likelihood of observations `X` using transition density `lp`
 """
@@ -22,7 +22,7 @@ end
 
 
 """
-     sample(tt, P, x1=zero(T))
+    sample(tt, P, x1=zero(T))
 
 Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
 starting in `x1`.
@@ -31,7 +31,7 @@ sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} =
     sample!(SamplePath(tt, zeros(T,length(tt))), P, x1)
 
 """
-     sample!(X, P, x1=zero(T))
+    sample!(X, P, x1=zero(T))
 
 Sample the process `P` on the grid `X.tt` exactly from its `transitionprob`(-ability)
 starting in `x1` writing into `X.yy`.
