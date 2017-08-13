@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "StatsBase.sample",
     "category": "Function",
-    "text": " sample(tt, P, x1=zero(T))\n\nSample the process P on the grid tt exactly from its transitionprob(-ability) starting in x1.\n\n\n\n"
+    "text": "sample(tt, P, x1=zero(T))\n\nSample the process P on the grid tt exactly from its transitionprob(-ability) starting in x1.\n\n\n\n"
 },
 
 {
@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "StatsBase.sample!",
     "category": "Function",
-    "text": " sample!(X, P, x1=zero(T))\n\nSample the process P on the grid X.tt exactly from its transitionprob(-ability) starting in x1 writing into X.yy.\n\n\n\n"
+    "text": "sample!(X, P, x1=zero(T))\n\nSample the process P on the grid X.tt exactly from its transitionprob(-ability) starting in x1 writing into X.yy.\n\n\n\n"
 },
 
 {
@@ -133,7 +133,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.girsanov",
     "category": "Function",
-    "text": "girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})\n\nGirsanov log likelihood dPdPt(X)    \n\n\n\n"
+    "text": "girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)\n\nGirsanov log likelihood mathrmdPmathrmdPt(X)    \n\n\n\n"
 },
 
 {
@@ -149,7 +149,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.llikelihood",
     "category": "Function",
-    "text": " llikelihood(X::SamplePath, P::ContinuousTimeProcess)\n\nLog-likelihood of observations X using transition density lp\n\n\n\nLog-likelihood with respect to reference measure P.P\n\nUp to proportionality\n\n\n\nBridge log-likelihood with respect to reference measure P.P\n\nUp to proportionality\n\n\n\n"
+    "text": "llikelihood(X::SamplePath, P::ContinuousTimeProcess)\n\nLog-likelihood of observations X using transition density lp\n\n\n\nllikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)\n\nLog-likelihood dPº/dP. (Up to proportionality.)\n\n\n\nllikelihood(X::SamplePath, P::LocalGammaProcess)\n\nBridge log-likelihood with respect to reference measure P.P. (Up to proportionality.)\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.compensator0",
     "category": "Function",
-    "text": "compensator0(kstart, P::LocalGammaProcess)\n\nCompensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu([b1,Inf], P0)\n\n\n\n"
+    "text": "compensator0(kstart, P::LocalGammaProcess)\n\nCompensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu_0(b1Inf).\n\n\n\n"
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.θ",
     "category": "Function",
-    "text": "Inverse jump size compared to gamma process with same alpha and beta\n\n\n\n"
+    "text": "θ(x, P::LocalGammaProcess)\n\nInverse jump size compared to gamma process with same alpha and beta.\n\n\n\n"
 },
 
 {
@@ -293,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.compensator",
     "category": "Function",
-    "text": "compensator(kstart, P::LocalGammaProcess)\n\nCompensator of LocalGammaProcess \n\nfor kstart = 1, this is sum_k=1^N nu(B_k) for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant)\n\n\n\n"
+    "text": "compensator(kstart, P::LocalGammaProcess)\n\nCompensator of LocalGammaProcess  For kstart = 1, this is sum_k=1^N nu(B_k), for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant).\n\n\n\n"
 },
 
 {
@@ -325,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.nu",
     "category": "Function",
-    "text": "(Bin-wise) integral of the Levy measure\n\n\n\n"
+    "text": " nu(k,P)\n\n(Bin-wise) integral of the Levy measure nu(B_k).\n\n\n\n"
 },
 
 {
@@ -373,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.GammaProcess",
     "category": "Type",
-    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\n(x)= x^-1exp(- x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia's parametrization with shape parameter α and scale θ\n\n\n\n"
+    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\n(x)= x^-1exp(- x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia's parametrization with shape parameter α and scale θ.\n\n\n\n"
 },
 
 {
