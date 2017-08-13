@@ -38,7 +38,7 @@ lp
 llikelihood
 ```
 
-## Miscallenious
+## Miscellaneous
 ```@docs
 Bridge.endpoint!
 ```
