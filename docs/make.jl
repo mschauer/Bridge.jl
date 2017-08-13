@@ -3,7 +3,7 @@ using Bridge
 
 makedocs(
     modules = [Bridge],
-    format = :html,
+#    format = :html,
     sitename = "Bridge",
 )
 
