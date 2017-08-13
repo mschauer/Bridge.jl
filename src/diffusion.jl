@@ -10,7 +10,7 @@ lp(s, x, t, y, P) = logpdf(transitionprob(s,x,t,P),y)
 """
     llikelihood(X::SamplePath, P::ContinuousTimeProcess)
 
-Log-likelihood of observations `X` using transition density `lp`
+Log-likelihood of observations `X` using transition density `lp`.
 """
 function llikelihood(X::SamplePath, P::ContinuousTimeProcess)
     ll = 0.
@@ -101,7 +101,7 @@ end
 """
     girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)
 
-Girsanov log likelihood ``\mathrm{d}P/\mathrm{d}Pt(X)``    
+Girsanov log likelihood ``\\mathrm{d}P/\\mathrm{d}Pt(X)``    
 """    
 function girsanov(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T}) where T
     tt = X.tt

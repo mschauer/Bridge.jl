@@ -4,7 +4,7 @@ import Base: valtype
 """
     ContinuousTimeProcess{T}
 
-Types inheriting from the abstract type `ContinuousTimeProcess{T}`` characterize 
+Types inheriting from the abstract type `ContinuousTimeProcess{T}` characterize 
 the properties of a `T`-valued stochastic process, play
 a similar role as distribution types like `Exponential` in the package
 `Distributions`.

@@ -1,8 +1,7 @@
 """
     tofs(s, T1, T2)
-    soft(t, T1, T2)
   
-    Time change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).
+Time change mapping `t` in `[T1, T2]` (``X``-time) to `s` in `[T1, T2]` (`U`-time).
 """      
 tofs(s, T1, T2) = T1 + (s - T1).*(2.0 - (s-T1)/(T2-T1))
 
@@ -10,7 +9,7 @@ tofs(s, T1, T2) = T1 + (s - T1).*(2.0 - (s-T1)/(T2-T1))
 """
     soft(t, T1, T2)
   
-    Time change mapping s in [T1, T2] (U-time) to t in [T1, T2] (X-time), and inverse.
+Time change mapping `s` in `[T1, T2]`` (``U``-time) to `t`` in `[T1, T2]` (`X`-time).
 """  
 soft(t, T1, T2, T=T2-T1) = T2 - sqrt.(T*(T2 - t))
 
@@ -20,9 +19,9 @@ uofx(s, x, T1, T2, v, P) = (Vs(s, T1, T2, v, P) .- x)/(T2-s)
 txofsu(s, u, T1, T2, v, P) = (tofs(s, T1, T2), xofu(s, u, T1, T2, v, P))
 
 """
-    Vs (s, T1, T2, v, B, beta)
+    Vs(s, T1, T2, v, P)
 
-Time changed V for generation of U
+Time changed `V` for generation of `U`.
 """
 function Vs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( v .- P.μ) .-  P.μ
@@ -31,9 +30,9 @@ Vs(s, T1, T2, v, P::Ptilde) = V(tofs(s, T1, T2), T2, v, P)
 
 
 """
-    dotVs (s, T, v, B, beta)
+    dotVs (s, T1, T2, v, P)
 
-Time changed time derivative of V for generation of U
+Time changed time derivative of `V` for generation of `U`.
 """
 function dotVs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( P.B*v .+ P.beta) 

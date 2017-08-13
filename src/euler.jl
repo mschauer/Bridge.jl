@@ -64,7 +64,7 @@ end
 """
     thetamethod(u, W, P, theta=0.5) 
   
-Solve stochastic differential equation using the theta method and Newton-Raphson steps
+Solve stochastic differential equation using the theta method and Newton-Raphson steps.
 """
 thetamethod(u, W, P, theta=0.5) = thetamethod!(copy(W), u, W, P, theta)
 function thetamethod!(Y, u, W::SamplePath, P, theta=0.5)
@@ -141,7 +141,7 @@ end
 """
     bridge(W, P, scheme! = euler!) -> Y
 
-Integrate with ``scheme!`` and set ``Y[end] = P.v1``.
+Integrate with `scheme!` and set `Y[end] = P.v1`.
 """
 bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
 function bridge!(Y, W::SamplePath, P, scheme! = euler!)

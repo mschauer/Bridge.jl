@@ -70,7 +70,7 @@ end
 """
     solve!(method, X::SamplePath, x0, P) -> X, [err]
 
-Solve ordinary differential equation `(d/dx) x(t) = F(t, x(t), P)` on the fixed
+Solve ordinary differential equation ``(d/dx) x(t) = F(t, x(t), P)`` on the fixed
 grid `X.tt` writing into `X.yy` 
 
 `method::R3` - using a non-adaptive Ralston (1965) update (order 3).

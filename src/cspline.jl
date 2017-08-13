@@ -23,9 +23,9 @@ struct CSpline{T}
     s; t; x::T; y::T; mx; my
 end
 """
-    CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s))
+    CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 = (y-x)/(t-s))
 
-Cubic spline parametrized by f(s) = x and f(t) = y, f'(x) = m0, f'(t) = m1
+Cubic spline parametrized by ``f(s) = x`` and ``f(t) = y``, ``f'(s) = m0``, ``f'(t) = m1``.
 """
 CSpline(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) where {T} = CSpline{T}(s, t, x, y, mx, my)
 (cs::CSpline)(t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
@@ -33,6 +33,6 @@ CSpline(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) where {T} = CSpl
 """ 
     integrate(cs::CSpline, s, t)
     
-Integrate the cubic spline from s to t    
+Integrate the cubic spline from `s` to `t`.    
 """
 integrate(cs::CSpline, s, t) = intcspline(s,t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)
