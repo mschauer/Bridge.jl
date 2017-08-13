@@ -11,19 +11,19 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 # varmu(x, mu) = dot(x-mu, x-mu)/length(x)
 var0(x) = dot(x, x)/length(x)
 
-brown1(s, t, n) = sample(linspace(s, t, n), Wiener{Float64}())
+brown1(s, t, n) = sample(linspace(s, t, n), Wiener())
 bb(u,v,t,n) = sample(linspace(0, t, n), WienerBridge{Float64}(t,v), u)
+X = SamplePath([0.0, 1.0, 3.0], zeros(3))
+@test abs(mean(Bridge._sample!(X,  Wiener(), 0.0).yy[end] for i in 1:n) -  
+    mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))) < 
+    3*std(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))/sqrt(n)
 
-@test abs(mean(Bridge._sample([0.0, 1.0, 3.0],  Wiener{Float64}(), 0.0).yy[end] for i in 1:n) -  
-    mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener{Float64}()))) < 
-    3*std(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener{Float64}()))/sqrt(n)
 
-
-X = sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())
+X = sample(linspace(0.0, 2.0, 1000), Wiener())
 @test bracket(X)[end] == bracket(X,X)[end] == quvar(X)
 
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
-quv = [quvar(sample(linspace(0.0, 2.0, 1000), Wiener{Float64}())) for j in 1:1000]
+quv = [quvar(sample(linspace(0.0, 2.0, 1000), Wiener())) for j in 1:1000]
 s2 = var(quv)
 @test abs(mean(quv)-2)/sqrt(s2)*sqrt(1000) < 3 
 

@@ -27,17 +27,27 @@ end
 Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
 starting in `x1`.
 """
-sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = sample(tt, P, x1)
-function _sample(tt, P::ContinuousTimeProcess{T}, x1) where T
-    tt = collect(tt)
-    yy = zeros(T,length(tt))
+sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = 
+    sample!(SamplePath(tt, zeros(T,length(tt))), P, x1)
+
+"""
+     sample!(X, P, x1=zero(T))
+
+Sample the process `P` on the grid `X.tt` exactly from its `transitionprob`(-ability)
+starting in `x1` writing into `X.yy`.
+"""
+sample!(X, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = _sample!(X, P, x1)
+
+function _sample!(X, P::ContinuousTimeProcess{T}, x1) where T
+    tt = X.tt
+    yy = X.yy
     x = convert(T, x1)
     yy[1] = x
     for i in 2:length(tt)
         x = rand(transitionprob(tt[i-1], x, tt[i], P))
         yy[i] = x
     end
-    SamplePath{T}(tt, yy)
+    X
 end
 
 

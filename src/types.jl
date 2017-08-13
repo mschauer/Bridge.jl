@@ -60,19 +60,15 @@ function setindex!(V::SamplePath, y, I)
     V.tt[I], V.yy[I] = y
 end
 
+"""
+    endpoint!(X::SamplePath, v)
+
+Convenience functions setting the endpoint of `X`` to `v`.
+"""
 function endpoint!(X::SamplePath, v)
     X.yy[end] = v
     X
 end
-
-
-# reinterpret to array
-
-mat(X::SamplePath{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, X.yy), d, length(X.yy))
-mat(yy::Vector{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, yy), d, length(yy))
-
-unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1),T}, A[:])
-unmat(::Type{SVector{d,T}}, A::Matrix{T}) where {d,T} = reinterpret(SVector{d,T}, A[:])
 
 # separate a Zip2
 sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} = 

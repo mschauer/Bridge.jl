@@ -1,16 +1,30 @@
+"""
+    ODESolver
+
+Abstract (super-)type for solving methods for ordinary differential equations.
+"""
 abstract type ODESolver 
-end
-struct R3
-end
-struct BS3
 end
 
 """
-    kernelr3(f, t, y, dt, P)
+    R3
 
 Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
 to solve ``y(t + dt) - y(t) = \int_t^{t+dt} f(s, y(s)) ds``.
 """
+struct R3 <: ODESolver
+end
+
+"""
+    BS3
+
+Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
+to solve ``y(t + dt) - y(t) = \int_t^{t+dt} f(s, y(s)) ds``. Uses Bogacki–Shampine method 
+to give error estimate. 
+"""
+struct BS3 <: ODESolver
+end
+
 function kernelr3(f, t, y, dt, P)
     k1 = f(t, y, P)
     k2 = f(t + 1/2*dt, y + 1/2*dt*k1, P)
