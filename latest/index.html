@@ -118,7 +118,7 @@
 </code></pre>
 
 <p>Types inheriting from the abstract type ContinuousTimeProcess{T} characterize  the properties of a <code>T</code>-valued stochastic process, play a similar role as distribution types like <code>Exponential</code> in the package <code>Distributions</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/types.jl#L4-L11' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/types.jl#L4-L11' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.SamplePath' href='#Bridge.SamplePath'>#</a>
 <strong><code>Bridge.SamplePath</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>SamplePath{T} &lt;: AbstractPath{T}
@@ -134,14 +134,14 @@ end
 
 <p>serves as container for discretely observed <code>ContinuousTimeProcess</code>es and for the sample path returned by direct and approximate samplers. <code>tt``is the vector of the grid points of the observation/simulation  and</code>yy` is the corresponding vector of states.</p>
 <p>It supports <code>getindex, setindex!, length, copy, vcat, start, next, done, endof</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/types.jl#L23-L39' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/types.jl#L23-L39' class='documenter-source'>source</a><br></p>
 <p><a id='Base.valtype' href='#Base.valtype'>#</a>
 <strong><code>Base.valtype</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>valtype(::ContinuousTimeProcess) -&gt; T
 </code></pre>
 
 <p>Returns statespace (type) of a <code>ContinuousTimeProcess{T]</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/types.jl#L15-L19' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/types.jl#L15-L19' class='documenter-source'>source</a><br></p>
 <p><a id='Ordinary-differential-equations-1'></a></p>
 <h2 id="ordinary-differential-equations">Ordinary differential equations</h2>
 <p><a id='Bridge.solve!' href='#Bridge.solve!'>#</a>
@@ -153,21 +153,21 @@ end
 <p><code>method::R3</code> - using a non-adaptive Ralston (1965) update (order 3).</p>
 <p><code>method::BS3</code> use non-adaptive Bogacki–Shampine method to give error estimate.</p>
 <p>Call <code>_solve!</code> to inline. "Pretty fast if <code>x</code> is a bitstype or a StaticArray."</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/ode.jl#L70-L82' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/ode.jl#L70-L82' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.R3' href='#Bridge.R3'>#</a>
 <strong><code>Bridge.R3</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>R3
 </code></pre>
 
 <p>Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve $y(t + dt) - y(t) = int_t^{t+dt} f(s, y(s)) ds$.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/ode.jl#L9-L14' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/ode.jl#L9-L14' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.BS3' href='#Bridge.BS3'>#</a>
 <strong><code>Bridge.BS3</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>BS3
 </code></pre>
 
 <p>Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve $y(t + dt) - y(t) = int_t^{t+dt} f(s, y(s)) ds$. Uses Bogacki–Shampine method  to give error estimate. </p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/ode.jl#L18-L24' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/ode.jl#L18-L24' class='documenter-source'>source</a><br></p>
 <p><a id='Brownian-motion-1'></a></p>
 <h2 id="brownian-motion">Brownian motion</h2>
 <p><a id='Stochastic-differential-equations-1'></a></p>
@@ -178,21 +178,21 @@ end
 </code></pre>
 
 <p>Sample the process <code>P</code> on the grid <code>tt</code> exactly from its <code>transitionprob</code>(-ability) starting in <code>x1</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L24-L29' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L24-L29' class='documenter-source'>source</a><br></p>
 <p><a id='StatsBase.sample!' href='#StatsBase.sample!'>#</a>
 <strong><code>StatsBase.sample!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code> sample!(X, P, x1=zero(T))
 </code></pre>
 
 <p>Sample the process <code>P</code> on the grid <code>X.tt</code> exactly from its <code>transitionprob</code>(-ability) starting in <code>x1</code> writing into <code>X.yy</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L33-L38' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L33-L38' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.quvar' href='#Bridge.quvar'>#</a>
 <strong><code>Bridge.quvar</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>quvar(X)
 </code></pre>
 
 <p>Computes quadratic variation of <code>X</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L54-L58' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L54-L58' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.bracket' href='#Bridge.bracket'>#</a>
 <strong><code>Bridge.bracket</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>bracket(X)
@@ -200,39 +200,39 @@ bracket(X,Y)
 </code></pre>
 
 <p>Computes quadratic variation process of <code>X</code> (of <code>X</code> and <code>Y</code>).</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L68-L73' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L68-L73' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.ito' href='#Bridge.ito'>#</a>
 <strong><code>Bridge.ito</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>ito(Y, X)
 </code></pre>
 
 <p>Integrate a valued stochastic process with respect to a stochastic differential.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L83-L87' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L83-L87' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.girsanov' href='#Bridge.girsanov'>#</a>
 <strong><code>Bridge.girsanov</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
 </code></pre>
 
 <p>Girsanov log likelihood $dP/dPt(X)$    </p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L101-L105' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L101-L105' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.lp' href='#Bridge.lp'>#</a>
 <strong><code>Bridge.lp</code></strong> &mdash; <em>Function</em>.</p>
 <p>lp(s, x, t, y, P)</p>
 <p>Log-transition density, shorthand for <code>logpdf(transitionprob(s,x,t,P),y)</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L2-L6' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L2-L6' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.llikelihood' href='#Bridge.llikelihood'>#</a>
 <strong><code>Bridge.llikelihood</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code> llikelihood(X::SamplePath, P::ContinuousTimeProcess)
 </code></pre>
 
 <p>Log-likelihood of observations <code>X</code> using transition density <code>lp</code></p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/diffusion.jl#L10-L14' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/diffusion.jl#L10-L14' class='documenter-source'>source</a><br></p>
 <p>Log-likelihood with respect to reference measure P.P</p>
 <p>Up to proportionality</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L178-L182' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L178-L182' class='documenter-source'>source</a><br></p>
 <p>Bridge log-likelihood with respect to reference measure P.P</p>
 <p>Up to proportionality</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L202-L206' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L202-L206' class='documenter-source'>source</a><br></p>
 <p><a id='Miscellaneous-1'></a></p>
 <h2 id="miscellaneous">Miscellaneous</h2>
 <p><a id='Bridge.endpoint!' href='#Bridge.endpoint!'>#</a>
@@ -241,7 +241,7 @@ bracket(X,Y)
 </code></pre>
 
 <p>Convenience functions setting the endpoint of <code>X``to</code>v`.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/types.jl#L63-L67' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/types.jl#L63-L67' class='documenter-source'>source</a><br></p>
 <p><a id='Unsorted-1'></a></p>
 <h2 id="unsorted">Unsorted</h2>
 <p><a id='Bridge.ODESolver' href='#Bridge.ODESolver'>#</a>
@@ -250,60 +250,60 @@ bracket(X,Y)
 </code></pre>
 
 <p>Abstract (super-)type for solving methods for ordinary differential equations.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/ode.jl#L1-L5' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/ode.jl#L1-L5' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mcbandmean' href='#Bridge.mcbandmean'>#</a>
 <strong><code>Bridge.mcbandmean</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mcmeanband(mc)
 </code></pre>
 
 <p>Compute marginal confidence interval for the chain mean using normal approximation</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/mclog.jl#L35-L39' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/mclog.jl#L35-L39' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.cumsum0' href='#Bridge.cumsum0'>#</a>
 <strong><code>Bridge.cumsum0</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>cumsum0
 </code></pre>
 
 <p>Cumulative sum starting at 0, </p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/misc.jl#L2-L6' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/misc.jl#L2-L6' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.LocalGammaProcess' href='#Bridge.LocalGammaProcess'>#</a>
 <strong><code>Bridge.LocalGammaProcess</code></strong> &mdash; <em>Type</em>.</p>
 <p>LocalGammaProcess</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L106-L108' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L106-L108' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.Ptilde' href='#Bridge.Ptilde'>#</a>
 <strong><code>Bridge.Ptilde</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>Ptilde(cs::CSpline, σ)
 </code></pre>
 
 <p>Affine diffusion $dX = cs(t) dt + σdW$  with cs a </p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/linpro.jl#L18-L24' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/linpro.jl#L18-L24' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.GuidedProp' href='#Bridge.GuidedProp'>#</a>
 <strong><code>Bridge.GuidedProp</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>GuidedProp
 </code></pre>
 
 <p>General bridge proposal process</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/guip.jl#L58-L62' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/guip.jl#L58-L62' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.compensator0' href='#Bridge.compensator0'>#</a>
 <strong><code>Bridge.compensator0</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>compensator0(kstart, P::LocalGammaProcess)
 </code></pre>
 
 <p>Compensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu([b1,Inf], P0)</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L162-L167' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L162-L167' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mcstart' href='#Bridge.mcstart'>#</a>
 <strong><code>Bridge.mcstart</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mcstart(x) -&gt; state
 </code></pre>
 
 <p>Create state for random chain online statitics. The entries/value of <code>x</code> are ignored</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/mclog.jl#L11-L15' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/mclog.jl#L11-L15' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.CSpline' href='#Bridge.CSpline'>#</a>
 <strong><code>Bridge.CSpline</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s))
 </code></pre>
 
 <p>Cubic spline parametrized by f(s) = x and f(t) = y, f'(x) = m0, f'(t) = m1</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/cspline.jl#L25-L29' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/cspline.jl#L25-L29' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.tofs' href='#Bridge.tofs'>#</a>
 <strong><code>Bridge.tofs</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>tofs(s, T1, T2)
@@ -312,32 +312,32 @@ soft(t, T1, T2)
 Time change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).
 </code></pre>
 
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/timechange.jl#L1-L6' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/timechange.jl#L1-L6' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.r' href='#Bridge.r'>#</a>
 <strong><code>Bridge.r</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>r(t, x, T, v, P)
 </code></pre>
 
 <p>Returns $r(t,x) = \operatorname{grad}_x \log p(t,x; T, v)$ where $p$ is the transition density of the process $P$.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/guip.jl#L1-L7' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/guip.jl#L1-L7' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.θ' href='#Bridge.θ'>#</a>
 <strong><code>Bridge.θ</code></strong> &mdash; <em>Function</em>.</p>
 <p>Inverse jump size compared to gamma process with same alpha and beta</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L118-L120' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L118-L120' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.gpK!' href='#Bridge.gpK!'>#</a>
 <strong><code>Bridge.gpK!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>gpK!(K::SamplePath, P)
 </code></pre>
 
 <p>Precompute $K = H^{-1}$ from $(d/dt)K = BK + KB' + a$ for a guided proposal.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/ode.jl#L48-L52' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/ode.jl#L48-L52' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mcnext' href='#Bridge.mcnext'>#</a>
 <strong><code>Bridge.mcnext</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mcnext(state, x) -&gt; state
 </code></pre>
 
 <p>Update random chain online statistics when new chain value <code>x</code> was observed. Return new <code>state</code>.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/mclog.jl#L19-L24' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/mclog.jl#L19-L24' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.compensator' href='#Bridge.compensator'>#</a>
 <strong><code>Bridge.compensator</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>compensator(kstart, P::LocalGammaProcess)
@@ -345,21 +345,21 @@ Time change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).
 
 <p>Compensator of LocalGammaProcess </p>
 <p>for kstart = 1, this is sum_k=1^N nu(B_k) for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant)</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L146-L153' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L146-L153' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.outer' href='#Bridge.outer'>#</a>
 <strong><code>Bridge.outer</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>outer(x[, y])
 </code></pre>
 
 <p>Short-hand for quadratic form xx' (or xy').</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/misc.jl#L33-L36' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/misc.jl#L33-L36' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.integrate' href='#Bridge.integrate'>#</a>
 <strong><code>Bridge.integrate</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>integrate(cs::CSpline, s, t)
 </code></pre>
 
 <p>Integrate the cubic spline from s to t    </p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/cspline.jl#L33-L38' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/cspline.jl#L33-L38' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.soft' href='#Bridge.soft'>#</a>
 <strong><code>Bridge.soft</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>soft(t, T1, T2)
@@ -367,32 +367,32 @@ Time change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).
 Time change mapping s in [T1, T2] (U-time) to t in [T1, T2] (X-time), and inverse.
 </code></pre>
 
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/timechange.jl#L10-L14' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/timechange.jl#L10-L14' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.nu' href='#Bridge.nu'>#</a>
 <strong><code>Bridge.nu</code></strong> &mdash; <em>Function</em>.</p>
 <p>(Bin-wise) integral of the Levy measure</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L132-L134' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L132-L134' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.bridge' href='#Bridge.bridge'>#</a>
 <strong><code>Bridge.bridge</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>bridge(W, P, scheme! = euler!) -&gt; Y
 </code></pre>
 
 <p>Integrate with $scheme!$ and set $Y[end] = P.v1$.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L141-L145' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L141-L145' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.Vs' href='#Bridge.Vs'>#</a>
 <strong><code>Bridge.Vs</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>Vs (s, T1, T2, v, B, beta)
 </code></pre>
 
 <p>Time changed V for generation of U</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/timechange.jl#L22-L26' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/timechange.jl#L22-L26' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.logpdfnormal' href='#Bridge.logpdfnormal'>#</a>
 <strong><code>Bridge.logpdfnormal</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>logpdfnormal(x, A)
 </code></pre>
 
 <p>logpdf of centered gaussian with covariance A</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/gaussian.jl#L37-L41' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/gaussian.jl#L37-L41' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mdb!' href='#Bridge.mdb!'>#</a>
 <strong><code>Bridge.mdb!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mdb(u, W, P)
@@ -400,14 +400,14 @@ mdb!(copy(W), u, W, P)
 </code></pre>
 
 <p>Euler scheme with the diffusion coefficient correction of the modified diffusion bridge.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L121' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L121' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.euler!' href='#Bridge.euler!'>#</a>
 <strong><code>Bridge.euler!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>euler!(Y, u, W, P) -&gt; X
 </code></pre>
 
 <p>Solve stochastic differential equation $dX_t = b(t,X_t)dt + σ(t,X_t)dW_t$  using the Euler scheme in place.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L11-L16' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L11-L16' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.GammaProcess' href='#Bridge.GammaProcess'>#</a>
 <strong><code>Bridge.GammaProcess</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>GammaProcess
@@ -418,14 +418,14 @@ mdb!(copy(W), u, W, P)
 ν(x)=γ x^{-1}\exp(-λ x), 
 $$</p>
 <p>Here <code>Gamma(α,θ)</code> is the Gamma distribution in julia's parametrization with shape parameter <code>α</code> and scale <code>θ</code></p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/levy.jl#L4-L14' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/levy.jl#L4-L14' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.dotVs' href='#Bridge.dotVs'>#</a>
 <strong><code>Bridge.dotVs</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>dotVs (s, T, v, B, beta)
 </code></pre>
 
 <p>Time changed time derivative of V for generation of U</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/timechange.jl#L33-L37' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/timechange.jl#L33-L37' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mdb' href='#Bridge.mdb'>#</a>
 <strong><code>Bridge.mdb</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mdb(u, W, P)
@@ -433,14 +433,14 @@ mdb!(copy(W), u, W, P)
 </code></pre>
 
 <p>Euler scheme with the diffusion coefficient correction of the modified diffusion bridge.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L114-L119' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L114-L119' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.euler' href='#Bridge.euler'>#</a>
 <strong><code>Bridge.euler</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>euler(u, W, P) -&gt; X
 </code></pre>
 
 <p>Solve stochastic differential equation $dX_t = b(t,X_t)dt + σ(t,X_t)dW_t$ using the Euler scheme.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L4-L8' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L4-L8' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mat' href='#Bridge.mat'>#</a>
 <strong><code>Bridge.mat</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mat(X::SamplePath{SVector}) 
@@ -448,28 +448,28 @@ mat(yy::Vector{SVector})
 </code></pre>
 
 <p>Reinterpret <code>X</code> or <code>yy</code> to an array without change in memory.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/misc.jl#L41-L46' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/misc.jl#L41-L46' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.thetamethod' href='#Bridge.thetamethod'>#</a>
 <strong><code>Bridge.thetamethod</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>thetamethod(u, W, P, theta=0.5)
 </code></pre>
 
 <p>Solve stochastic differential equation using the theta method and Newton-Raphson steps</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/euler.jl#L64-L68' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/euler.jl#L64-L68' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.mcband' href='#Bridge.mcband'>#</a>
 <strong><code>Bridge.mcband</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>mcband(mc)
 </code></pre>
 
 <p>Compute marginal 95% coverage interval for the chain from normal approximation.</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/mclog.jl#L48-L52' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/mclog.jl#L48-L52' class='documenter-source'>source</a><br></p>
 <p><a id='Bridge.LinPro' href='#Bridge.LinPro'>#</a>
 <strong><code>Bridge.LinPro</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>LinPro(B, μ::T, σ)
 </code></pre>
 
 <p>Linear diffusion $dX = B(X - μ)dt + σdW$</p>
-<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/52def864a93cd2f226af766191f17283b1391e60/src/linpro.jl#L75-L80' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/mschauer/Bridge.jl/tree/c7b676f165fabf65871b50b64727626a0015fa48/src/linpro.jl#L75-L80' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
@@ -509,5 +509,5 @@ mat(yy::Vector{SVector})
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2017-08-13 18:17:18
+Build Date UTC : 2017-08-13 18:19:36
 -->
