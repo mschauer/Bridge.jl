@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.ContinuousTimeProcess",
     "category": "Type",
-    "text": "ContinuousTimeProcess{T}\n\nTypes inheriting from the abstract type ContinuousTimeProcess{T}characterize  the properties of aT-valued stochastic process, play a similar role as distribution types likeExponentialin the packageDistributions`.\n\n\n\n"
+    "text": "ContinuousTimeProcess{T}\n\nTypes inheriting from the abstract type ContinuousTimeProcess{T} characterize  the properties of a T-valued stochastic process, play a similar role as distribution types like Exponential in the package Distributions.\n\n\n\n"
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.solve!",
     "category": "Function",
-    "text": "solve!(method, X::SamplePath, x0, P) -> X, [err]\n\nSolve ordinary differential equation (d/dx) x(t) = F(t, x(t), P) on the fixed grid X.tt writing into X.yy \n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n"
+    "text": "solve!(method, X::SamplePath, x0, P) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy \n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n"
 },
 
 {
@@ -149,7 +149,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.llikelihood",
     "category": "Function",
-    "text": "llikelihood(X::SamplePath, P::ContinuousTimeProcess)\n\nLog-likelihood of observations X using transition density lp\n\n\n\nllikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)\n\nLog-likelihood dPº/dP. (Up to proportionality.)\n\n\n\nllikelihood(X::SamplePath, P::LocalGammaProcess)\n\nBridge log-likelihood with respect to reference measure P.P. (Up to proportionality.)\n\n\n\n"
+    "text": "llikelihood(X::SamplePath, P::ContinuousTimeProcess)\n\nLog-likelihood of observations X using transition density lp.\n\n\n\nllikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)\n\nLog-likelihood dPº/dP. (Up to proportionality.)\n\n\n\nllikelihood(X::SamplePath, P::LocalGammaProcess)\n\nBridge log-likelihood with respect to reference measure P.P. (Up to proportionality.)\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.compensator0",
     "category": "Function",
-    "text": "compensator0(kstart, P::LocalGammaProcess)\n\nCompensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu_0(b1Inf).\n\n\n\n"
+    "text": "compensator0(kstart, P::LocalGammaProcess)\n\nCompensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu_0(b_1infty).\n\n\n\n"
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.CSpline",
     "category": "Type",
-    "text": "CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s))\n\nCubic spline parametrized by f(s) = x and f(t) = y, f'(x) = m0, f'(t) = m1\n\n\n\n"
+    "text": "CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 = (y-x)/(t-s))\n\nCubic spline parametrized by f(s) = x and f(t) = y, f(s) = m0, f(t) = m1.\n\n\n\n"
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.tofs",
     "category": "Function",
-    "text": "tofs(s, T1, T2)\nsoft(t, T1, T2)\n\nTime change mapping t in [T1, T2] (X-time) to s in [T1, T2]  (U-time).\n\n\n\n"
+    "text": "tofs(s, T1, T2)\n\nTime change mapping t in [T1, T2] (X-time) to s in [T1, T2] (U-time).\n\n\n\n"
 },
 
 {
@@ -309,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.integrate",
     "category": "Function",
-    "text": "integrate(cs::CSpline, s, t)\n\nIntegrate the cubic spline from s to t    \n\n\n\n"
+    "text": "integrate(cs::CSpline, s, t)\n\nIntegrate the cubic spline from s to t.    \n\n\n\n"
 },
 
 {
@@ -317,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.soft",
     "category": "Function",
-    "text": "soft(t, T1, T2)\n\nTime change mapping s in [T1, T2] (U-time) to t in [T1, T2] (X-time), and inverse.\n\n\n\n"
+    "text": "soft(t, T1, T2)\n\nTime change mapping s in [T1, T2](U-time) tot`in[T1, T2](X`-time).\n\n\n\n"
 },
 
 {
@@ -333,7 +333,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.bridge",
     "category": "Function",
-    "text": "bridge(W, P, scheme! = euler!) -> Y\n\nIntegrate with scheme and set Yend = Pv1.\n\n\n\n"
+    "text": "bridge(W, P, scheme! = euler!) -> Y\n\nIntegrate with scheme! and set Y[end] = P.v1.\n\n\n\n"
 },
 
 {
@@ -341,7 +341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.Vs",
     "category": "Function",
-    "text": "Vs (s, T1, T2, v, B, beta)\n\nTime changed V for generation of U\n\n\n\n"
+    "text": "Vs(s, T1, T2, v, P)\n\nTime changed V for generation of U.\n\n\n\n"
 },
 
 {
@@ -381,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.dotVs",
     "category": "Function",
-    "text": "dotVs (s, T, v, B, beta)\n\nTime changed time derivative of V for generation of U\n\n\n\n"
+    "text": "dotVs (s, T1, T2, v, P)\n\nTime changed time derivative of V for generation of U.\n\n\n\n"
 },
 
 {
@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.thetamethod",
     "category": "Function",
-    "text": "thetamethod(u, W, P, theta=0.5)\n\nSolve stochastic differential equation using the theta method and Newton-Raphson steps\n\n\n\n"
+    "text": "thetamethod(u, W, P, theta=0.5)\n\nSolve stochastic differential equation using the theta method and Newton-Raphson steps.\n\n\n\n"
 },
 
 {
