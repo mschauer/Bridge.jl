@@ -11,5 +11,6 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/mschauer/Bridge.jl.git"
+    repo = "github.com/mschauer/Bridge.jl.git",
+    julia  = "0.6",
 )
