@@ -10,7 +10,7 @@ A *GammaProcess* with jump rate `γ` and inverse jump size `λ` has increments `
 ν(x)=γ x^{-1}\\exp(-λ x), 
 ```
 
-Here `Gamma(α,θ)` is the Gamma distribution in julia's parametrization with shape parameter `α` and scale `θ`
+Here `Gamma(α,θ)` is the Gamma distribution in julia's parametrization with shape parameter `α` and scale `θ`.
 """
 struct GammaProcess <: LevyProcess{Float64}
     γ::Float64
@@ -104,7 +104,7 @@ end
 
 
 """
-LocalGammaProcess
+    LocalGammaProcess
 """
 struct LocalGammaProcess
     P::GammaProcess
@@ -116,7 +116,9 @@ struct LocalGammaProcess
 end
 
 """
-Inverse jump size compared to gamma process with same alpha and beta
+    θ(x, P::LocalGammaProcess)
+
+Inverse jump size compared to gamma process with same alpha and beta.
 """
 function θ(x, P::LocalGammaProcess)
     N = length(P.θ)
@@ -130,7 +132,9 @@ function θ(x, P::LocalGammaProcess)
 end
 
 """
-(Bin-wise) integral of the Levy measure
+     nu(k,P)
+
+(Bin-wise) integral of the Levy measure ``\\nu(B_k)``.
 """
 function nu(k,P)
     if k == 0
@@ -147,9 +151,8 @@ end
     compensator(kstart, P::LocalGammaProcess)
 
 Compensator of LocalGammaProcess 
-
-for kstart = 1, this is sum_k=1^N nu(B_k)
-for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant)
+For `kstart = 1`, this is ``\\sum_{k=1}^N \\nu(B_k)``,
+for `kstart = 0`, this is ``\\sum_{k=0}^N \\nu(B_k) - C`` (where ``C`` is a constant).
 """
 function compensator(kstart, P::LocalGammaProcess)
     s = 0.0
@@ -163,7 +166,7 @@ end
     compensator0(kstart, P::LocalGammaProcess)
 
 Compensator of GammaProcess approximating the LocalGammaProcess.
-For kstart == 1 (only choice) this is nu([b1,Inf], P0)
+For `kstart == 1` (only choice) this is ``\\nu_0([b1,Inf])``.
 """
 function compensator0(kstart, P::LocalGammaProcess)
     if kstart == 1
@@ -176,9 +179,9 @@ end
 
 
 """
-Log-likelihood with respect to reference measure P.P
+    llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)
 
-Up to proportionality
+Log-likelihood `dPº/dP`. (Up to proportionality.)
 """
 function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess, c = 0.0)::Float64
     assert(Pº.P.γ == P.P.γ)
@@ -200,9 +203,10 @@ end
 
 
 """
-Bridge log-likelihood with respect to reference measure P.P
+    llikelihood(X::SamplePath, P::LocalGammaProcess)
 
-Up to proportionality
+Bridge log-likelihood with respect to reference measure `P.P`.
+(Up to proportionality.)
 """
 function llikelihood(X::SamplePath, P::LocalGammaProcess, c = 0.0)::Float64
     ll = 0.

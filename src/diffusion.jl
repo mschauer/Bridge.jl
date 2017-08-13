@@ -99,9 +99,9 @@ end
 
 
 """
-    girsanov{T}(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T})
+    girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)
 
-Girsanov log likelihood ``dP/dPt(X)``    
+Girsanov log likelihood ``\mathrm{d}P/\mathrm{d}Pt(X)``    
 """    
 function girsanov(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T}) where T
     tt = X.tt
