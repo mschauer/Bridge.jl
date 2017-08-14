@@ -10,7 +10,7 @@ dt = t / n
 x0 = 1.
 
 # define a Float64 Wiener process
-P = Wiener{Float64}() #returns object representing standard Brownian motion
+P = Wiener() #returns object representing standard Brownian motion
 
 typeof(P)
 #prints Bridge.Wiener{Float64}
@@ -32,8 +32,11 @@ plot(W.tt, W.yy)
 
 
 # sample complex Brownian motion on a nonequidistant grid
-X = sample(sort(rand(1000)), Wiener{Complex{Float64}}())
-plot(real(X.yy), imag(X.yy))
+
+if VERSION >= v"0.7.0-DEV.350"
+    X = sample(sort(rand(1000)), Wiener{Complex{Float64}}())
+    plot(real(X.yy), imag(X.yy))
+end
 
 # sample a standard Brownian bridge ending in v at time s
 s = 1.
