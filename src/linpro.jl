@@ -62,7 +62,7 @@ mutable struct LinPro{S,T,U} <: ContinuousTimeProcess{T}
 end
 
 B(t, P::LinPro) = P.B
-β(t, P::LinPro) = P.B*P.μ
+β(t, P::LinPro) = -P.B*P.μ
 b(t, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
 bderiv(t, x, P::LinPro) = P.B
