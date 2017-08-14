@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/mschauer/Bridge.jl.svg?branch=master)](https://travis-ci.org/mschauer/Bridge.jl)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://mschauer.github.io/Bridge.jl/latest/)
+[![Latest](https://img.shields.io/badge/docs-stable-blue.svg)](https://mschauer.github.io/Bridge.jl/stable/)
 
 # Bridge.jl
  
