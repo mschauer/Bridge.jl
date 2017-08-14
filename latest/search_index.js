@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.solve!",
     "category": "Function",
-    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n"
+    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\nsolve!(::EulerMaruyama, Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using the Euler-Maruyama scheme in place.\n\n\n\n"
 },
 
 {
