@@ -37,6 +37,13 @@ Short-hand for quadratic form xx' (or xy').
 outer(x) = x*x'
 outer(x,y) = x*y'
 
+"""
+    inner(x[, y])
+Short-hand for quadratic form x'x (or x'y).
+"""
+inner(x) = dot(x,x)
+inner(x,y) = dot(x,y)
+
 
 """
     mat(X::SamplePath{SVector}) 
