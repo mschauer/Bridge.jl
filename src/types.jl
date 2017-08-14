@@ -75,3 +75,17 @@ sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} =
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
 
 
+"""
+    Increments{S<:AbstractPath{T}}
+    
+Iterator over the increments of an AbstractPath. 
+Iterates over `(i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i])`.
+"""
+type Increments{S<:AbstractPath}
+    X::S
+end
+start(dX::Increments) = 1
+next(dX::Increments, i) = (i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[i+1]-dX.X.yy[i]), i + 1
+done(dX::Increments, i) = i + 1 > length(dX.X.tt)
+increments(X::AbstractPath) = Increments(X)
+

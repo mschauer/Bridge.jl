@@ -142,6 +142,13 @@ function Γ(s, x, P::Wiener)
     I
 end
 
+function b!(s, x, dx, P::Wiener{T}) where T
+    @. dx = 0
+end
+
+function σ!(s, x, dw, dm, P::Wiener)
+    @. dm = dw
+end
 
 
 

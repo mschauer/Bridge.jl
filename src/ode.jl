@@ -95,7 +95,7 @@ Solve ordinary differential equation ``(d/dx) x(t) = F(t, x(t))`` or
 Call `_solve!` to inline. "Pretty fast if `x` is a bitstype or a StaticArray."
 
 """
-function solve!(method, F, X, x0, P) 
+function solve!(method::ODESolver, F, X, x0, P) 
      _solve!(method, F, X, x0, P) 
 end
 @inline function _solve!(::R3, F, X::SamplePath{T}, x0, P) where {T}
@@ -109,8 +109,8 @@ end
     X
 end
 
-solve!(method, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
-solve!(method, X, x0, P) = solve!(method, b, X, x0, P) 
+solve!(method::ODESolver, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
+solve!(method::ODESolver, X, x0, P) = solve!(method, b, X, x0, P) 
 
 @inline function _solve!(::BS3, F, X::SamplePath{T}, x0, P) where {T}
     tt = X.tt

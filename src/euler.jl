@@ -9,9 +9,12 @@ Abstract (super-)type for solving methods for stochastic differential equations.
 abstract type SDESolver 
 end
 
-struct Euler <: SDESolver
+struct EulerMaruyama <: SDESolver
+end
+struct EulerMaruyama! <: SDESolver
 end
 
+const Euler = EulerMaruyama
 
 
 
@@ -149,6 +152,52 @@ function mdb!(Y, u, W::SamplePath, P)
     for i in 1:N-1
         yy[.., i] = y
         y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))*(ww[.., i+1]-ww[..,i])
+    end
+    yy[.., N] = y
+    Y
+end
+
+"""
+    solve!(::EulerMaruyama, Y, u, W, P) -> X
+  
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+using the Euler-Maruyama scheme in place.
+"""
+function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y::T = u
+
+    for (i, t, dt, dw) in increments(W)
+        yy[.., i] = y
+        y = y + b(t, y, P)*dt + _scale(dw, σ(t, y, P))
+    end
+    yy[.., N] = y
+    Y
+end
+function solve!(::EulerMaruyama!, Y, u, dW::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
+    N = length(dW)
+    N != length(Y) && error("Y and dW differ in length.")
+
+    yy = Y.yy
+    y::T = u
+    tmp1 = copy(y)
+    tmp2 = copy(y)
+    for (i, t, dt, dw) in dW
+        yy[.., i] = y
+        b!(t, y, tmp1, P)
+        @inbounds for k in indices(tmp1)
+            tmp1[1] *= dt
+        end
+        σ!(t, y, dw, tmp2, P)
+        @. y = tmp1 + tmp2
+        
     end
     yy[.., N] = y
     Y
