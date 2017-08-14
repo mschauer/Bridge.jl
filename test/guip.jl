@@ -124,7 +124,7 @@ tau(s, T) = s.*(2-s/T)
 tt = ss
 
 u = 0.5
-v = 0.0
+v = 0.1
 a = 0.7
 P1 = OrnsteinUhlenbeck(0.8, sqrt(a))
 #cs = Bridge.CSpline(tt[1], tt[end], u, u*exp(-P1.β*T), -P1.β*u, -exp(-P1.β*T)*P1.β*u)
@@ -250,6 +250,32 @@ pt = exp(lp(0.0, u, T, v, Pt))
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 
+
+# GuidedProposal
+push!(Cnames, "GuidedProposal")
+Ptarget = Bridge.Ptilde(cs, sqrt(a))
+Pt = LinPro(-β, 0.2, sqrt(a))
+GP = Bridge.GuidedBridge(tt, (u,v), Ptarget, Pt)
+
+@test norm(GP.K-[inv(Bridge.H(t, T, Pt)) for t in tt], Inf) < 1e-5
+@test norm(GP.V-[Bridge.V(t, T, v, Pt) for t in tt], Inf) < 1e-5
+
+
+z = Float64[
+    begin
+    W = sample(tt, Wiener{Float64}())
+    X = copy(W)
+    Bridge.bridge!(Bridge.Euler(), X, W, GP)
+    llikelihood(LeftRule(), X, GP)
+    end
+    for i in 1:m]
+
+p2 = pdf(transitionprob(0.0, u, T, Ptarget), v)
+p = exp(lp(0.0, u, T, v, Ptarget))
+pt = exp(lp(0.0, u, T, v, Pt))
+@test p == p2
+@test pt ≈ exp(lptilde(Po))
+push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 println(Cnames)
 println(C)

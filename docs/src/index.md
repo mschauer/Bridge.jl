@@ -10,13 +10,14 @@ SamplePath{T}
 valtype
 ```
 
-## Ordinary differential equations
+## Ordinary differential equations and quadrature
 
 ```@docs
 Bridge.ODESolver
 solve!
 Bridge.R3
 Bridge.BS3
+LeftRule
 ```
 
 ## Brownian motion
@@ -90,6 +91,7 @@ Bridge.Ptilde
 
 ```@docs
 GuidedProp
+Bridge.GuidedBridge
 bridge
 Bridge.Vs
 Bridge.mdb 
@@ -108,4 +110,5 @@ Bridge.θ
 Bridge.soft
 Bridge.tofs
 Bridge.dotVs
+Bridge.SDESolver
 ```

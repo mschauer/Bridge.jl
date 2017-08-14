@@ -4,7 +4,7 @@ module Bridge
 export ContinuousTimeProcess, SamplePath
 export LinPro, Wiener, WienerBridge, CSpline
 export sample, sample!, .., euler, euler!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
-export bridge!, bridge
+
 
 export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, innovations, innovations!, lptilde
 export ubridge!, ubridge
@@ -18,8 +18,14 @@ export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaP
 # mclog
 export mcstart, mcnext, mcbandmean, mcband
 
+# euler
+export SDESolver, Euler, bridge!, bridge
+
 # ode
-export solve!, solvebackward!
+export solve!, solvebackward!, ODESolver, RS3
+
+# guip
+export LeftRule
 
 using Distributions
 using StaticArrays

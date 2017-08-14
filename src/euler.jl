@@ -2,6 +2,21 @@ _scale(w, σ) = σ*w
 _scale(w::Number, σ::UniformScaling) = σ.λ*w
 
 """
+    SDESolver
+
+Abstract (super-)type for solving methods for stochastic differential equations.
+"""
+abstract type SDESolver 
+end
+
+struct Euler <: SDESolver
+end
+
+
+
+
+
+"""
     euler(u, W, P) -> X
   
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` using the Euler scheme.
@@ -138,18 +153,34 @@ function mdb!(Y, u, W::SamplePath, P)
     yy[.., N] = y
     Y
 end
-"""
-    bridge(W, P, scheme! = euler!) -> Y
 
-Integrate with `scheme!` and set `Y[end] = P.v1`.
 """
-bridge(W, P, scheme! = euler!) = bridge!(copy(W), W, P, scheme!)
-function bridge!(Y, W::SamplePath, P, scheme! = euler!)
-    !(W.tt[1] == P.t0 && W.tt[end] == P.t1) && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
-    scheme!(Y, P.v0, W, P)
-    Y.yy[.., length(W.tt)] = P.v1
+    bridge(method, W, P) -> Y
+
+Integrate with `method`, where ``P`` is a bridge proposal
+"""
+bridge(method::SDESolver, W, P) = bridge!(method, copy(W), W, P)
+function bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+    
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y::T = P.v[1]
+    
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+    end
+    yy[.., N] = P.v[end]
     Y
 end
+
 
 rungekutta(W, P) = rungekutta!(copy(W), W, P)
 function rungekutta!(Y, u, W::SamplePath{T}, P) where T<:Number

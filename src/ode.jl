@@ -1,3 +1,15 @@
+abstract type QuadratureRule
+end
+"""
+    LeftRule <: QuadratureRule
+
+Integrate using left Riemann sum approximation.
+"""
+struct LeftRule <: QuadratureRule
+end
+
+
+
 """
     ODESolver
 
@@ -44,6 +56,8 @@ end
 
 @inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
 @inline _F(t, v, P) = B(t, P)*v + β(t, P)
+@inline _F(t, v, F::Function) = F(t, v)
+
 
 """
     gpK!(K::SamplePath, P)
@@ -69,9 +83,10 @@ end
 
 """
     solve!(method, F, X::SamplePath, x0, P) -> X, [err]
+    solve!(method, X::SamplePath, x0, F) -> X, [err]
 
-Solve ordinary differential equation ``(d/dx) x(t) = F(t, x(t), P)`` on the fixed
-grid `X.tt` writing into `X.yy` 
+Solve ordinary differential equation ``(d/dx) x(t) = F(t, x(t))`` or
+``(d/dx) x(t) = F(t, x(t), P)`` on the fixed grid `X.tt` writing into `X.yy` .
 
 `method::R3` - using a non-adaptive Ralston (1965) update (order 3).
 
@@ -93,6 +108,10 @@ end
     end
     X
 end
+
+solve!(method, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
+solve!(method, X, x0, P) = solve!(method, b, X, x0, P) 
+
 @inline function _solve!(::BS3, F, X::SamplePath{T}, x0, P) where {T}
     tt = X.tt
     yy = X.yy

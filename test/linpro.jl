@@ -8,7 +8,7 @@ m = 1000
 S = SVector{2,Float64}
 M = SArray{Tuple{2,2},Float64,2,4}
 B = SMatrix{2,2,Float64}([-1 0.1; -0.2 -1])
-mu = 0*S([0.2, 0.3])
+mu = 0.1*S([0.2, 0.3])
 sigma = SMatrix{2,2,Float64}(2*[-0.212887  0.0687025
   0.193157  0.388997 ])
 a = sigma*sigma'

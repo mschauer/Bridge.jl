@@ -84,13 +84,51 @@ btilde(t, x, P::GuidedProp) = b(t,x,P.Pt)
 atilde(t, x, P::GuidedProp) = a(t,x,P.Pt)
 ptilde(P::GuidedProp) = P.Pt
 
-function lptilde(P::GuidedProp{T}) where T 
-     lp( P.t0, P.v0, P.t1, P.v1, P.Pt) 
+function lptilde(P::GuidedProp) 
+     lp(P.t0, P.v0, P.t1, P.v1, P.Pt) 
 end
 
+"""
+    GuidedBridge
 
+Guided proposal process for diffusion bridge.
+"""
+struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
+    Target::R
+    Pt::R2
+    tt::Vector{Float64}
+    v::Tuple{T,T}
+    K::Vector{S} 
+    V::Vector{T}
+"""
+    GuidedBridge(tt, (u, v), P, Pt)
 
-
+Guided proposal process for diffusion bridge of `P` from `u` to `v` on 
+the time grid `tt` using guiding term derived from linear process `Pt`.
+"""    
+    function GuidedBridge(tt_, v::Tuple{T,T}, P::R, Pt::R2) where {T,R,R2}
+        tt = collect(tt_)
+        N = length(tt)
+        S = typeof(Bridge.outer(zero(T)))
+        K = SamplePath(tt, zeros(S, N)) 
+        V = SamplePath(tt, zeros(T, N)) 
+        gpK!(K, Pt)
+        gpV!(V, v[2], Pt)
+        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy) 
+    end
+end
+ 
+bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.K[i]\(P.V[i] - x)) 
+ri(i::Integer, x, P::GuidedBridge) = P.K[i]\(P.V[i] - x)
+σ(t, x, P::GuidedBridge) = σ(t, x, P.Target)
+a(t, x, P::GuidedBridge) = a(t, x, P.Target)
+Γ(t, x, P::GuidedBridge) = Γ(t, x, P.Target)
+constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
+btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
+atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
+function lptilde(P::GuidedBridge)
+     lp(P.tt[1], P.v[1], P.tt[end], P.v[end], P.Pt) 
+end
 #####################
 
 
@@ -257,6 +295,26 @@ function llikelihoodleft(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgePro
     end
     som
 end
+
+
+# using left approximation
+function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge) 
+    tt = Xcirc.tt
+    xx = Xcirc.yy
+
+    som::Float64 = 0.
+    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
+        s = tt[i]
+        x = xx[i]
+        r = Bridge.ri(i, x, Po)
+        som += (dot(b(s,x, Po.Target) - btilde(s, x, Po), r)  ) * (tt[i+1]-tt[i])
+        if !constdiff(Po)
+            som += trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(i,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+        end
+    end
+    som
+end
+
 
 #using trapezoidal rule
 function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) where T
