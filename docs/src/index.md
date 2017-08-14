@@ -13,6 +13,7 @@ valtype
 ## Ordinary differential equations
 
 ```@docs
+Bridge.ODESolver
 solve!
 Bridge.R3
 Bridge.BS3
@@ -36,45 +37,75 @@ ito
 girsanov
 lp
 llikelihood
+euler
+euler!
+thetamethod
+```
+
+## Levy processes
+```@docs
+GammaProcess
+Bridge.nu 
 ```
 
 ## Miscellaneous
+
 ```@docs
 Bridge.endpoint!
+Bridge.inner
+Bridge.cumsum0
+Bridge.mat
+Bridge.outer
+CSpline
+Bridge.integrate 
+Bridge.logpdfnormal
+```
+
+## Online statistics
+
+Online updating of the tuple `state = (m, m2, n)` where
+
+`m` - `mean(x[1:n])`
+
+`m2` - sum of squares of differences from the current mean, ``\textstyle\sum_{i=1}^n (x_i - \bar x_n)^2``
+
+`n` - number of iterations
+
+```@docs
+mcstart
+mcnext
+mcband
+mcbandmean
+```
+
+## Linear Processes
+
+```@docs
+LinPro
+Bridge.Ptilde
+```
+
+
+## Bridges
+
+```@docs
+GuidedProp
+bridge
+Bridge.Vs
+Bridge.mdb 
+Bridge.mdb!
+Bridge.r
+Bridge.gpK! 
 ```
 
 ## Unsorted
+
 ```@docs
-Bridge.ODESolver
-mcbandmean 
-Bridge.cumsum0 
 LocalGammaProcess
-Bridge.Ptilde
-GuidedProp
 Bridge.compensator0 
-mcstart 
-CSpline 
-Bridge.tofs
-Bridge.r
+Bridge.compensator
 Bridge.θ 
-Bridge.gpK! 
-mcnext 
-Bridge.compensator 
-Bridge.outer 
-Bridge.integrate 
 Bridge.soft
-Bridge.nu 
-bridge
-Bridge.Vs
-Bridge.logpdfnormal
-Bridge.mdb!
-euler! 
-GammaProcess
+Bridge.tofs
 Bridge.dotVs
-Bridge.mdb 
-euler 
-Bridge.mat 
-thetamethod 
-mcband 
-LinPro
 ```

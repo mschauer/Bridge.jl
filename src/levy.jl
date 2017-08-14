@@ -166,7 +166,7 @@ end
     compensator0(kstart, P::LocalGammaProcess)
 
 Compensator of GammaProcess approximating the LocalGammaProcess.
-For `kstart == 1` (only choice) this is ``\\nu_0([b_1,\infty)``.
+For `kstart == 1` (only choice) this is ``\\nu_0([b_1,\\infty)``.
 """
 function compensator0(kstart, P::LocalGammaProcess)
     if kstart == 1
@@ -175,7 +175,6 @@ function compensator0(kstart, P::LocalGammaProcess)
         throw(ArgumentError("k != 1 or 2"))
     end
 end
-
 
 
 """

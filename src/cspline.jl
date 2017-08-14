@@ -25,7 +25,7 @@ end
 """
     CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 = (y-x)/(t-s))
 
-Cubic spline parametrized by ``f(s) = x`` and ``f(t) = y``, ``f'(s) = m0``, ``f'(t) = m1``.
+Cubic spline parametrized by ``f(s) = x`` and ``f(t) = y``, ``f'(s) = m_0``, ``f'(t) = m_1``.
 """
 CSpline(s, t, x::T, y = x, m0 = (y-x)/(t-s), m1 =  (y-x)/(t-s)) where {T} = CSpline{T}(s, t, x, y, mx, my)
 (cs::CSpline)(t) =  cspline(t, cs.s, cs.t, cs.x, cs.y, cs.mx, cs.my)

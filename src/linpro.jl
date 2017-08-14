@@ -19,7 +19,7 @@ constdiff(::Ptilde) = true
     Ptilde(cs::CSpline, σ) 
     
 Affine diffusion ``dX = cs(t) dt + σdW`` 
-with cs a 
+with cs a cubic spline `::CSpline`.
     
 """    
 Ptilde(cs::CSpline{T}, σ) where {T} = Ptilde{T}(cs, σ)
@@ -75,7 +75,7 @@ constdiff(::LinPro) = true
 """
     LinPro(B, μ::T, σ) 
     
-Linear diffusion ``dX = B(X - μ)dt + σdW``
+Linear diffusion ``dX = B(X - μ)dt + σdW``.
     
 """    
 LinPro

@@ -10,7 +10,7 @@ end
     R3
 
 Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
-to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} f(s, y(s)) ds``.
+to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``.
 """
 struct R3 <: ODESolver
 end
@@ -19,7 +19,7 @@ end
     BS3
 
 Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
-to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} f(s, y(s)) ds``. Uses Bogacki–Shampine method 
+to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``. Uses Bogacki–Shampine method 
 to give error estimate. 
 """
 struct BS3 <: ODESolver
@@ -68,7 +68,7 @@ end
 end
 
 """
-    solve!(method, X::SamplePath, x0, P) -> X, [err]
+    solve!(method, F, X::SamplePath, x0, P) -> X, [err]
 
 Solve ordinary differential equation ``(d/dx) x(t) = F(t, x(t), P)`` on the fixed
 grid `X.tt` writing into `X.yy` 
