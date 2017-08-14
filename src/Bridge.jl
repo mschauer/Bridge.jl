@@ -1,3 +1,5 @@
+__precompile__()
+
 module Bridge
 export ContinuousTimeProcess, SamplePath
 export LinPro, Wiener, WienerBridge, CSpline
