@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.solve!",
     "category": "Function",
-    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy \n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n"
+    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n"
 },
 
 {
@@ -81,11 +81,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Ordinary-differential-equations-1",
+    "location": "index.html#Bridge.LeftRule",
     "page": "Bridge.jl",
-    "title": "Ordinary differential equations",
+    "title": "Bridge.LeftRule",
+    "category": "Type",
+    "text": "LeftRule <: QuadratureRule\n\nIntegrate using left Riemann sum approximation.\n\n\n\n"
+},
+
+{
+    "location": "index.html#Ordinary-differential-equations-and-quadrature-1",
+    "page": "Bridge.jl",
+    "title": "Ordinary differential equations and quadrature",
     "category": "section",
-    "text": "Bridge.ODESolver\nsolve!\nBridge.R3\nBridge.BS3"
+    "text": "Bridge.ODESolver\nsolve!\nBridge.R3\nBridge.BS3\nLeftRule"
 },
 
 {
@@ -361,11 +369,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Bridge.GuidedBridge",
+    "page": "Bridge.jl",
+    "title": "Bridge.GuidedBridge",
+    "category": "Type",
+    "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge.\n\n\n\n"
+},
+
+{
     "location": "index.html#Bridge.bridge",
     "page": "Bridge.jl",
     "title": "Bridge.bridge",
     "category": "Function",
-    "text": "bridge(W, P, scheme! = euler!) -> Y\n\nIntegrate with scheme! and set Y[end] = P.v1.\n\n\n\n"
+    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal\n\n\n\n"
 },
 
 {
@@ -413,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nbridge\nBridge.Vs\nBridge.mdb \nBridge.mdb!\nBridge.r\nBridge.gpK! "
+    "text": "GuidedProp\nBridge.GuidedBridge\nbridge\nBridge.Vs\nBridge.mdb \nBridge.mdb!\nBridge.r\nBridge.gpK! "
 },
 
 {
@@ -473,11 +489,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Bridge.SDESolver",
+    "page": "Bridge.jl",
+    "title": "Bridge.SDESolver",
+    "category": "Type",
+    "text": "SDESolver\n\nAbstract (super-)type for solving methods for stochastic differential equations.\n\n\n\n"
+},
+
+{
     "location": "index.html#Unsorted-1",
     "page": "Bridge.jl",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver"
 },
 
 ]}
