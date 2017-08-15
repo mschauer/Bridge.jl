@@ -3,6 +3,7 @@ include(joinpath("..", "docs", "make.jl"))
 
 include("wiener.jl")
 include("diffusion.jl")
+include("euler.jl")
 include("misc.jl")
 include("VHK.jl")
 include("guip.jl")

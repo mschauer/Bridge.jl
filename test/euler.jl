@@ -9,7 +9,7 @@ tt = collect(linspace(T[1], T[2], n+1))
 vx = [1.0,0.0,0.0]
 
 
-const SV = SVector{3, Float64}
+const SV3 = SVector{3, Float64}
 
 
 
@@ -32,7 +32,7 @@ end
 
 
 
-W = sample(tt, Wiener{SV}())
+W = sample(tt, Wiener{SV3}())
 VW = VSamplePath(tt, Bridge.mat(W.yy))
 VX = VSamplePath(tt, copy(VW.yy))
 VX2 = VSamplePath(tt, copy(VW.yy))
@@ -42,7 +42,7 @@ Bridge.solve!(Bridge.EulerMaruyama(), VX2, vx, VW, VLorenz())
 
 ######
 
-type Lorenz <: ContinuousTimeProcess{SV}
+type Lorenz <: ContinuousTimeProcess{SV3}
 end
 
 Bridge.b(s, u, ::Lorenz) = @SVector [10.0(u[2]-u[1]), u[1]*(28.0-u[3]) - u[2], u[1]*u[2] - (8/3)*u[3]           ]
