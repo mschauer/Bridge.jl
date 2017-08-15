@@ -163,6 +163,26 @@ end
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using the Euler-Maruyama scheme in place.
 """
+function solve!(::EulerMaruyama, Y, u, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y::T = u
+
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+    end
+    yy[.., N] = y
+    Y
+end
+
+# fallback method
 function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -181,23 +201,34 @@ function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess
     yy[.., N] = y
     Y
 end
-function solve!(::EulerMaruyama!, Y, u, dW::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
-    N = length(dW)
-    N != length(Y) && error("Y and dW differ in length.")
+function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
 
+    tt = Y.tt
+    tt[:] = W.tt
     yy = Y.yy
-    y::T = u
+    y::T = copy(u)
+
+    assert(size(Y.yy) == (length(y), N))
+    assert(size(W.yy) == (length(y), N))
     tmp1 = copy(y)
     tmp2 = copy(y)
-    for (i, t, dt, dw) in dW
-        yy[.., i] = y
-        b!(t, y, tmp1, P)
-        @inbounds for k in indices(tmp1)
-            tmp1[1] *= dt
+    dw = W.yy[.., 1]
+    for i in 1:N-1
+        t¯ = tt[i]
+        dt = tt[i+1] - t¯ 
+        for k in eachindex(tmp1)
+            @inbounds yy[k, i] = y[k]
         end
-        σ!(t, y, dw, tmp2, P)
-        @. y = tmp1 + tmp2
-        
+        for k in eachindex(dw)
+            @inbounds dw[k] = W.yy[k, i+1] - W.yy[k, i]
+        end
+        b!(t¯, y, tmp1, P)
+        σ!(t¯, y, dw, tmp2, P)
+        for k in eachindex(y)
+            @inbounds y[k] = y[k] + tmp1[k]*dt + tmp2[k]
+        end
     end
     yy[.., N] = y
     Y
@@ -322,6 +353,3 @@ function thetainnovations!(W, Y::SamplePath, P, theta=0.5)
     ww[.., N] = ww[.., N-1] = w
     W
 end
-
-
-     

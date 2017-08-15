@@ -34,6 +34,19 @@ function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = W.yy
     SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
 end
 
+function sample!(W::VSamplePath{T}, P::Wiener{T}) where {T}
+    N = length(W.tt)
+    yy = W.yy
+    sz = size(yy, 1)
+    for i = 2:N
+        rootdt = sqrt(W.tt[i] - W.tt[i-1])
+        for j = 1:sz
+            yy[j, i] = yy[j, i-1] + rootdt*randn(T)
+        end
+    end
+    W
+end
+
 function sample!(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1]) where T
     W.yy[1] = y1
     yy = W.yy

@@ -1,7 +1,7 @@
 __precompile__()
 
 module Bridge
-export ContinuousTimeProcess, SamplePath
+export ContinuousTimeProcess, SamplePath, VSamplePath
 export LinPro, Wiener, WienerBridge, CSpline
 export sample, sample!, .., euler, euler!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
 

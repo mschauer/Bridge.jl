@@ -70,6 +70,18 @@ function endpoint!(X::SamplePath, v)
     X
 end
 
+
+struct VSamplePath{T} <: Bridge.AbstractPath{T}
+    tt::Vector{Float64}
+    yy::Matrix{T}
+    function VSamplePath(tt, yy::Matrix{T}) where {T} 
+        length(tt) != size(yy, 2) && throw(DimensionMismatch("length(tt) != size(yy, 2)"))
+        new{T}(tt, yy) 
+    end    
+end
+
+length(X::VSamplePath) = length(X.tt)
+
 # separate a Zip2
 sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} = 
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
@@ -85,7 +97,7 @@ type Increments{S<:AbstractPath}
     X::S
 end
 start(dX::Increments) = 1
-next(dX::Increments, i) = (i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[i+1]-dX.X.yy[i]), i + 1
+next(dX::Increments, i) = (i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[.., i+1]-dX.X.yy[.., i]), i + 1
 done(dX::Increments, i) = i + 1 > length(dX.X.tt)
 increments(X::AbstractPath) = Increments(X)
 
