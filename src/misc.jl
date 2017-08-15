@@ -1,8 +1,8 @@
 export supnorm, @_isdefined
 """
-    cumsum0
+    cumsum0(x)
 
-Cumulative sum starting at 0, 
+Cumulative sum starting at 0 such that `cumsum0(diff(x)) ≈ x`.
 """
 function cumsum0(dx::Vector)
         n = length(dx) + 1
@@ -32,6 +32,7 @@ end
 
 """
     outer(x[, y])
+    
 Short-hand for quadratic form xx' (or xy').
 """
 outer(x) = x*x'
@@ -39,6 +40,7 @@ outer(x,y) = x*y'
 
 """
     inner(x[, y])
+
 Short-hand for quadratic form x'x (or x'y).
 """
 inner(x) = dot(x,x)
@@ -46,12 +48,10 @@ inner(x,y) = dot(x,y)
 
 
 """
-    mat(X::SamplePath{SVector}) 
     mat(yy::Vector{SVector})
 
 Reinterpret `X` or `yy` to an array without change in memory.
 """
-mat(X::SamplePath{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, X.yy), d, length(X.yy))
 mat(yy::Vector{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, yy), d, length(yy))
 
 unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1),T}, A[:])

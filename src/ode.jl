@@ -55,9 +55,6 @@ function kernelbs3(f, t, y, dt, P, k = f(t, y, P))
 end
 
 @inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
-@inline _F(t, v, P) = B(t, P)*v + β(t, P)
-@inline _F(t, v, F::Function) = F(t, v)
-
 
 """
     gpK!(K::SamplePath, P)

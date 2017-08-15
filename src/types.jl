@@ -104,3 +104,15 @@ next(dX::Increments, i) = (i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[.., i
 done(dX::Increments, i) = i + 1 > length(dX.X.tt)
 increments(X::AbstractPath) = Increments(X)
 
+# Interoperatibility SDEs
+
+b!(t, u, du, fg::Tuple{Function,Function}) = fg[1](t, u, du)
+σ!(t, u, dw, dm, fg::Tuple{Function,Function}) = fg[2](t, u, dw, dm)
+b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
+σ(t, x, fg::Tuple{Function,Function}) = fg[2](t, x)
+
+# Interoperatibility ODEs
+
+@inline _F(t, x, P) = B(t, P)*x + β(t, P)
+@inline _F(t, x, F::Function) = F(t, x)
+@inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)
