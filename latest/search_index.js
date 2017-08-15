@@ -169,6 +169,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Bridge.solve",
+    "page": "Bridge.jl",
+    "title": "Bridge.solve",
+    "category": "Function",
+    "text": "solve!(method::SDESolver, Y, u, W::SamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method in place.\n\n\n\nsolve!(method::SDESolver, Y, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method in place.\n\n\n\n"
+},
+
+{
     "location": "index.html#Bridge.euler",
     "page": "Bridge.jl",
     "title": "Bridge.euler",
@@ -197,7 +205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Stochastic differential equations",
     "category": "section",
-    "text": "sample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\neuler\neuler!\nthetamethod"
+    "text": "sample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nthetamethod"
 },
 
 {
