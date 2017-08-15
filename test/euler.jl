@@ -39,6 +39,7 @@ VX2 = VSamplePath(tt, copy(VW.yy))
 Bridge.solve!(Bridge.EulerMaruyama!(), VX, vx, VW, VLorenz())
 Bridge.solve!(Bridge.EulerMaruyama(), VX2, vx, VW, VLorenz())
 
+Bridge.solve(Bridge.EulerMaruyama!(), zeros(3), VW, Wiener())
 
 ######
 

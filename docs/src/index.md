@@ -38,6 +38,7 @@ ito
 girsanov
 lp
 llikelihood
+solve
 euler
 euler!
 thetamethod

@@ -157,6 +157,25 @@ function mdb!(Y, u, W::SamplePath, P)
     Y
 end
 
+
+"""
+    solve!(method::SDESolver, Y, u, W::SamplePath, P) -> X
+  
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+using `method` in place.
+"""
+solve(method::SDESolver, u::T, W::SamplePath, P::ContinuousTimeProcess) where {T} =
+    solve!(method, SamplePath{T}(W.tt, Vector{T}[zero(u) for t in W.tt]), u, W, P)
+
+"""
+    solve!(method::SDESolver, Y, u, W::VSamplePath, P) -> X
+  
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+using `method` in place.
+"""
+solve(method::SDESolver, u, W::VSamplePath{T}, P::ContinuousTimeProcess) where {T} =
+    solve!(method, VSamplePath(W.tt, zeros(T, size(u)..., length(W.tt))), u, W, P)
+
 """
     solve!(::EulerMaruyama, Y, u, W, P) -> X
   
@@ -201,7 +220,7 @@ function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess
     yy[.., N] = y
     Y
 end
-function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
+function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ContinuousTimeProcess) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 

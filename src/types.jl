@@ -43,6 +43,9 @@ struct SamplePath{T} <: AbstractPath{T}
     SamplePath{T}(tt, yy) where {T} = new(tt, yy)
 end
 SamplePath(tt, yy::Vector{T}) where {T} = SamplePath{T}(tt, yy)
+
+
+
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))
 length(X::SamplePath) = length(X.tt)
 

@@ -19,10 +19,10 @@ export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaP
 export mcstart, mcnext, mcbandmean, mcband
 
 # euler
-export SDESolver, Euler, bridge!, bridge
+export SDESolver, Euler, bridge!, bridge, solve, solve!
 
 # ode
-export solve!, solvebackward!, ODESolver, RS3
+export solve, solve!, solvebackward!, ODESolver, RS3
 
 # guip
 export LeftRule
