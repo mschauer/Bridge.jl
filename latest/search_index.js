@@ -497,11 +497,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Bridge.Increments",
+    "page": "Bridge.jl",
+    "title": "Bridge.Increments",
+    "category": "Type",
+    "text": "Increments{S<:AbstractPath{T}}\n\nIterator over the increments of an AbstractPath.  Iterates over (i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i]).\n\n\n\n"
+},
+
+{
     "location": "index.html#Unsorted-1",
     "page": "Bridge.jl",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments"
 },
 
 ]}
