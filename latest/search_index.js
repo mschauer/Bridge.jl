@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.cumsum0",
     "category": "Function",
-    "text": "cumsum0\n\nCumulative sum starting at 0, \n\n\n\n"
+    "text": "cumsum0(x)\n\nCumulative sum starting at 0 such that cumsum0(diff(x)) ≈ x.\n\n\n\n"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Bridge.jl",
     "title": "Bridge.mat",
     "category": "Function",
-    "text": "mat(X::SamplePath{SVector}) \nmat(yy::Vector{SVector})\n\nReinterpret X or yy to an array without change in memory.\n\n\n\n"
+    "text": "mat(yy::Vector{SVector})\n\nReinterpret X or yy to an array without change in memory.\n\n\n\n"
 },
 
 {
