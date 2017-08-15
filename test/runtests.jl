@@ -11,3 +11,4 @@ include("linpro.jl")
 include("timechange.jl")
 include("uniformscaling.jl")
 include("gamma.jl")
+include("with_srand.jl") #run last
