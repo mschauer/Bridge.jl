@@ -2,6 +2,8 @@
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://mschauer.github.io/Bridge.jl/latest/)
 [![Latest](https://img.shields.io/badge/docs-stable-blue.svg)](https://mschauer.github.io/Bridge.jl/stable/)
 
+![Logo](https://mschauer.github.io/Bridge.jl/bridgelogo.gif)
+
 # Bridge.jl
  
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
