@@ -164,7 +164,7 @@ end
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using `method` in place.
 """
-solve(method::SDESolver, u::T, W::SamplePath, P::ContinuousTimeProcess) where {T} =
+solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T} =
     solve!(method, SamplePath{T}(W.tt, Vector{T}[zero(u) for t in W.tt]), u, W, P)
 
 """
@@ -173,7 +173,7 @@ solve(method::SDESolver, u::T, W::SamplePath, P::ContinuousTimeProcess) where {T
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using `method` in place.
 """
-solve(method::SDESolver, u, W::VSamplePath{T}, P::ContinuousTimeProcess) where {T} =
+solve(method::SDESolver, u, W::VSamplePath{T}, P::ProcessOrCoefficients) where {T} =
     solve!(method, VSamplePath(W.tt, zeros(T, size(u)..., length(W.tt))), u, W, P)
 
 """
@@ -182,7 +182,7 @@ solve(method::SDESolver, u, W::VSamplePath{T}, P::ContinuousTimeProcess) where {
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using the Euler-Maruyama scheme in place.
 """
-function solve!(::EulerMaruyama, Y, u, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
+function solve!(::EulerMaruyama, Y, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 
@@ -202,7 +202,7 @@ function solve!(::EulerMaruyama, Y, u, W::SamplePath, P::ContinuousTimeProcess{T
 end
 
 # fallback method
-function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess{T}) where {T}
+function solve!(::EulerMaruyama, Y, u::T, W::AbstractPath, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 
@@ -220,7 +220,7 @@ function solve!(::EulerMaruyama, Y, u, W::AbstractPath, P::ContinuousTimeProcess
     yy[.., N] = y
     Y
 end
-function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ContinuousTimeProcess) where {T}
+function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 

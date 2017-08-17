@@ -10,6 +10,8 @@ a similar role as distribution types like `Exponential` in the package
 `Distributions`.
 """
 abstract type ContinuousTimeProcess{T} end
+const ProcessOrCoefficients = Union{ContinuousTimeProcess,Tuple{Function,Function}}
+
 abstract type AbstractPath{T} end
 
 """
