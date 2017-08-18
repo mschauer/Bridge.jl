@@ -13,6 +13,14 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Home",
     "category": "section",
+    "text": ""
+},
+
+{
+    "location": "index.html#Summary-1",
+    "page": "Home",
+    "title": "Summary",
+    "category": "section",
     "text": "Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.The key objects introduced are the abstract type ContinuousTimeProcess{T} parametrised by the state space of the path, for example T == Float64 and various structs suptyping it, for example Wiener{Float64} for a real Brownian motion. These play roughly a similar role as types subtyping Distribution in the Distributions.jl package.Secondly, the struct struct SamplePath{T}\n    tt::Vector{Float64}\n    yy::Vector{T}\n    SamplePath{T}(tt, yy) where {T} = new(tt, yy)\nendserves as container for sample path returned by direct and approximate samplers (sample, euler, ...). tt is the vector of the grid points of the simulation and yy the corresponding vector of states.Help is available at the REPL:help?> euler\nsearch: euler euler! eulergamma default_worker_pool schedule @schedule\n\n  euler(u, W, P) -> X\n\n  Solve stochastic differential equation ``dX_t = b(t, X_t)dt + σ(t, X_t)dW_t, X_0 = u``\n  using the Euler scheme.Pre-defined processes defined are Wiener, WienerBridge, Gamma, LinPro (linear diffusion/generalized Ornstein-Uhlenbeck) and others."
 },
 
@@ -21,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Features",
     "category": "section",
-    "text": "Define and simulate diffusion processes in one or more dimension\nContinuous and discrete likelihood using Girsanovs theorem and transition densities\nMonte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T\nBrownian motion in one and more dimensions\nOrnstein-Uhlenbeck processes\nBessel processes\nGamma processes\nBasic stochastic calculus functionality (Ito integral, quadratic variation)\nEuler-Scheme and implicit methods (Rungekutta)The layout/api was originally written to be compatible with Simon Danisch's package FixedSizeArrays.jl. It was refactored to be compatible with StaticArrays.jl by Dan Getz.The example programs in the example/directory have additional dependencies: ConjugatePriors and a plotting library."
+    "text": "Define and simulate diffusion processes in one or more dimension\nContinuous and discrete likelihood using Girsanovs theorem and transition densities\nMonte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T\nBrownian motion in one and more dimensions\nOrnstein-Uhlenbeck processes\nBessel processes\nGamma processes\nBasic stochastic calculus functionality (Ito integral, quadratic variation)\nEuler-Scheme and implicit methods (Runge-Kutta)The layout/api was originally written to be compatible with Simon Danisch's package FixedSizeArrays.jl. It was refactored to be compatible with StaticArrays.jl by Dan Getz.The example programs in the example/directory have additional dependencies: ConjugatePriors and a plotting library."
 },
 
 {
@@ -41,11 +49,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual.html#Defining-and-simulating-a-new-process-1",
+    "location": "manual.html#Define-and-simulate-a-stochastic-process-1",
     "page": "Manual",
-    "title": "Defining and simulating a new process",
+    "title": "Define and simulate a stochastic process",
     "category": "section",
-    "text": "In this section, a Ornstein-Uhlenbeck process    mathrmd X_t = - mathrmdt + mathrmd W_tis defined and a sample path generated in three steps."
+    "text": "In this section, an Ornstein-Uhlenbeck process is defined by the stochastic differential equation    mathrmd X_t = - mathrmdt + mathrmd W_tqquad(1)and a sample path is generated in three steps."
 },
 
 {
@@ -53,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Step 1. Define a diffusion process OrnsteinUhlenbeck.",
     "category": "section",
-    "text": "using Bridge\nstruct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}\n    β::Float64 # drift parameter (also known as inverse relaxation time)\n    σ::Float64 # diffusion parameter\n    function OrnsteinUhlenbeck(β::Float64, σ::Float64)\n        isnan(β) || β > 0. || error(\"Parameter β must be positive.\")\n        isnan(σ) || σ > 0. || error(\"Parameter σ must be positive.\")\n        new(β, σ)\n    end\nend\n\n# output\n"
+    "text": "The new struct OrnsteinUhlenbeck is a subtype ContinuousTimeProcess{Float64} indicating that the Ornstein-Uhlenbeck process has Float64-valued trajectories.using Bridge\nstruct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}\n    β::Float64 # drift parameter (also known as inverse relaxation time)\n    σ::Float64 # diffusion parameter\n    function OrnsteinUhlenbeck(β::Float64, σ::Float64)\n        isnan(β) || β > 0. || error(\"Parameter β must be positive.\")\n        isnan(σ) || σ > 0. || error(\"Parameter σ must be positive.\")\n        new(β, σ)\n    end\nend\n\n# output\n"
 },
 
 {
@@ -61,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Step 2. Define drift and diffusion coefficient.",
     "category": "section",
-    "text": "b is the dependend drift, σ the dispersion coefficient and a the diffusion coefficient. These functions expect a time t, a location x and are dispatch on the type of the process P.Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β*x\nBridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ\nBridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2\n\n# output\n"
+    "text": "b is the dependend drift, σ the dispersion coefficient and a the diffusion coefficient. These functions expect a time t, a location x and are dispatch on the type of the process P. In this case their values are constants provided by the P argument.Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β * x\nBridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ\nBridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2\n\n# output\n"
 },
 
 {
@@ -69,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Step 3. Simulate OrnsteinUhlenbeck process using the Euler scheme.",
     "category": "section",
-    "text": "Generate a driving Brownian motion W.srand(1)\nW = sample(0:0.1:1, Wiener())\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])Generate a solution X using the Euler()-scheme.X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])DocTestSetup = quote\n    using Bridge\nend"
+    "text": "Generate the driving Brownian motion W of the stochastic differential equation (1) with sample. Thefirst argument is the time grid, the second arguments specifies a Float64-valued Brownian motion/Wiener process.srand(1)\nW = sample(0:0.1:1, Wiener())\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])The output is a SamplePath object assigned to W. It contains time grid W.tt and the sampled values W.yy.Generate a solution X using the Euler()-scheme, using time grid W.tt. The arguments are starting point 0.1, driving Brownianmotion W and the OrnsteinUhlenbeck process with parameters β = 20.0 and σ = 1.0.X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])This returns a SamplePath of the solution.DocTestSetup = quote\n    using Bridge\nend"
 },
 
 {
@@ -77,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Tutorials and Notebooks",
     "category": "section",
-    "text": "A detailed tutorial script: ./example/tutorial.jlA nice notebook detailing the generation of the logo:  ./example/Bridge+Logo.ipynb"
+    "text": "A detailed tutorial script: ./example/tutorial.jlA nice notebook detailing the generation of the logo using ordinary and stochastic differential equations:  ./example/Bridge+Logo.ipynb"
 },
 
 {
