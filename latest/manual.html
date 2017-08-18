@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Manual · Bridge.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="index.html"><img class="logo" src="assets/logo.png" alt="Bridge.jl logo"/></a><h1>Bridge.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" action="search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="index.html">Home</a></li><li class="current"><a class="toctext" href="manual.html">Manual</a><ul class="internal"><li><a class="toctext" href="#Defining-and-simulating-a-new-process-1">Defining and simulating a new process</a></li><li><a class="toctext" href="#Tutorials-and-Notebooks-1">Tutorials and Notebooks</a></li></ul></li><li><a class="toctext" href="library.html">Library</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href="manual.html">Manual</a></li></ul><a class="edit-page" href="https://github.com/mschauer/Bridge.jl/tree/a5c274e61611aeacd809e71779ae949765058eea/docs/src/manual.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Manual</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Manual-1" href="#Manual-1">Manual</a></h1><h2><a class="nav-anchor" id="Defining-and-simulating-a-new-process-1" href="#Defining-and-simulating-a-new-process-1">Defining and simulating a new process</a></h2><p>In this section, a Ornstein-Uhlenbeck process</p><div>\[    \mathrm{d} X_t = -β \mathrm{d}t + \mathrm{d} W_t\]</div><p>is defined and a sample path generated in three steps.</p><h3><a class="nav-anchor" id="Step-1.-Define-a-diffusion-process-OrnsteinUhlenbeck.-1" href="#Step-1.-Define-a-diffusion-process-OrnsteinUhlenbeck.-1">Step 1. Define a diffusion process <code>OrnsteinUhlenbeck</code>.</a></h3><pre><code class="language-julia">using Bridge
+struct OrnsteinUhlenbeck  &lt;: ContinuousTimeProcess{Float64}
+    β::Float64 # drift parameter (also known as inverse relaxation time)
+    σ::Float64 # diffusion parameter
+    function OrnsteinUhlenbeck(β::Float64, σ::Float64)
+        isnan(β) || β &gt; 0. || error(&quot;Parameter β must be positive.&quot;)
+        isnan(σ) || σ &gt; 0. || error(&quot;Parameter σ must be positive.&quot;)
+        new(β, σ)
+    end
+end
+
+# output
+</code></pre><h3><a class="nav-anchor" id="Step-2.-Define-drift-and-diffusion-coefficient.-1" href="#Step-2.-Define-drift-and-diffusion-coefficient.-1">Step 2. Define drift and diffusion coefficient.</a></h3><p><code>b</code> is the dependend drift, <code>σ</code> the dispersion coefficient and <code>a</code> the diffusion coefficient. These functions expect a time <code>t</code>, a location <code>x</code> and are dispatch on the type of the process <code>P</code>.</p><pre><code class="language-julia">Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β*x
+Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
+Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
+
+# output
+</code></pre><h3><a class="nav-anchor" id="Step-3.-Simulate-OrnsteinUhlenbeck-process-using-the-Euler-scheme.-1" href="#Step-3.-Simulate-OrnsteinUhlenbeck-process-using-the-Euler-scheme.-1">Step 3. Simulate <code>OrnsteinUhlenbeck</code> process using the Euler scheme.</a></h3><p>Generate a driving Brownian motion <code>W</code>.</p><pre><code class="language-julia">srand(1)
+W = sample(0:0.1:1, Wiener())
+
+# output
+
+Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])</code></pre><p>Generate a solution <code>X</code> using the <code>Euler()</code>-scheme.</p><pre><code class="language-julia">X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));
+
+# output
+
+Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])</code></pre><h2><a class="nav-anchor" id="Tutorials-and-Notebooks-1" href="#Tutorials-and-Notebooks-1">Tutorials and Notebooks</a></h2><p>A detailed tutorial script: <a href="https://www.github.com/mschauer/Bridge.jl/example/tutorial.jl">./example/tutorial.jl</a></p><p>A nice notebook detailing the generation of the logo:  <a href="https://github.com/mschauer/Bridge.jl/blob/master/example/Bridge%2BLogo.ipynb">./example/Bridge+Logo.ipynb</a></p><footer><hr/><a class="previous" href="index.html"><span class="direction">Previous</span><span class="title">Home</span></a><a class="next" href="library.html"><span class="direction">Next</span><span class="title">Library</span></a></footer></article></body></html>
