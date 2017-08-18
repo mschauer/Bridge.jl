@@ -165,7 +165,7 @@ Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t``
 using `method` in place.
 """
 solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T} =
-    solve!(method, SamplePath{T}(W.tt, Vector{T}[zero(u) for t in W.tt]), u, W, P)
+    solve!(method, SamplePath{T}(W.tt, T[zero(u) for t in W.tt]), u, W, P)
 
 """
     solve!(method::SDESolver, Y, u, W::VSamplePath, P) -> X

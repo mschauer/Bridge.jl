@@ -6,6 +6,11 @@ makedocs(
     format = :html,
     sitename = "Bridge.jl",
     authors = "Moritz Schauer and contributors",
+    pages = Any[ # Compat: `Any` for 0.4 compat
+        "Home" => "index.md",
+        "Manual" => "manual.md",
+        "Library" => "library.md",
+        ],
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.

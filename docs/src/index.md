@@ -1,116 +1,48 @@
-# Bridge.jl
+# Home
+ 
+Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
 
-Documentation for Bridge.jl
+The key objects introduced are the abstract type `ContinuousTimeProcess{T}` parametrised by the state space of the path, for example `T == Float64` and various `structs` suptyping it, for example `Wiener{Float64}` for a real Brownian motion. These play roughly a similar role as types subtyping `Distribution` in the Distributions.jl package.
 
-## Important concepts
+Secondly, the struct 
+```julia
+struct SamplePath{T}
+    tt::Vector{Float64}
+    yy::Vector{T}
+    SamplePath{T}(tt, yy) where {T} = new(tt, yy)
+end
+```
+serves as container for sample path returned by direct and approximate samplers (`sample`, `euler`, ...).
+`tt` is the vector of the grid points of the simulation and `yy` the corresponding vector of states.
 
-```@docs
-ContinuousTimeProcess{T}
-SamplePath{T}
-valtype
+Help is available at the REPL:
+```
+help?> euler
+search: euler euler! eulergamma default_worker_pool schedule @schedule
+
+  euler(u, W, P) -> X
+
+  Solve stochastic differential equation ``dX_t = b(t, X_t)dt + σ(t, X_t)dW_t, X_0 = u``
+  using the Euler scheme.
 ```
 
-## Ordinary differential equations and quadrature
+Pre-defined processes defined are
+`Wiener`, `WienerBridge`, `Gamma`, `LinPro` (linear diffusion/generalized Ornstein-Uhlenbeck) and others.
 
-```@docs
-Bridge.ODESolver
-solve!
-Bridge.R3
-Bridge.BS3
-LeftRule
-```
+## Features
 
-## Brownian motion
+- Define and simulate diffusion processes in one or more dimension
+- Continuous and discrete likelihood using Girsanovs theorem and transition densities
+- Monte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T
+- Brownian motion in one and more dimensions
+- Ornstein-Uhlenbeck processes
+- Bessel processes
+- Gamma processes
+- Basic stochastic calculus functionality (Ito integral, quadratic variation)
+- Euler-Scheme and implicit methods (Rungekutta)
 
-```@autodocs
-Modules = [Bridge]
-Pages = ["/wiener.jl"]
-```
+The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
 
-## Stochastic differential equations
-
-```@docs
-sample
-sample!
-quvar
-bracket
-ito
-girsanov
-lp
-llikelihood
-solve
-euler
-euler!
-thetamethod
-```
-
-## Levy processes
-```@docs
-GammaProcess
-Bridge.nu 
-```
-
-## Miscellaneous
-
-```@docs
-Bridge.endpoint!
-Bridge.inner
-Bridge.cumsum0
-Bridge.mat
-Bridge.outer
-CSpline
-Bridge.integrate 
-Bridge.logpdfnormal
-```
-
-## Online statistics
-
-Online updating of the tuple `state = (m, m2, n)` where
-
-`m` - `mean(x[1:n])`
-
-`m2` - sum of squares of differences from the current mean, ``\textstyle\sum_{i=1}^n (x_i - \bar x_n)^2``
-
-`n` - number of iterations
-
-```@docs
-mcstart
-mcnext
-mcband
-mcbandmean
-```
-
-## Linear Processes
-
-```@docs
-LinPro
-Bridge.Ptilde
-```
+The example programs in the example/directory have additional dependencies: ConjugatePriors and a plotting library.
 
 
-## Bridges
-
-```@docs
-GuidedProp
-Bridge.GuidedBridge
-bridge
-Bridge.Vs
-Bridge.mdb 
-Bridge.mdb!
-Bridge.r
-Bridge.gpK! 
-```
-
-## Unsorted
-
-```@docs
-LocalGammaProcess
-Bridge.compensator0 
-Bridge.compensator
-Bridge.θ 
-Bridge.soft
-Bridge.tofs
-Bridge.dotVs
-Bridge.SDESolver
-Bridge.Increments
-```
