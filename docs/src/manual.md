@@ -6,10 +6,12 @@ In this section, an Ornstein-Uhlenbeck process is defined by the
 stochastic differential equation
 
 ```math
-    \mathrm{d} X_t = -β \mathrm{d}t + \mathrm{d} W_t\qquad(1)
+    \mathrm{d} X_t = -β\, \mathrm{d}t + σ\, \mathrm{d} W_t\qquad(1)
 ```
 
 and a sample path is generated in three steps.
+`β::Float64` is the mean reversion parameter 
+and `σ::Float64` is the diffusion parameter.
 
 ### Step 1. Define a diffusion process `OrnsteinUhlenbeck`.
 
@@ -19,8 +21,8 @@ The new struct `OrnsteinUhlenbeck` is a subtype `ContinuousTimeProcess{Float64}`
 ```jldoctest OrnsteinUhlenbeck
 using Bridge
 struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
-    β::Float64 # drift parameter (also known as inverse relaxation time)
-    σ::Float64 # diffusion parameter
+    β::Float64
+    σ::Float64 
     function OrnsteinUhlenbeck(β::Float64, σ::Float64)
         isnan(β) || β > 0. || error("Parameter β must be positive.")
         isnan(σ) || σ > 0. || error("Parameter σ must be positive.")
@@ -63,7 +65,7 @@ Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.
 The output is a `SamplePath` object assigned to `W`. It contains time grid `W.tt` and the sampled values `W.yy`.
 
 Generate a solution `X` using the `Euler()`-scheme, using time grid `W.tt`. The arguments are
-starting point `0.1`, driving Brownianmotion `W` and the `OrnsteinUhlenbeck` process with parameters `β = 20.0` and
+starting point `0.1`, driving Brownian motion `W` and the `OrnsteinUhlenbeck` object with parameters `β = 20.0` and
 `σ = 1.0`.
 
 ```jldoctest OrnsteinUhlenbeck
@@ -87,5 +89,5 @@ end
 A detailed tutorial script:
 [./example/tutorial.jl](https://www.github.com/mschauer/Bridge.jl/example/tutorial.jl)
 
-A nice notebook detailing the generation of the logo using ordinary and stochastic differential equations: 
+A nice notebook detailing the generation of the logo using ordinary and stochastic differential equations (and, in fact, *diffusion bridges* (sic) to create a seemless loop):
 [./example/Bridge+Logo.ipynb](https://github.com/mschauer/Bridge.jl/blob/master/example/Bridge%2BLogo.ipynb)
