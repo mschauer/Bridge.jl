@@ -1,5 +1,6 @@
-srand(joinpath(@__DIR__,"SEED"),1)
 include(joinpath("..", "docs", "make.jl"))
+
+srand(joinpath(@__DIR__,"SEED"),1)
 
 include("wiener.jl")
 include("diffusion.jl")
