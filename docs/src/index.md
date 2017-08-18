@@ -1,4 +1,6 @@
 # Home
+
+## Summary
  
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
 
@@ -39,7 +41,7 @@ Pre-defined processes defined are
 - Bessel processes
 - Gamma processes
 - Basic stochastic calculus functionality (Ito integral, quadratic variation)
-- Euler-Scheme and implicit methods (Rungekutta)
+- Euler-Scheme and implicit methods (Runge-Kutta)
 
 The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
 

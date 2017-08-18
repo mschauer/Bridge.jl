@@ -1,16 +1,20 @@
 # Manual
 
-## Defining and simulating a new process
+## Define and simulate a stochastic process
 
-In this section, a Ornstein-Uhlenbeck process
+In this section, an Ornstein-Uhlenbeck process is defined by the
+stochastic differential equation
 
 ```math
-    \mathrm{d} X_t = -β \mathrm{d}t + \mathrm{d} W_t
+    \mathrm{d} X_t = -β \mathrm{d}t + \mathrm{d} W_t\qquad(1)
 ```
 
-is defined and a sample path generated in three steps.
+and a sample path is generated in three steps.
 
 ### Step 1. Define a diffusion process `OrnsteinUhlenbeck`.
+
+The new struct `OrnsteinUhlenbeck` is a subtype `ContinuousTimeProcess{Float64}` indicating that the Ornstein-Uhlenbeck process has
+`Float64`-valued trajectories.
 
 ```jldoctest OrnsteinUhlenbeck
 using Bridge
@@ -32,10 +36,10 @@ end
 
 `b` is the dependend drift, `σ` the dispersion coefficient and `a` the
 diffusion coefficient. These functions expect a time `t`, a location `x`
-and are dispatch on the type of the process `P`.
+and are dispatch on the type of the process `P`. In this case their values are constants provided by the `P` argument.
 
 ```jldoctest OrnsteinUhlenbeck
-Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β*x
+Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β * x
 Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
 Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
@@ -45,7 +49,7 @@ Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 ### Step 3. Simulate `OrnsteinUhlenbeck` process using the Euler scheme.
 
-Generate a driving Brownian motion `W`.
+Generate the driving Brownian motion `W` of the stochastic differential equation (1) with `sample`. Thefirst argument is the time grid, the second arguments specifies a `Float64`-valued Brownian motion/Wiener process.
 
 ```jldoctest OrnsteinUhlenbeck
 srand(1)
@@ -56,7 +60,11 @@ W = sample(0:0.1:1, Wiener())
 Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])
 ```
 
-Generate a solution `X` using the `Euler()`-scheme.
+The output is a `SamplePath` object assigned to `W`. It contains time grid `W.tt` and the sampled values `W.yy`.
+
+Generate a solution `X` using the `Euler()`-scheme, using time grid `W.tt`. The arguments are
+starting point `0.1`, driving Brownianmotion `W` and the `OrnsteinUhlenbeck` process with parameters `β = 20.0` and
+`σ = 1.0`.
 
 ```jldoctest OrnsteinUhlenbeck
 X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));
@@ -65,6 +73,8 @@ X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));
 
 Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])
 ```
+
+This returns a `SamplePath` of the solution.
 
 ```@meta
 DocTestSetup = quote
@@ -77,5 +87,5 @@ end
 A detailed tutorial script:
 [./example/tutorial.jl](https://www.github.com/mschauer/Bridge.jl/example/tutorial.jl)
 
-A nice notebook detailing the generation of the logo: 
+A nice notebook detailing the generation of the logo using ordinary and stochastic differential equations: 
 [./example/Bridge+Logo.ipynb](https://github.com/mschauer/Bridge.jl/blob/master/example/Bridge%2BLogo.ipynb)
