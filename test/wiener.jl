@@ -1,15 +1,15 @@
 using Bridge, StaticArrays
 using Base.Test
-SV = SVector{2,Float64}
+SV2 = SVector{2,Float64}
 
 @test let # functions callable
     tt = linspace(0, 1, 100)
    
-    sample(tt, Wiener{SV}())
-    sample!(SamplePath{SV}(collect(tt), zeros(SV, 100)), Wiener{SV}())
-    sample(tt, WienerBridge{SV}(1.0, SVector(2.0, -2.0)))
-    sample!(SamplePath{SV}(collect(tt), zeros(SV, 100)), WienerBridge{SV}(1.0, SVector(2.0, -2.0)))
-    euler!(sample(tt,  Wiener{SV}()), SVector(1.1, 1.0), sample(tt, Wiener{SV}()), Wiener{SV}())
+    sample(tt, Wiener{SV2}())
+    sample!(SamplePath{SV2}(collect(tt), zeros(SV2, 100)), Wiener{SV2}())
+    sample(tt, WienerBridge{SV2}(1.0, SVector(2.0, -2.0)))
+    sample!(SamplePath{SV2}(collect(tt), zeros(SV2, 100)), WienerBridge{SV2}(1.0, SVector(2.0, -2.0)))
+    solve(Euler(), SVector(1.1, 1.0), sample(tt, Wiener{SV2}()), Wiener{SV2}())
 
     sample(tt, Wiener())
     sample(tt, WienerBridge(1.0, 1.0))
@@ -43,8 +43,8 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 
 # mean and covariance of vector brownian motion
 
-@test norm(SVector(5.0,2.0) - mean([sample(linspace(0.0,2.0,5),Wiener{SV}(),SVector(5.0,2.0)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
-@test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SV}(),SVector(5.0,2.0)).yy[end] for i = 1:1000]), 2, true))  < 0.3
+@test norm(SVector(5.0,2.0) - mean([sample(linspace(0.0,2.0,5),Wiener{SV2}(),SVector(5.0,2.0)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
+@test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SV2}(),SVector(5.0,2.0)).yy[end] for i = 1:1000]), 2, true))  < 0.3
 
 @test Bridge.a(0.0, 0.0, Wiener()) == inv(Bridge.a(0.0, 0.0, Wiener())) == Bridge.σ(0.0, 0.0, Wiener())
 @test Bridge.a(0.0, 0.0, WienerBridge(1.0, 0.0)) == inv(Bridge.a(0.0, 0.0, WienerBridge(1.0, 0.0))) == 

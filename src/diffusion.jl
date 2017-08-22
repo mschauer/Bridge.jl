@@ -54,7 +54,7 @@ end
 """
     quvar(X)
              
-Computes quadratic variation of `X`.
+Computes the (realized) quadratic variation of the path `X`.
 """
 function quvar(X::SamplePath{T}) where T
         s = zero(T)*zero(T)'
@@ -83,7 +83,7 @@ end
 """
     ito(Y, X)
 
-Integrate a valued stochastic process with respect to a stochastic differential.
+Integrate a stochastic process `Y` with respect to a stochastic differential `dX`.
 """
 function ito(X::SamplePath, W::SamplePath{T}) where T
         assert(X.tt[1] == W.tt[1])

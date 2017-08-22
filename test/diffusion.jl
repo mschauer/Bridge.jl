@@ -38,12 +38,12 @@ Bridge.b(t,x, ::Diff) = -5x
 Bridge.σ(t, x, ::Diff) = 1.
 
 
-X = [euler(0.0, brown1(0.0,1.0,1000), WienerBridge(2.0, 1.0)).yy[end] for i in 1:1000]
+X = [solve(EulerMaruyama(), 0.0, brown1(0.0,1.0,1000), WienerBridge(2.0, 1.0)).yy[end] for i in 1:1000]
 @test abs(mean(X)-0.5) < r*sqrt(2/n)
 
 
 #test (roughly) the quadratic variance of Euler approximation
-quv = [quvar(euler(0.0, brown1(0.0,1.0,1000), Diff())) for j in 1: 1000]
+quv = [quvar(solve(EulerMaruyama(), 0.0, brown1(0.0,1.0,1000), Diff())) for j in 1: 1000]
 s2 = var(quv)
 @test abs(mean(quv)-1)/sqrt(s2)*sqrt(1000) < 5.
  

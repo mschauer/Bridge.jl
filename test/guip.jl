@@ -57,7 +57,7 @@ S = @SMatrix [1.0]
 convolution(N1::Normal,N2::Normal) = Normal(mean(N1)+mean(N2), sqrt(var(N1)+var(N2)))
 EXgivenXpY(X, Y, z) = (z) * var(X) / (var(X) + var(Y))
 
-X = [euler(u, sample(tt, Wiener{SVector{2,Float64}}()),P).yy[end][1] for i in 1:m]
+X = [solve(EulerMaruyama(), u, sample(tt, Wiener{SVector{2,Float64}}()),P).yy[end][1] for i in 1:m]
 Xstat = mean(X),var(X)
 p1(s, x, t, P::VOrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s)), sqrt((0.5P.σ^2/P.β) *(1-exp(-2*P.β*(t-s)))))
 PX1 = p1(tt[1],u[1], tt[end], P)
@@ -68,7 +68,7 @@ pt= pdf(Normal(0.0, 1.0),v[1])
 p2 = pdf(Pobs,v[1])
 pt2 = pdf(Normal(0.0, sqrt(2.0)),v[1])
 
-X = euler(0.0, sample(tt, Wiener{Float64}()),P1)
+X = solve(EulerMaruyama(), 0.0, sample(tt, Wiener{Float64}()),P1)
 @test abs(girsanov(X, P1, Wiener{Float64}()) - llikelihood(X, P1) + llikelihood(X,Wiener{Float64}())) < 0.5
 
 
@@ -80,7 +80,7 @@ Po3 = PBridgeProp(P, tt[1], u, (tt[end]-tt[1])/2, 1.2v,tt[end], v, L, S, Bridge.
 
 Y = Float64[
 begin
- X = euler((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
+ X = solve(EulerMaruyama(), (@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  X.yy[end][1]*exp(llikelihood(X, Po))*pt2/p2
  end
  
@@ -89,7 +89,7 @@ begin
  
 Z = Float64[
 begin
- X = euler((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
+ X = solve(EulerMaruyama(), (@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  exp(llikelihood(X, Po))*pt2/p2
  end
  for i in 1:m]
@@ -97,15 +97,6 @@ begin
 @test abs(mean(Y-y)*sqrt(m)/std(Y)) < percentile
 @test abs(mean(Z-1)*sqrt(m)/std(Z)) < percentile
 
-
-# thetamethod 
-Z = Float64[
-begin
- X = thetamethod((@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
- exp(llikelihood(X, Po))*pt2/p2
- end
- for i in 1:m]
-@test abs(mean(Z-1)*sqrt(m)/std(Z)) < percentile
 
 ##########################################
 
@@ -138,10 +129,10 @@ cs = Bridge.CSpline(tt[1], tt[end],
     (Bridge.b(tt[end], v, P1) - Bridge.b(tt[end-1], v - Bridge.b(tt[end], v, P1)*(tt[end]-tt[end-1]), P1))/(tt[end]-tt[end-1])
 )
 
-Po = BridgeProp(P1, tt[1], u, tt[end], v, a, cs)
+Po = BridgeProp(P1, tt, (u, v), a, cs)
 Z = Float64[
     begin
-    X = euler(u, sample(tt, Wiener{Float64}()),Po)
+    X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po)
     exp(llikelihood(X, Po)) 
     end
     for i in 1:m]
@@ -197,7 +188,7 @@ push!(Cnames, "DHBridgeProp")
 Po3 = DHBridgeProp(P1, tt[1], u, tt[end], v)
 Z = Float64[
     begin
-    X = euler(u, sample(tt, Wiener{Float64}()),Po3)
+    X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po3)
     exp(llikelihood(X, Po3)) 
     end
     for i in 1:m]
@@ -216,7 +207,7 @@ L = 1.
 Po2 = PBridgeProp(P1, tt[1], u, tm, vm, tt[end], v, L, si^2, a, cs)
 Z2 = Float64[
     begin
-    X = euler(u, sample(tt, Wiener{Float64}()),Po2)
+    X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po2)
     exp(llikelihood(X, Po2)) 
     end
     for i in 1:m]

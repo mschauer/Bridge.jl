@@ -22,6 +22,7 @@ intcspline(s, T, t1, t2, p1, p2, m1, m2) = intcspline(T, t1, t2, p1, p2, m1, m2)
 struct CSpline{T}
     s; t; x::T; y::T; mx; my
 end
+
 """
     CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 = (y-x)/(t-s))
 

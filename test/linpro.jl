@@ -32,8 +32,8 @@ Bridge.gpV!(V, v, P)
 Mu = SamplePath(tt, zeros(S, length(tt)))
 Mu2 = SamplePath(tt, zeros(S, length(tt)))
 
-Bridge.solve!(Bridge.R3(), Bridge._F, Mu, u, P)
-Bridge.solve!(Bridge.BS3(), Bridge._F, Mu2, u, P)
+solve!(Bridge.R3(), Bridge._F, Mu, u, P)
+solve!(BS3(), Bridge._F, Mu2, u, P)
 @test (@allocated Bridge.gpK!(K, P)) == 0
 @test (@allocated Bridge.gpV!(V, v, P)) == 0
 @test norm(K.yy[1]*Bridge.H(t, T, P) - I) < 10/n2^3
@@ -44,7 +44,7 @@ Bridge.solve!(Bridge.BS3(), Bridge._F, Mu2, u, P)
 
 
 # Normal(mu, lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
-X = Bridge.mat(S[euler(mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
+X = Bridge.mat(S[solve(EulerMaruyama(), mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
 
 @test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
 
@@ -53,7 +53,7 @@ n = 1000
 TT = 0.5
 tt = 0.0:TT/n:TT
 
-X = euler(mu, sample(tt, Wiener{S}()),P)
+X = solve(EulerMaruyama(), mu, sample(tt, Wiener{S}()),P)
 @test supnorm(quvar(X)-TT*a) < 0.06
 
 

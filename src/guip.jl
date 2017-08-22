@@ -17,20 +17,23 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 struct BridgeProp{T} <: ContinuousTimeProcess{T}
     Target
-    t0; v0; t1; v1
+    tt::Vector{Float64}
+    v::Tuple{T,T}
     cs::CSpline{T}
     a
     Γ
-    BridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs) where T = 
-        new(Target, t0, v0, t1, v1, cs, a, inv(a))
+    BridgeProp{T}(Target::ContinuousTimeProcess{T}, tt, v, a, cs) where T = 
+        new(Target, tt, v, cs, a, inv(a))
 end
-BridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, a, cs=CSpline(t0, t1, zero(T))) where {T} = BridgeProp{T}(Target, t0, v0, t1, v1, a, cs)
+BridgeProp(Target::ContinuousTimeProcess{T}, tt, v, a, cs=CSpline(first(tt), last(tt), zero(T))) where {T} = BridgeProp{T}(Target, tt, v, a, cs)
 
-h(t,x, P::BridgeProp) = P.v1 - x -  integrate(P.cs, t,  P.t1)
+h(t,x, P::BridgeProp) = P.v[2] - x -  integrate(P.cs, t,  last(P.tt))
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P) 
+bi(i, x, P::BridgeProp) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*r(P.tt[i], x, P) 
+
 function bderiv(t, x, P::BridgeProp) 
     assert(constdiff(P))
-    bderiv(t, x, P.Target) - a(t, x, P.Target)*P.Γ/(P.t1 - t)
+    bderiv(t, x, P.Target) - a(t, x, P.Target)*P.Γ/(last(P.tt) - t)
 end    
 
 σ(t, x, P::BridgeProp) = σ(t, x, P.Target)
@@ -40,18 +43,18 @@ constdiff(P::BridgeProp) = constdiff(P.Target)
 
 btilde(t, x, P::BridgeProp) = P.cs(t)
 atilde(t, x, P::BridgeProp) = P.a
-ptilde(P::BridgeProp) = Ptilde(P.cs, σ(P.t1, P.v1, P.Target))
+ptilde(P::BridgeProp) = Ptilde(P.cs, σ(last(P.tt), P.v[2], P.Target))
 
  
 function r(t, x, P::BridgeProp) 
-    P.Γ*h(t, x, P)/(P.t1 - t)
+    P.Γ*h(t, x, P)/(last(P.tt) - t)
 end
 function H(t, x, P::BridgeProp) 
-    P.Γ/(P.t1 - t)
+    P.Γ/(last(P.tt) - t)
 end
 
 function lptilde(P::BridgeProp{T}) where T 
-    logpdfnormal(P.v1 - (P.v0 + integrate(P.cs, P.t0, P.t1)), (P.t1 -P.t0)*P.a)
+    logpdfnormal(P.v[2] - (P.v[1] + integrate(P.cs, first(P.tt), last(P.tt))), (last(P.tt) - first(P.tt))*P.a)
 end
 
 
@@ -129,7 +132,7 @@ atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
 function lptilde(P::GuidedBridge)
      lp(P.tt[1], P.v[1], P.tt[end], P.v[end], P.Pt) 
 end
-#####################
+
 
 
 struct PBridgeProp{T} <: ContinuousTimeProcess{T}

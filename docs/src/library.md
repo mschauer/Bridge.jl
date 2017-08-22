@@ -18,6 +18,7 @@ Bridge.BS3
 LeftRule
 ```
 
+
 ## Brownian motion
 
 ```@autodocs
@@ -39,12 +40,18 @@ llikelihood
 solve
 euler
 euler!
-thetamethod
+EulerMaruyama
+Euler
+StochasticRungeKutta
+StochasticHeun
 ```
 
 ## Levy processes
 ```@docs
 GammaProcess
+GammaBridge
+Bridge.ExpCounting
+Bridge.CompoundPoisson
 Bridge.nu 
 ```
 
@@ -91,12 +98,12 @@ Bridge.Ptilde
 ```@docs
 GuidedProp
 Bridge.GuidedBridge
+Bridge.Mdb
 bridge
+bridge!
 Bridge.Vs
-Bridge.mdb 
-Bridge.mdb!
 Bridge.r
-Bridge.gpK! 
+Bridge.gpK!
 ```
 
 ## Unsorted

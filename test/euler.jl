@@ -36,10 +36,10 @@ W = sample(tt, Wiener{SV3}())
 VW = VSamplePath(tt, Bridge.mat(W.yy))
 VX = VSamplePath(tt, copy(VW.yy))
 VX2 = VSamplePath(tt, copy(VW.yy))
-Bridge.solve!(Bridge.EulerMaruyama!(), VX, vx, VW, VLorenz())
-Bridge.solve!(Bridge.EulerMaruyama(), VX2, vx, VW, VLorenz())
+solve!(EulerMaruyama!(), VX, vx, VW, VLorenz())
+solve!(EulerMaruyama(), VX2, vx, VW, VLorenz())
 
-Bridge.solve(Bridge.EulerMaruyama!(), zeros(3), VW, Wiener())
+solve(EulerMaruyama!(), zeros(3), VW, Wiener())
 
 ######
 
@@ -51,14 +51,14 @@ Bridge.σ(t, u, ::Lorenz) = 3.0I
 
 
 u = SVector{3}(vx)
-X = Bridge.euler(u, W, Lorenz())
+X = solve(EulerMaruyama(), u, W, Lorenz())
 X2 = copy(X)
 X3 = copy(X)
 
-Bridge.solve!(Euler(), X, u, W, Lorenz())
-Bridge.euler!(X2, u, W, Lorenz())
-invoke(Bridge.solve!, Tuple{Bridge.EulerMaruyama,Any,SVector{3,Float64},Bridge.AbstractPath,Lorenz},
-Bridge.EulerMaruyama(), X3, u, W, Lorenz())
+solve!(Euler(), X, u, W, Lorenz())
+solve!(EulerMaruyama(), X2, u, W, Lorenz())
+invoke(solve!, Tuple{EulerMaruyama,Any,SVector{3,Float64},Bridge.AbstractPath,Lorenz},
+EulerMaruyama(), X3, u, W, Lorenz())
 
 @test maximum(abs.(VW.yy - Bridge.mat(W.yy))) < eps()
 

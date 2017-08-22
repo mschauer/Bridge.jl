@@ -53,9 +53,9 @@ end
 
 ubridge(W, Po) = ubridge!(copy(W), W, Po)
 function ubridge!(X, W::SamplePath{T}, Po) where T
-    T1 = Po.t0
-    T2 = Po.t1
-    v = Po.v1
+    T1 = Po.tt[1]
+    T2 = Po.tt[end]
+    v = Po.v[2]
     Pt = ptilde(Po)
     N = length(W)
     N != length(X) && error("X and W differ in length.")
@@ -67,7 +67,7 @@ function ubridge!(X, W::SamplePath{T}, Po) where T
    
     
 
-    u = uofx(T1, Po.v0, T1, T2, v, Pt)
+    u = uofx(T1, Po.v[1], T1, T2, v, Pt)
    
     for i in 1:N-1
         s = ss[i]
@@ -139,9 +139,9 @@ end
 function ullikelihood(Y::SamplePath{T}, Po) where T
     yy = Y.yy
     tt = Y.tt
-    T1 = Po.t0
-    T2 = Po.t1
-    v = Po.v1
+    T1 = Po.tt[1]
+    T2 = Po.tt[end]
+    v = Po.v[2]
     P = Po.Target
     Pt = ptilde(Po)
     s2 = soft(tt[1], T1, T2)
@@ -166,9 +166,9 @@ end
 function ullikelihoodtrapez(Y::SamplePath{T}, Po) where T
     yy = Y.yy
     tt = Y.tt
-    T1 = Po.t0
-    T2 = Po.t1
-    v = Po.v1
+    T1 = Po.tt[1]
+    T2 = Po.tt[end]
+    v = Po.v[2]
     P = Po.Target
     Pt = ptilde(Po)
     ss = soft(tt, T1, T2)
@@ -207,9 +207,9 @@ function uinnovations!(W, Y::SamplePath{T}, Po) where T
     ss = W.tt
     Pt = ptilde(Po)
     
-    T1 = Po.t0
-    T2 = Po.t1
-    v = Po.v1
+    T1 = Po.tt[1]
+    T2 = Po.tt[end]
+    v = Po.v[2]
 
     w = zero(ww[.., 1])
     s = s2 = soft(tt[1], T1, T2)

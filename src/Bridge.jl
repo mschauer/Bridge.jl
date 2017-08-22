@@ -3,12 +3,11 @@ __precompile__()
 module Bridge
 export ContinuousTimeProcess, SamplePath, VSamplePath
 export LinPro, Wiener, WienerBridge, CSpline
-export sample, sample!, .., euler, euler!, quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
+export sample, sample!, .., quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
 
 
 export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, innovations, innovations!, lptilde
 export ubridge!, ubridge
-export thetamethod, thetamethod!, thetainnovations!, thetainnovations, heun, heun!
 
 export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 
@@ -19,10 +18,11 @@ export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaP
 export mcstart, mcnext, mcbandmean, mcband
 
 # euler
-export SDESolver, Euler, bridge!, bridge, solve, solve!
+export SDESolver, Euler, EulerMaruyama, EulerMaruyama!, StochasticHeun,
+    StochasticRungeKutta, bridge!, bridge, solve, solve!
 
 # ode
-export solve, solve!, solvebackward!, ODESolver, RS3
+export solve, solve!, solvebackward!, ODESolver, BS3
 
 # guip
 export LeftRule

@@ -1,5 +1,47 @@
 abstract type LevyProcess{T} <: ContinuousTimeProcess{T} end
 
+"""
+    CompoundPoisson{T} <: LevyProcess{T}
+
+Abstract type. For a compound Poisson process define `rjumpsize(P) -> T` and
+ `arrival(P) -> Distribution`.
+"""
+abstract type CompoundPoisson{T} <: LevyProcess{T} end
+
+
+"""
+    ExpCounting(λ)
+
+Counting process with arrival times `arrival(P) = Exponential(1/λ)` and unit jumps.
+"""
+struct ExpCounting <: CompoundPoisson{Int}
+    λ::Float64
+end
+
+arrival(P::ExpCounting) = Exponential(inv(P.λ))
+
+function rjumpsize(::ExpCounting)
+    1
+end
+
+function sample(T, P::CompoundPoisson)
+    dt = rand(arrival(P))
+    t = 0.0
+    y = 0.0
+    tt = [t]
+    yy = [y]
+
+    while t + dt <= T
+        t = t + dt
+        y = y + rjumpsize(P)
+        append!(tt, t)
+        append!(yy, y)
+
+        dt = rand(arrival(P))
+    end
+    SamplePath(tt, yy)
+end
+
 
 """
     GammaProcess
@@ -31,7 +73,11 @@ struct VarianceGamma
     ν::Float64
 end
 
+"""
+    GammaBridge(t, v, P)
 
+A `GammaProcess` `P` conditional on htting `v` at time `t`.
+"""
 struct GammaBridge  <: ContinuousTimeProcess{Float64}
     t::Float64
     v::Float64
