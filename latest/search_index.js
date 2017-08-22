@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Define and simulate a stochastic process",
     "category": "section",
-    "text": "In this section, an Ornstein-Uhlenbeck process is defined by the stochastic differential equation    mathrmd X_t = - mathrmdt + mathrmd W_tqquad(1)and a sample path is generated in three steps."
+    "text": "In this section, an Ornstein-Uhlenbeck process is defined by the stochastic differential equation    mathrmd X_t = - mathrmdt +  mathrmd W_tqquad(1)and a sample path is generated in three steps. β::Float64 is the mean reversion parameter  and σ::Float64 is the diffusion parameter."
 },
 
 {
@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Step 1. Define a diffusion process OrnsteinUhlenbeck.",
     "category": "section",
-    "text": "The new struct OrnsteinUhlenbeck is a subtype ContinuousTimeProcess{Float64} indicating that the Ornstein-Uhlenbeck process has Float64-valued trajectories.using Bridge\nstruct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}\n    β::Float64 # drift parameter (also known as inverse relaxation time)\n    σ::Float64 # diffusion parameter\n    function OrnsteinUhlenbeck(β::Float64, σ::Float64)\n        isnan(β) || β > 0. || error(\"Parameter β must be positive.\")\n        isnan(σ) || σ > 0. || error(\"Parameter σ must be positive.\")\n        new(β, σ)\n    end\nend\n\n# output\n"
+    "text": "The new struct OrnsteinUhlenbeck is a subtype ContinuousTimeProcess{Float64} indicating that the Ornstein-Uhlenbeck process has Float64-valued trajectories.using Bridge\nstruct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}\n    β::Float64\n    σ::Float64 \n    function OrnsteinUhlenbeck(β::Float64, σ::Float64)\n        isnan(β) || β > 0. || error(\"Parameter β must be positive.\")\n        isnan(σ) || σ > 0. || error(\"Parameter σ must be positive.\")\n        new(β, σ)\n    end\nend\n\n# output\n"
 },
 
 {
@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Step 3. Simulate OrnsteinUhlenbeck process using the Euler scheme.",
     "category": "section",
-    "text": "Generate the driving Brownian motion W of the stochastic differential equation (1) with sample. Thefirst argument is the time grid, the second arguments specifies a Float64-valued Brownian motion/Wiener process.srand(1)\nW = sample(0:0.1:1, Wiener())\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])The output is a SamplePath object assigned to W. It contains time grid W.tt and the sampled values W.yy.Generate a solution X using the Euler()-scheme, using time grid W.tt. The arguments are starting point 0.1, driving Brownianmotion W and the OrnsteinUhlenbeck process with parameters β = 20.0 and σ = 1.0.X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])This returns a SamplePath of the solution.DocTestSetup = quote\n    using Bridge\nend"
+    "text": "Generate the driving Brownian motion W of the stochastic differential equation (1) with sample. Thefirst argument is the time grid, the second arguments specifies a Float64-valued Brownian motion/Wiener process.srand(1)\nW = sample(0:0.1:1, Wiener())\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])The output is a SamplePath object assigned to W. It contains time grid W.tt and the sampled values W.yy.Generate a solution X using the Euler()-scheme, using time grid W.tt. The arguments are starting point 0.1, driving Brownian motion W and the OrnsteinUhlenbeck object with parameters β = 20.0 and σ = 1.0.X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));\n\n# output\n\nBridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])This returns a SamplePath of the solution.DocTestSetup = quote\n    using Bridge\nend"
 },
 
 {
@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "Tutorials and Notebooks",
     "category": "section",
-    "text": "A detailed tutorial script: ./example/tutorial.jlA nice notebook detailing the generation of the logo using ordinary and stochastic differential equations:  ./example/Bridge+Logo.ipynb"
+    "text": "A detailed tutorial script: ./example/tutorial.jlA nice notebook detailing the generation of the logo using ordinary and stochastic differential equations (and, in fact, diffusion bridges (sic) to create a seamless loop): ./example/Bridge+Logo.ipynb"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.quvar",
     "category": "Function",
-    "text": "quvar(X)\n\nComputes quadratic variation of X.\n\n\n\n"
+    "text": "quvar(X)\n\nComputes the (realized) quadratic variation of the path X.\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.ito",
     "category": "Function",
-    "text": "ito(Y, X)\n\nIntegrate a valued stochastic process with respect to a stochastic differential.\n\n\n\n"
+    "text": "ito(Y, X)\n\nIntegrate a stochastic process Y with respect to a stochastic differential dX.\n\n\n\n"
 },
 
 {
@@ -281,11 +281,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "library.html#Bridge.thetamethod",
+    "location": "library.html#Bridge.EulerMaruyama",
     "page": "Library",
-    "title": "Bridge.thetamethod",
-    "category": "Function",
-    "text": "thetamethod(u, W, P, theta=0.5)\n\nSolve stochastic differential equation using the theta method and Newton-Raphson steps.\n\n\n\n"
+    "title": "Bridge.EulerMaruyama",
+    "category": "Type",
+    "text": "EulerMaruyama() <: SDESolver\n\nEuler-Maruyama scheme. Euler is defined as alias.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.Euler",
+    "page": "Library",
+    "title": "Bridge.Euler",
+    "category": "Type",
+    "text": "EulerMaruyama() <: SDESolver\n\nEuler-Maruyama scheme. Euler is defined as alias.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.StochasticRungeKutta",
+    "page": "Library",
+    "title": "Bridge.StochasticRungeKutta",
+    "category": "Type",
+    "text": "StochasticRungeKutta() <: SDESolver\n\nStochastic Runge-Kutta scheme for T<:Number-valued processes.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.StochasticHeun",
+    "page": "Library",
+    "title": "Bridge.StochasticHeun",
+    "category": "Type",
+    "text": "StochasticHeun() <: SDESolver\n\nStochastic heun scheme.\n\n\n\n"
 },
 
 {
@@ -293,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Stochastic differential equations",
     "category": "section",
-    "text": "sample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nthetamethod"
+    "text": "sample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nEulerMaruyama\nEuler\nStochasticRungeKutta\nStochasticHeun"
 },
 
 {
@@ -302,6 +326,30 @@ var documenterSearchIndex = {"docs": [
     "title": "Bridge.GammaProcess",
     "category": "Type",
     "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\n(x)= x^-1exp(- x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia's parametrization with shape parameter α and scale θ.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.GammaBridge",
+    "page": "Library",
+    "title": "Bridge.GammaBridge",
+    "category": "Type",
+    "text": "GammaBridge(t, v, P)\n\nA GammaProcess P conditional on htting v at time t.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.ExpCounting",
+    "page": "Library",
+    "title": "Bridge.ExpCounting",
+    "category": "Type",
+    "text": "ExpCounting(λ)\n\nCounting process with arrival times arrival(P) = Exponential(1/λ) and unit jumps.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.CompoundPoisson",
+    "page": "Library",
+    "title": "Bridge.CompoundPoisson",
+    "category": "Type",
+    "text": "CompoundPoisson{T} <: LevyProcess{T}\n\nAbstract type. For a compound Poisson process define rjumpsize(P) -> T and  arrival(P) -> Distribution.\n\n\n\n"
 },
 
 {
@@ -317,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Levy processes",
     "category": "section",
-    "text": "GammaProcess\nBridge.nu "
+    "text": "GammaProcess\nGammaBridge\nBridge.ExpCounting\nBridge.CompoundPoisson\nBridge.nu "
 },
 
 {
@@ -473,11 +521,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.Mdb",
+    "page": "Library",
+    "title": "Bridge.Mdb",
+    "category": "Type",
+    "text": "Mdb() <: SDESolver\n\nEuler scheme with the diffusion coefficient correction of the modified diffusion bridge.\n\n\n\n"
+},
+
+{
     "location": "library.html#Bridge.bridge",
     "page": "Library",
     "title": "Bridge.bridge",
     "category": "Function",
-    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal\n\n\n\n"
+    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where `P is a bridge proposal.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.bridge!",
+    "page": "Library",
+    "title": "Bridge.bridge!",
+    "category": "Function",
+    "text": "bridge!(method, Y, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal overwritingY`.\n\n\n\n"
 },
 
 {
@@ -486,22 +550,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Bridge.Vs",
     "category": "Function",
     "text": "Vs(s, T1, T2, v, P)\n\nTime changed V for generation of U.\n\n\n\n"
-},
-
-{
-    "location": "library.html#Bridge.mdb",
-    "page": "Library",
-    "title": "Bridge.mdb",
-    "category": "Function",
-    "text": "mdb(u, W, P)\nmdb!(copy(W), u, W, P)\n\nEuler scheme with the diffusion coefficient correction of the modified diffusion bridge.\n\n\n\n"
-},
-
-{
-    "location": "library.html#Bridge.mdb!",
-    "page": "Library",
-    "title": "Bridge.mdb!",
-    "category": "Function",
-    "text": "mdb(u, W, P)\nmdb!(copy(W), u, W, P)\n\nEuler scheme with the diffusion coefficient correction of the modified diffusion bridge.\n\n\n\n\n\n"
 },
 
 {
@@ -525,7 +573,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nBridge.GuidedBridge\nbridge\nBridge.Vs\nBridge.mdb \nBridge.mdb!\nBridge.r\nBridge.gpK! "
+    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.r\nBridge.gpK!"
 },
 
 {
