@@ -116,28 +116,4 @@ function dotV(t, T, v, P::LinPro)
     expm(-(T-t)*P.B)*P.B*(v - P.μ)
 end
 
-function mustar(s, x, t, T, P::LinPro)
-    inv(P.a - expm(P.B*(T-s))*a*expm(B*(T-s))')*(a - expm(B*(T-t))*a*expm(B*(T-t))')*x
-end
-
-#(1-exp(2*(T-t)*b))/(1-exp(2*(T-s)*b))*exp(b*(t-s))
-#msinh(b) = (expm(b) - expm(-b))/2
-#mu(s, t, T, B) = inv(msinh((T-s)*B))*msinh((T-t)*B)
-
-
-function Mu(t, T, P::LinPro)
-    # phim = expm(-(T-t)*P.B)
-    # phi = expm((T-t)*P.B)
-    # phim*(phi*P.lambda*phi'-P.lambda)
-    P.lambda*expm((T-t)*P.B)'- expm(-(T-t)*P.B)*P.lambda
-end
-
-#Mu(tt[n-1], T, P)*inv(Mu(0, T, P))*x0
-#@SVector [1.1596192644448247,0.9449866351942955]
-
-#xx = zeros(n);x = x0;for i in 1:n
-#       x = x + (P.B -  P.a*Bridge.H(tt[i], tt[end], P))*x*(tt[i+1]-tt[i]) 
-#      xx[i] = x[1];end;x
-#@SVector [1.1594605378744431,0.9448833540533151]
-
 

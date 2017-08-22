@@ -46,8 +46,8 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 @test norm(SVector(5.0,2.0) - mean([sample(linspace(0.0,2.0,5),Wiener{SV2}(),SVector(5.0,2.0)).yy[end] for i = 1:div(n,2)])) < r *sqrt(2*2.82 / n)
 @test norm(2I - cov(Bridge.mat([sample(linspace(0.0,2.0,5),Wiener{SV2}(),SVector(5.0,2.0)).yy[end] for i = 1:1000]), 2, true))  < 0.3
 
-@test Bridge.a(0.0, 0.0, Wiener()) == inv(Bridge.a(0.0, 0.0, Wiener())) == Bridge.σ(0.0, 0.0, Wiener())
-@test Bridge.a(0.0, 0.0, WienerBridge(1.0, 0.0)) == inv(Bridge.a(0.0, 0.0, WienerBridge(1.0, 0.0))) == 
+@test Bridge.a(0.0, 0.0, Wiener()) == inv(Bridge.Γ(0.0, 0.0, Wiener())) == Bridge.σ(0.0, 0.0, Wiener())
+@test Bridge.a(0.0, 0.0, WienerBridge(1.0, 0.0)) == inv(Bridge.Γ(0.0, 0.0, WienerBridge(1.0, 0.0))) == 
     Bridge.σ(0.0, 0.0, WienerBridge(1.0, 0.0))
 
 

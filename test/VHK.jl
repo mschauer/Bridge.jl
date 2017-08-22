@@ -69,3 +69,5 @@ t, x = 0.0, v
 @test norm(Bridge.b(t, x, Po) - Bridge.b(t, x, Ptarget) - a*(GP.K[1]\(GP.V[1] - x))) < 1e-5
 @test norm(Bridge.b(t, x, Po) - Bridge.bi(1, x, GP)) < 1e-5
 
+@test norm(Bridge.solvebackward!(Bridge.R3(), Bridge._F, SamplePath(tt,zeros(length(tt))), 2.0, ((t,x)->-x)).yy[1] - 
+    2exp(tt[end]-tt[1]))<1e-5

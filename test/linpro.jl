@@ -20,8 +20,21 @@ v = S([.5, 0.0])
 
 @test (norm(Matrix(-P.lambda*B' - B*P.lambda - a))) < eps()
 
+
 t = 0.5
 T = 2.0
+
+
+
+@test Bridge.bderiv(t, v, P) == B
+@test Bridge.σderiv(t, v, P) == zero(sigma)
+
+
+
+dt = 1e-6
+@test norm( (Bridge.V(t+dt, T, v, P)-Bridge.V(t, T, v, P))/dt - Bridge.dotV(t, T, v, P) ) < 10*dt
+
+
 n2 = 150
 tt = linspace(t, T, n2)
 K = SamplePath(tt, zeros(M, length(tt)))
@@ -38,6 +51,7 @@ solve!(BS3(), Bridge._F, Mu2, u, P)
 @test (@allocated Bridge.gpV!(V, v, P)) == 0
 @test norm(K.yy[1]*Bridge.H(t, T, P) - I) < 10/n2^3
 @test norm(V.yy[1] - Bridge.V(t, T, v, P)) < 10/n2^3
+
 
 @test norm(Mu.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
 @test norm(Mu2.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
@@ -61,3 +75,8 @@ theta = 0.7
 @test_skip  begin X = Bridge.mat(S[thetamethod(mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()), P, theta).yy[end] - mu for i in 1:m])
   supnorm(cov(X,2) - Matrix(P.lambda)) < 1.0
 end
+
+
+P = Bridge.Ptilde(Bridge.CSpline(tt[1], tt[end], 1.0, 0.0, 0.0, 1.0), sigma)
+
+@test Bridge.gamma(t, v, P) ≈ inv(sigma*sigma')
