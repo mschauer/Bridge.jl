@@ -135,6 +135,8 @@ end
  
 bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.K[i]\(P.V[i] - x)) 
 ri(i::Integer, x, P::GuidedBridge) = P.K[i]\(P.V[i] - x)
+Hi(i::Integer, x, P::GuidedBridge) = inv(P.K[i])
+
 σ(t, x, P::GuidedBridge) = σ(t, x, P.Target)
 a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 Γ(t, x, P::GuidedBridge) = Γ(t, x, P.Target)
@@ -320,9 +322,10 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge)
         s = tt[i]
         x = xx[i]
         r = Bridge.ri(i, x, Po)
-        som += (dot(b(s,x, Po.Target) - btilde(s, x, Po), r)  ) * (tt[i+1]-tt[i])
+        som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
-            som += trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(i,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+            H = Hi(i, x, Po)
+            som += trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H -  r*r') ) * (tt[i+1]-tt[i])
         end
     end
     som
