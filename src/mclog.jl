@@ -32,6 +32,15 @@ function mcnext(mc, x)
     m, m2, n
 end 
 
+function mcnext(mc,  x::Vector{<:AbstractArray}) # fix me: use covariance
+    m, m2, n = mc
+    delta = x - m
+    n = n + 1
+    m = m + delta*(1/n)
+    m2 = m2 + map((x,y)->x.*y, delta, (x - m))
+    m, m2, n
+end
+
 """
     mcmeanband(mc)
 

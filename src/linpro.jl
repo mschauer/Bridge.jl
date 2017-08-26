@@ -9,9 +9,14 @@ mutable struct Ptilde{T} <: ContinuousTimeProcess{T}
     Ptilde{T}(cs, σ) where T = new(cs, σ, σ*σ', inv(σ*σ'))
 end
 b(t, x, P::Ptilde) = P.cs(t) 
+
+B(t, P::Ptilde) = 0.0
+β(t, P::Ptilde) = P.cs(t)
+
 mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
 σ(t, x, P::Ptilde) = P.σ
 a(t, x, P::Ptilde) = P.a
+a(t, P::Ptilde) = P.a
 gamma(t, x, P::Ptilde) = P.Γ
 constdiff(::Ptilde) = true
 
@@ -110,7 +115,6 @@ function V(t, T, v, P::LinPro)
     phim = expm(-(T-t)*P.B)
     phim*(v - P.μ) + P.μ
 end
-
 
 function dotV(t, T, v, P::LinPro)
     expm(-(T-t)*P.B)*P.B*(v - P.μ)

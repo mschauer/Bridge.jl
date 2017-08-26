@@ -22,6 +22,14 @@ Euler, EulerMaruyama
 
 
 """
+    BridgePre() <: SDESolver
+
+Precomputed Euler-Maruyama scheme for bridges using `bi`.
+"""
+struct BridgePre <: SDESolver
+end
+
+"""
     StochasticHeun() <: SDESolver
 
 Stochastic heun scheme.
@@ -178,10 +186,9 @@ end
 Integrate with `method`, where `P is a bridge proposal.
 """
 bridge(method::SDESolver, W, P) = bridge!(method, copy(W), W, P)
+bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess) = bridge!(BridgePre(), Y, W, P)
 
-
-
-function bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
+function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
     
     N = length(W)
@@ -275,6 +282,26 @@ function innovations!(::EulerMaruyama, W, Y::SamplePath, P)
     for i in 1:N-1
         ww[.., i] = w
         w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+    end
+    ww[.., N] = w
+    W
+end
+
+function innovations!(::BridgePre, W, Y::SamplePath, P)
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    yy = Y.yy
+    tt = Y.tt
+    ww = W.yy
+    W.tt[:] = Y.tt
+
+    w = zero(ww[.., 1])
+
+    for i in 1:N-1
+        ww[.., i] = w
+        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - bi(i, yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W

@@ -6,7 +6,7 @@ export LinPro, Wiener, WienerBridge, CSpline
 export sample, sample!, .., quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
 
 
-export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, innovations, innovations!, lptilde
+export BridgeProp, DHBridgeProp, FilterProp, PBridgeProp, GuidedProp, GuidedBridge, innovations, innovations!, lptilde
 export ubridge!, ubridge
 
 export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
@@ -18,7 +18,7 @@ export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaP
 export mcstart, mcnext, mcbandmean, mcband
 
 # euler
-export SDESolver, Euler, EulerMaruyama, EulerMaruyama!, StochasticHeun,
+export SDESolver, Euler, BridgePre, EulerMaruyama, EulerMaruyama!, StochasticHeun,
     StochasticRungeKutta, bridge!, bridge, solve, solve!
 
 # ode

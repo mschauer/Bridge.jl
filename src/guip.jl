@@ -103,6 +103,7 @@ struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
     v::Tuple{T,T}
     K::Vector{S} 
     V::Vector{T}
+    lp::Float64
 """
     GuidedBridge(tt, (u, v), P, Pt)
 
@@ -115,9 +116,20 @@ the time grid `tt` using guiding term derived from linear process `Pt`.
         S = typeof(Bridge.outer(zero(T)))
         K = SamplePath(tt, zeros(S, N)) 
         V = SamplePath(tt, zeros(T, N)) 
-        gpK!(K, Pt)
+        gpHinv!(K, Pt)
         gpV!(V, v[2], Pt)
-        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy) 
+        lp = logpdfnormal(v[2] - gpmu(tt, v[1], Pt), gpK(tt, zero(S), Pt))
+        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy, lp)
+    end
+    function GuidedBridge(tt_, v::Tuple{T,T}, P::R, Pt::R2, KT) where {T,R,R2}
+        tt = collect(tt_)
+        N = length(tt)
+        S = typeof(Bridge.outer(zero(T)))
+        K = SamplePath(tt, zeros(S, N))
+        V = SamplePath(tt, zeros(T, N))
+        gpHinv!(K, Pt, KT)
+        gpV!(V, v[2], Pt)
+        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy, NaN)
     end
 end
  
@@ -129,9 +141,7 @@ a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
 btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
-function lptilde(P::GuidedBridge)
-     lp(P.tt[1], P.v[1], P.tt[end], P.v[end], P.Pt) 
-end
+lptilde(P::GuidedBridge) = P.lp
 
 
 

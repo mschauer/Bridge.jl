@@ -98,12 +98,13 @@ Bridge.Ptilde
 ```@docs
 GuidedProp
 Bridge.GuidedBridge
+BridgePre
 Bridge.Mdb
 bridge
 bridge!
 Bridge.Vs
 Bridge.r
-Bridge.gpK!
+Bridge.gpHinv!
 ```
 
 ## Unsorted

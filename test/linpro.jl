@@ -38,16 +38,16 @@ dt = 1e-6
 n2 = 150
 tt = linspace(t, T, n2)
 K = SamplePath(tt, zeros(M, length(tt)))
-Bridge.gpK!(K, P)
+Bridge.gpHinv!(K, P)
 V = SamplePath(tt, zeros(S, length(tt)))
-Bridge.gpK!(K, P) # warm up
+Bridge.gpHinv!(K, P) # warm up
 Bridge.gpV!(V, v, P)
 Mu = SamplePath(tt, zeros(S, length(tt)))
 Mu2 = SamplePath(tt, zeros(S, length(tt)))
 
 solve!(Bridge.R3(), Bridge._F, Mu, u, P)
 solve!(BS3(), Bridge._F, Mu2, u, P)
-@test (@allocated Bridge.gpK!(K, P)) == 0
+@test (@allocated Bridge.gpHinv!(K, P)) == 0
 @test (@allocated Bridge.gpV!(V, v, P)) == 0
 @test norm(K.yy[1]*Bridge.H(t, T, P) - I) < 10/n2^3
 @test norm(V.yy[1] - Bridge.V(t, T, v, P)) < 10/n2^3
@@ -56,6 +56,7 @@ solve!(BS3(), Bridge._F, Mu2, u, P)
 @test norm(Mu.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
 @test norm(Mu2.yy[end] - Bridge.mu(t, u, T, P)) < 10/n2^3
 
+@test norm(Bridge.K(t, T, P) - solve(Bridge.R3(), Bridge._dK, tt, zero(M), P)) < 10/n2^3
 
 # Normal(mu, lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
 X = Bridge.mat(S[solve(EulerMaruyama(), mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
@@ -77,6 +78,6 @@ theta = 0.7
 end
 
 
-P = Bridge.Ptilde(Bridge.CSpline(tt[1], tt[end], 1.0, 0.0, 0.0, 1.0), sigma)
+Pt = Bridge.Ptilde(Bridge.CSpline(tt[1], tt[end], 1.0, 0.0, 0.0, 1.0), sigma)
 
-@test Bridge.gamma(t, v, P) ≈ inv(sigma*sigma')
+@test Bridge.gamma(t, v, Pt) ≈ inv(sigma*sigma')

@@ -33,6 +33,7 @@ t, x = 0.0, v
 @test norm(Bridge.b(t, x, Po) -  Bridge.b(t, x, Ptarget) - Bridge.a(t, x, Ptarget)*Bridge.r(t, x, T, v, Pt)) < 1e-10
 @test norm(Bridge.b(t, x, Po) - Bridge.b(t, x, Ptarget) - a*(GP.K[1]\(GP.V[1] - x))) < 1e-5
 
+@test norm(GP.lp - Bridge.lp(t, u, T, v, Pt)) < 1e-5
 
 
 S = SVector{1, Float64}

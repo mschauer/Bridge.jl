@@ -54,15 +54,23 @@ function kernelbs3(f, t, y, dt, P, k = f(t, y, P))
     yº, k4, err
 end
 
-@inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
+@inline _dHinv(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
+
+@inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' + a(t, P)
 
 """
-    gpK!(K::SamplePath, P)
+    gpHinv!(K::SamplePath, P, v=zero(T))
 
 Precompute ``K = H^{-1}`` from ``(d/dt)K = BK + KB' + a`` for a guided proposal.
 """
-gpK!(K::SamplePath{T}, P) where {T} = _solvebackward!(R3(), _dK, K, zero(T), P)
+gpHinv!(K::SamplePath{T}, P, v=zero(T)) where {T} = _solvebackward!(R3(), _dHinv, K, v, P)
 gpV!(V::SamplePath{T}, v::T, P) where {T} = _solvebackward!(R3(), _F, V, v, P)
+
+
+gpmu(tt, u::T, P) where {T} = solve(R3(), _F, tt, u, P)
+gpK(tt, u::T, P) where {T} = solve(R3(), _dK, tt, u, P)
+
+
 
 function solvebackward!(method, F, X, xT, P) 
      _solvebackward!(method, F, X, xT, P) 
@@ -106,6 +114,16 @@ end
     X
 end
 
+function solve(::R3, F, tt, x0::T, P) where {T}
+    y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(F, tt[i-1], y, tt[i] - tt[i-1], P)
+    end
+    y
+end
+
+
+
 solve!(method::ODESolver, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
 solve!(method::ODESolver, X, x0, P) = solve!(method, b, X, x0, P) 
 
@@ -126,3 +144,15 @@ solve!(method::ODESolver, X, x0, P) = solve!(method, b, X, x0, P)
     X, err
 end
 
+@inline function solve(::BS3, F, tt, x0::T, P) where {T}
+    0 < length(tt) || throw(ArgumentError("length(X) == 0"))
+    y::T = x0
+    length(tt) == 1 && return y, 0.0
+    y, k, e = kernelbs3(F, tt[1], y, tt[2] - tt[1], P)
+    err = norm(e, 1)
+    for i in 3:length(tt)
+        y, k, e = kernelbs3(F, tt[i-1], y, tt[i] - tt[i-1], P, k)
+        err = err + norm(e, 1)
+    end
+    y, err
+end
