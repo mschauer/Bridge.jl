@@ -521,6 +521,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.BridgePre",
+    "page": "Library",
+    "title": "Bridge.BridgePre",
+    "category": "Type",
+    "text": "BridgePre() <: SDESolver\n\nPrecomputed Euler-Maruyama scheme for bridges using bi.\n\n\n\n"
+},
+
+{
     "location": "library.html#Bridge.Mdb",
     "page": "Library",
     "title": "Bridge.Mdb",
@@ -561,11 +569,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "library.html#Bridge.gpK!",
+    "location": "library.html#Bridge.gpHinv!",
     "page": "Library",
-    "title": "Bridge.gpK!",
+    "title": "Bridge.gpHinv!",
     "category": "Function",
-    "text": "gpK!(K::SamplePath, P)\n\nPrecompute K = H^-1 from (ddt)K = BK + KB + a for a guided proposal.\n\n\n\n"
+    "text": "gpHinv!(K::SamplePath, P, v=zero(T))\n\nPrecompute K = H^-1 from (ddt)K = BK + KB + a for a guided proposal.\n\n\n\n"
 },
 
 {
@@ -573,7 +581,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.r\nBridge.gpK!"
+    "text": "GuidedProp\nBridge.GuidedBridge\nBridgePre\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.r\nBridge.gpHinv!"
 },
 
 {
