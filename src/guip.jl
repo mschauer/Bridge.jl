@@ -305,7 +305,7 @@ function llikelihoodleft(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgePro
         r = Bridge.r(s, x, Po)
         som += (dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
-            som += trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+            som -= 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
         end
     end
     som
@@ -325,7 +325,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge)
         som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
             H = Hi(i, x, Po)
-            som += trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H -  r*r') ) * (tt[i+1]-tt[i])
+            som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H -  r*r') ) * (tt[i+1]-tt[i])
         end
     end
     som
@@ -344,16 +344,16 @@ function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeP
     r = Bridge.r(s, x, Po)
     som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
     if !constdiff(Po)
-        som += 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+        som -= 0.25*trace( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i])
     end
 
     for i in 2:length(tt)-1 #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
         r = Bridge.r(s, x, Po)
-        som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i-1])
+        som += 0.5*( dot(b(s,x, Po.Target) - btilde(s,x, Po), r) ) * (tt[i+1]-tt[i-1])
         if !constdiff(Po)
-            som += 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i-1])
+            som -= 0.25*trace( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i-1])
         end
     end
     som
