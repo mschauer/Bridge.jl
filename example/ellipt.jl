@@ -39,14 +39,13 @@ end
 end
 
 g(t, x) = sin(x)
-gamma(t, x) = 1.2 - sech(x + 0.6)/4 #d/dx gamma(t,v) == 0
-
+gamma(t, x) = 1.2 - sech(x)/4
 
 # define drift and sigma of Target
 
-Bridge.b(t,x, P::Target) = SV(P.κ*x[2] - P.c*x[1],  -P.c*x[2] + g(t, x[2]))
-Bridge.σ(t, x, P::Target) = SV(0.0, gamma(t, x[2]))
-Bridge.a(t, x, P::Target) = SM(0, 0, 0, outer(gamma(t, x[2])))
+Bridge.b(t, x, P::Target) = SV(P.κ*x[2] - P.c*x[1],  -P.c*x[2] + g(t, x[2]))::SV
+Bridge.σ(t, x, P::Target) =  SM(0.5, 0.0, 0.0, gamma(t, x[2]))
+Bridge.a(t, x, P::Target) = SM(0.25, 0, 0, outer(gamma(t, x[2])))
 Bridge.constdiff(::Target) = false
 
 
@@ -57,9 +56,9 @@ Bridge.B(t, P::Linear) = SM(P.b11, P.b21, P.b12, P.b22)
 
 Bridge.β(t, P::Linear) = SV(0, g(P.T, P.v[2]))
 
-Bridge.σ(t, x, P::Linear) = SV(0.0, gamma(P.T, P.v[2]))
-Bridge.a(t, x, P::Linear) = SM(0, 0, 0, outer(gamma(P.T, P.v[2])))
-Bridge.a(t, P::Linear) = SM(0, 0, 0, outer(gamma(P.T, P.v[2])))
+Bridge.σ(t, x, P::Linear) = SM(0.5, 0, 0, gamma(P.T, P.v[2]))
+Bridge.a(t, x, P::Linear) = SM(0.25, 0, 0, outer(gamma(P.T, P.v[2])))
+Bridge.a(t, P::Linear) = SM(0.25, 0, 0, outer(gamma(P.T, P.v[2])))
 Bridge.constdiff(::Linear) = false
 
 c = 0.0
@@ -110,7 +109,7 @@ if TEST
     @test norm(Bridge.mu(t, u, T,  Pt2) - ( Phi*u + (Phi-I)*(B\β))) < 1e-6
 end 
 
-W = sample(tt, Wiener{Float64}())
+W = sample(tt, Wiener{SV}())
 
 # Xtilde
 
@@ -119,7 +118,7 @@ Xt = SamplePath(tt, zeros(SV, length(tt)))
 Xts = SamplePath(tt, zeros(SV, length(tt)))
 best = Inf
 for i in 1:m
-    W = sample!(W, Wiener{Float64}())
+    W = sample!(W, Wiener{SV}())
     Bridge.solve!(Euler(), Xt, u, W, Pt)
     push!(Yt, Xt.yy[end])
     nrm = norm(v-Xt.yy[end])
@@ -137,7 +136,7 @@ X = SamplePath(tt, zeros(SV, length(tt)))
 Xs = SamplePath(tt, zeros(SV, length(tt)))
 best = Inf
 for i in 1:m
-    W = sample!(W, Wiener{Float64}())
+    W = sample!(W, Wiener{SV}())
     Bridge.solve!(Euler(), X, u, W, P)
     push!(Y, X.yy[end])
     nrm = norm(v-X.yy[end])
@@ -154,7 +153,7 @@ lpthat = log(mean(kernel.(collect(y - v for y in Yt))))
 Z = Float64[]
 Xo = SamplePath(tt, zeros(SV, length(tt)))
 @time for i in 1:m
-    W = sample!(W, Wiener{Float64}())
+    W = sample!(W, Wiener{SV}())
     Bridge.bridge!(Bridge.Euler(), Xo, W, GP)
     z = llikelihood(LeftRule(), Xo, GP) + lpt
     push!(Z, z)
@@ -171,7 +170,7 @@ if CLASSIC
     Z2 = Float64[]
     Xo2 = SamplePath(tt, zeros(SV, length(tt)))
     @time for i in 1:m
-        W = sample!(W, Wiener{Float64}())
+        W = sample!(W, Wiener{SV}())
         Bridge.bridge!(Xo2, W, GP2)
         z = llikelihood(Xo2, GP2) + lpt
         push!(Z2, z)
@@ -213,7 +212,7 @@ figure()
 subplot(211)
 X = SamplePath(tt, zeros(SV, length(tt)))
 for i in 1:10
-    W = sample!(W, Wiener{Float64}())
+    W = sample!(W, Wiener{SV}())
     Bridge.solve!(Euler(), X, u, W, P)
     display(plot(X.tt, X.yy))
 end    
