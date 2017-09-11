@@ -9,6 +9,24 @@
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
 See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am personally interested in simulating diffusion bridges and doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome. 
 
+- [x] Define and simulate diffusion processes in one or more dimension
+- [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
+- [x] Monte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T
+- [x] Brownian motion in one and more dimensions
+- [x] Ornstein-Uhlenbeck processes
+- [ ] Geometric Brownian motion 
+- [x] Bessel processes
+- [x] Gamma processes
+- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation)
+- [x] Euler-Scheme and implicit methods (Rungekutta)
+
+The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
+
+The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
+
+
+## Introduction
+
 The key objects introduced are the abstract type `ContinuousTimeProcess{T}` parametrised by the state space of the path, for example `T == Float64` and various `structs` suptyping it, for example `Wiener{Float64}` for a real Brownian motion. These play roughly a similar role as types subtyping `Distribution` in the Distributions.jl package.
 
 Secondly, the struct 
@@ -62,19 +80,13 @@ W = sample(0:0.01:10, Wiener())
 X = euler(0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
 ```
 
-- [x] Define and simulate diffusion processes in one or more dimension
-- [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
-- [x] Monte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T
-- [x] Brownian motion in one and more dimensions
-- [x] Ornstein-Uhlenbeck processes
-- [ ] Geometric Brownian motion 
-- [x] Bessel processes
-- [x] Gamma processes
-- [x] Basic stochastic calculus functionality (Ito integral, quadratic variation)
-- [x] Euler-Scheme and implicit methods (Rungekutta)
+## Feedback and Contributing
 
-The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
+See the [documentation](https://mschauer.github.io/Bridge.jl/latest/) for more functionality and [issue #12 (Feedback and Contribution)](https://github.com/mschauer/CausalInference.jl/issues/12) for coordination of the development.
+Bridge is free software under the MIT licence. If you use Bridge.jl in a closed environment I’d be happy to hear about your use case in a mail to moritzschauer@web.de and able to give some support.
 
-The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
+## Literature
 
+F. v. d. Meulen, M. Schauer: Bayesian estimation of discretely observed multi-dimensional diffusion processes using guided proposals. *Electronic Journal of Statistics* 11 (1), 2017, [doi:10.1214/17-EJS1290](http://dx.doi.org/10.1214/17-EJS1290).
 
+M. Schauer, F. v. d. Meulen, H. v. Zanten: Guided proposals for simulating multi-dimensional diffusion bridges. *Bernoulli* 23 (4A), 2017, [doi:10.3150/16-BEJ833](http://dx.doi.org/10.3150/16-BEJ833).
