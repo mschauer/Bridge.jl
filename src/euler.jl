@@ -183,7 +183,16 @@ end
 """
     bridge(method, W, P) -> Y
 
-Integrate with `method`, where `P is a bridge proposal.
+Integrate with `method`, where `P` is a bridge proposal. 
+
+# Examples
+
+```
+cs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))
+P° = BridgeProp(Pσ, v), Pσ.a, cs)
+W = sample(tt, Wiener())
+bridge(BridgePre(), W, P°)
+```
 """
 bridge(method::SDESolver, W, P) = bridge!(method, copy(W), W, P)
 bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess) = bridge!(BridgePre(), Y, W, P)

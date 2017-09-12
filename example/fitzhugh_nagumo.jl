@@ -298,11 +298,11 @@ while true
         for i in 1:n # reparametrization
             cs = Bridge.CSpline(Yobs.tt[i], Yobs.tt[i+1], Bridge.b( Yfil[i]..., P),  Bridge.b( Yfil[i+1]..., P))
            
-            P° = BridgeProp(Pσ, Yfil[i]..., Yfil[i+1]..., Pσ.a, cs)
-            P°° = BridgeProp(Pσ°, Yfil[i]..., Yfil[i+1]..., Pσ°.a, cs)
+            P° = BridgeProp(Pσ, BB[i].tt, (Yfil.yy[i+1], Yfil.yy[i+1]), Pσ.a, cs)
+            P°° = BridgeProp(Pσ°, BB[i].tt, (Yfil.yy[i+1], Yfil.yy[i+1]), Pσ°.a, cs)
             Z = innovations(BB[i], P°)
 
-            BBnew[i] = bridge(Z, P°°)
+            BBnew[i] = bridge(BridgePre(), Z, P°°)
             # BBnew[i] = eulerb(Z, P°°)
             ll += lptilde(P°°) - lptilde(P°) + llikelihood(BBnew[i], P°°) - llikelihood(BB[i], P°)
     #        println(lptilde(P°°), " - ", ptilde(lP°))

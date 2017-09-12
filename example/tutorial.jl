@@ -92,7 +92,7 @@ oplot(X2.tt, X2.yy)
 W2 = sample(0:0.1:10, Wiener{SVector{4,Float64}}())
 llikelihood(W2,Wiener{SVector{4,Float64}}())
 
-P = BridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 1., 1.)
+P = BridgeProp(OrnsteinUhlenbeck(3., 1.), 0:0.01:1,  (0., 1.), 1.)
 X = euler(0.1, sample(0:0.01:1, Wiener{Float64}()),P)
 
 P2 = PBridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 2., 2., 0., 1., 0.3, 1.)
