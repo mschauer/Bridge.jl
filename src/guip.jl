@@ -91,6 +91,8 @@ function lptilde(P::GuidedProp)
      lp(P.t0, P.v0, P.t1, P.v1, P.Pt) 
 end
 
+#################################################
+
 """
     GuidedBridge
 
@@ -145,7 +147,7 @@ btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
 lptilde(P::GuidedBridge) = P.lp
 
-
+#################################################
 
 struct PBridgeProp{T} <: ContinuousTimeProcess{T}
     Target
@@ -325,7 +327,8 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge)
         som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
             H = Hi(i, x, Po)
-            som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H -  r*r') ) * (tt[i+1]-tt[i])
+            som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
+            som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
         end
     end
     som

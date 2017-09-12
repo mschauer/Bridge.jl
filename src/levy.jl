@@ -168,8 +168,8 @@ Inverse jump size compared to gamma process with same alpha and beta.
 """
 function θ(x, P::LocalGammaProcess)
     N = length(P.θ)
-    N == 0 && return 0
-    x <= P.b[1] && return 0.
+    N == 0 && return 0.0
+    x <= P.b[1] && return 0.0
     x > P.b[N] && return P.θ[N] * x
     
     #k = Int(div(x, P.b1))
