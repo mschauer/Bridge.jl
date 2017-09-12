@@ -541,7 +541,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.bridge",
     "category": "Function",
-    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where `P is a bridge proposal.\n\n\n\n"
+    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal. \n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nbridge(BridgePre(), W, P°)\n\n\n\n"
 },
 
 {
