@@ -39,12 +39,12 @@ end
 end
 
 g(t, x) = sin(x)
-gamma(t, x) = 1.2 - sech(x + 0.6)/4 #d/dx gamma(t,v) == 0
+gamma(t, x) = 1.2 - sech(x + 0.2)/2 #d/dx gamma(t,v) == 0
 
 
 # define drift and sigma of Target
 
-Bridge.b(t,x, P::Target) = SV(P.κ*x[2] - P.c*x[1],  -P.c*x[2] + g(t, x[2]))
+Bridge.b(t, x, P::Target) = SV(P.κ*x[2] - P.c*x[1],  -P.c*x[2] + g(t, x[2]))
 Bridge.σ(t, x, P::Target) = SV(0.0, gamma(t, x[2]))
 Bridge.a(t, x, P::Target) = SM(0, 0, 0, outer(gamma(t, x[2])))
 Bridge.constdiff(::Target) = false
@@ -58,6 +58,7 @@ Bridge.B(t, P::Linear) = SM(P.b11, P.b21, P.b12, P.b22)
 Bridge.β(t, P::Linear) = SV(0, g(P.T, P.v[2]))
 
 Bridge.σ(t, x, P::Linear) = SV(0.0, gamma(P.T, P.v[2]))
+
 Bridge.a(t, x, P::Linear) = SM(0, 0, 0, outer(gamma(P.T, P.v[2])))
 Bridge.a(t, P::Linear) = SM(0, 0, 0, outer(gamma(P.T, P.v[2])))
 Bridge.constdiff(::Linear) = false
@@ -67,17 +68,18 @@ c = 0.0
 
 t = 1.0
 T = 1.5
-n = 401
+n = 1001
+skipl = 3
 dt = (T-t)/(n-1)
 tt = t:dt:T
-m = 200_000
+m = 50_000
 
 u = @SVector [0.1, 0.1]
 v = @SVector [0.3, -0.6]
 
 
 P = Target(c, κ)
-Pt = Linear(T, v, -c-0.1, -0.1, κ-0.1, -c/2)
+Pt = Linear(T, v, -c, 0.0, κ, -c)
 
 B = Bridge.B(0, Pt)
 β = Bridge.β(0, Pt)
@@ -153,10 +155,12 @@ lpthat = log(mean(kernel.(collect(y - v for y in Yt))))
 
 Z = Float64[]
 Xo = SamplePath(tt, zeros(SV, length(tt)))
+Xoshort = SamplePath(tt[1:end-skipl], zeros(SV, length(tt)-skipl))
 @time for i in 1:m
     W = sample!(W, Wiener{Float64}())
     Bridge.bridge!(Bridge.Euler(), Xo, W, GP)
-    z = llikelihood(LeftRule(), Xo, GP) + lpt
+    Xoshort.yy .= Xo.yy[1:n-skipl]
+    z = llikelihood(LeftRule(), Xoshort, GP) + lpt
     push!(Z, z)
 end
 
@@ -246,8 +250,8 @@ axis([1, div(m,step), 0, 2*exp(lpt)])
 
 r = Bridge.ri(n-1,Xo.yy[end-1], GP)    
 println( (Bridge.b(Xo[end-1]..., P)-Bridge.b(Xo[end-1]..., Pt))'*r)
-println(trace((Bridge.a(Xo[end-1]..., P)-a)*inv(GP.K[end-1])))
-println(r'*(Bridge.a(Xo[end-1]..., P)-a)*r)
+println(-0.5*trace((Bridge.a(Xo[end-1]..., P)-a)*inv(GP.K[end-1])))
+println(0.5*r'*(Bridge.a(Xo[end-1]..., P)-a)*r)
 
 
 ex = Dict(

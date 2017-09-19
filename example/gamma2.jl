@@ -12,12 +12,14 @@ PYPLOT && using PyPlot
 import Bridge: increment, expint
 import Distributions.pdf
 
-N = 3 # number of thetas
+N = 4 # number of thetas
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
 beta0 = 0.4
+beta0b = beta0/10
 alpha0 = 2.0
+alpha0b = alpha0/10
 
 b10 = .5 # CPP values for testing
 theta1 = -0.3
@@ -28,18 +30,14 @@ if !isdefined(:simid)
     error("provide simid = {1,...,5}")
 end
 
-addcpp = false
-
 if simid == 1
-
     simname = "gammap" 
 elseif simid == 2
     b10 = .5
     theta1 = -0.3
     simname = "gammappluscpp"
-    addcpp = true
 elseif simid == 3 
-    simname = "nonpargp"
+    simname = "sumgamma"
 elseif simid == 4
     simname = "levymatters1"
     beta0 = 0.2
@@ -59,8 +57,13 @@ end
 P0 = GammaProcess(beta0, alpha0)
 
 tt = linspace(0, T, n + 1)
-
 X0 = sample(tt, P0) 
+
+P0b = GammaProcess(beta0b, alpha0b)
+X0b = sample(tt, P0b) 
+
+
+
 Z = diff(X0.yy)
 dt = mean(diff(X0.tt))
 PD = increment(dt, P0)
@@ -178,6 +181,7 @@ sum(xx.*jumppdf.(xx, CP))*dx, mean(rjumpsize(CP) for i in 1:100000)
 
 Y = simulate(T, CP)
 
+
 #plot(Y.tt, Y.yy)
 # Plot jump process
 if PYPLOT 
@@ -193,8 +197,10 @@ function addprc(X, Y)
     SamplePath(X.tt, yy)
  end       
 
-if addcpp
+if simid == 2
     X = addprc(X0, Y)
+elseif simid === 3 
+    X = addprc(X0, X0b)
 else
     X = X0
 end
@@ -204,6 +210,7 @@ end
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
 b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
 #b = [Inf]
+b = [ 0.1, 1., 2.5, 5.]
 
 #println("P(Y < b1) = ", mean(diff(X.yy) .< b1))
 h = hist1(diff(X.yy), b) # note that P(Y < b[1]) may be inaccurate if dt is chosen small
@@ -252,20 +259,28 @@ end
 
 
 beps = b[1]/5
-c = beta0*(T/(n*m*alpha0)) *(1-exp(-alpha0*beps)) # compensator for small jumps
 #yy = diff(vcat(B...).yy)
 #var(yy[yy.< b[1]/4])
 
 
 iterations = 100000
 #beta0 = 0.8beta0
-alpha = 2.
+alpha = alpha0
 
-beta = beta0
+if simid == 3
+    beta = beta0 + beta0b
+    alpha = (beta0*alpha0 + beta0b*alpha0b)/(beta0 + beta0b)
+else
+    beta = beta0
+end
+
+c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
+
+
 theta = zeros(N)
 #theta = [0.0]
-alphasigma = 0.15
-thsigma = 0.15
+alphasigma = 0.05
+thsigma = 0.05
 
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
@@ -298,10 +313,10 @@ open(joinpath("output",simname,"params.txt"), "w") do f
     println(f, "n alpha $thn") 
 end
 
-P0 = GammaProcess(beta0, alpha0) 
+P0 = GammaProcess(beta, alpha) 
 P = LocalGammaProcess(P0, theta, b)
 
-mc = mcstart([alpha;theta])
+mc = mcstart([alpha; theta])
 thacc = 0
 Bacc = 0
 alphaacc = 0
@@ -311,14 +326,14 @@ for iter in 1:iterations
     open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([alpha; theta],8)," ")) end
    
     # compensator for small jumps
-    c = beta0*(T/(n*m*alpha)) *(1-exp(-alpha*beps))
-
+    #c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps))
+    c = 0.0
     # sample bridges
 
     for i in 1:n
         Delta = tt[i+1]-tt[i]
         delta = Delta/m
-        P0 = GammaProcess(beta0, alpha)
+        P0 = GammaProcess(beta, alpha)
         P = LocalGammaProcess(P0, theta, b)
         Pº = GammaBridge(tt[i+1], yy[i+1], P0)
         #tti = linspace(tt[i], tt[i+1], m+1)
@@ -336,7 +351,7 @@ for iter in 1:iterations
     # sample parameters
     # update theta
     if iter % 5 != 2 # remember to update formula for acceptane rates
-        P0 = GammaProcess(beta0, alpha)
+        P0 = GammaProcess(beta, alpha)
         thetaº = theta + thsigma*randn(length(theta))
         if thetaº[end] + alpha < eps() 
             # reject
@@ -365,8 +380,8 @@ for iter in 1:iterations
         if alphaº < 0 || theta[end] + alphaº < eps()
             # reject
         else   
-            P0º = GammaProcess(beta0, alphaº)
-            P0 = GammaProcess(beta0, alpha)
+            P0º = GammaProcess(beta, alphaº)
+            P0 = GammaProcess(beta, alpha)
             
             Pº = LocalGammaProcess(P0º, theta, b)
             P = LocalGammaProcess(P0, theta, b)

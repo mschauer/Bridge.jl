@@ -39,7 +39,7 @@ end
 end
 
 g(t, x) = sin(x)
-gamma(t, x) = 1.2 - sech(x)/4
+gamma(t, x) = 1.2 - sech(x)/2
 
 # define drift and sigma of Target
 
