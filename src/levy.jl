@@ -154,10 +154,11 @@ end
 """
 struct LocalGammaProcess
     P::GammaProcess
-    θ::Vector{Float64} # parameter vector
-    b::Vector{Float64} # grid points b1, ..., bn where n = length(θ)
-    LocalGammaProcess(P, θ, b) = length(θ) != length(b) ? 
-        throw(ArgumentError("θ and b differ in length")) : new(P, θ, b)
+    θ::Vector{Float64} # slope parameter of length N
+    ρ::Vector{Float64} # intercept parameter of length N
+    b::Vector{Float64} # grid points b1, ..., bN 
+    LocalGammaProcess(P, θ, ρ, b) = length(θ) != length(b) ? 
+        throw(ArgumentError("θ and b differ in length")) : new(P, θ, ρ, b)
 
 end
 
@@ -170,26 +171,26 @@ function θ(x, P::LocalGammaProcess)
     N = length(P.θ)
     N == 0 && return 0.0
     x <= P.b[1] && return 0.0
-    x > P.b[N] && return P.θ[N] * x
-    
+    x > P.b[N] && return P.θ[N] * x + P.ρ[N]
+
     #k = Int(div(x, P.b1))
     k = first(searchsorted(P.b, x)) - 1
-    P.θ[k] * x
+    P.θ[k] * x + P.ρ[k]
 end
 
 """
-     nu(k,P)
+     nu(k, P)
 
-(Bin-wise) integral of the Levy measure ``\\nu(B_k)``.
+(Bin-wise) integral of the Levy measure ``\\nu(B_k)`` (sic).
 """
-function nu(k,P)
+function nu(k, P)
     if k == 0
         P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to constant
     elseif k == length(P.θ) 
         assert((P.P.λ + P.θ[k]) > 0.0)
-        P.P.γ*(expint1((P.P.λ + P.θ[k])*P.b[k])) # - 0
+        P.P.γ*exp(-P.ρ[k])*(expint1((P.P.λ + P.θ[k])*P.b[k])) # - 0 (upper limit infty)
     else
-        P.P.γ*(expint1((P.P.λ + P.θ[k])*P.b[k]) - expint1((P.P.λ + P.θ[k])*P.b[k+1]))
+        P.P.γ*exp(-P.ρ[k])*(expint1((P.P.λ + P.θ[k])*P.b[k]) - expint1((P.P.λ + P.θ[k])*P.b[k+1]))
     end
 end
 
@@ -216,9 +217,9 @@ For `kstart == 1` (only choice) this is ``\\nu_0([b_1,\\infty)``.
 """
 function compensator0(kstart, P::LocalGammaProcess)
     if kstart == 1
-        return P.P.γ*(expint1(P.P.λ*P.b[1]))
+        return P.P.γ * (expint1(P.P.λ * P.b[1]))
     else
-        throw(ArgumentError("k != 1 or 2"))
+        throw(ArgumentError("k != 1"))
     end
 end
 
@@ -230,17 +231,17 @@ Log-likelihood `dPº/dP`. (Up to proportionality.)
 """
 function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess, c = 0.0)::Float64
     assert(Pº.P.γ == P.P.γ)
-    if Pº.P.λ == P.P.λ # same on the first bin
+    if Pº.P.λ == P.P.λ # case 1: same on the first bin
         ll = 0.
         for i in 2:length(X.tt)
-            x = X.yy[i]-X.yy[i-1] - c
-            ll = ll - (θ(x, Pº)-θ(x, P)) # θ(x, P) ≈ θ_k x
+            dx = X.yy[i] - X.yy[i-1] - c
+            ll = ll - (θ(dx, Pº) - θ(dx, P)) # θ(x, P) ≈ θ_k dx + ρ_k
         end
         ll = ll - (X.tt[end]-X.tt[1])*(compensator(1, Pº)-compensator(1, P))
         return ll
-    elseif Pº.θ === P.θ
-        ll = -(Pº.P.λ-(P.P.λ))*(X.yy[end]-X.yy[1])
-        return ll - (X.tt[end]-X.tt[1])*(compensator(0, Pº)-compensator(0, P))
+    elseif Pº.θ === P.θ && Pº.ρ === P.ρ # case 2:
+        ll = -(Pº.P.λ - P.P.λ) * (X.yy[end] - X.yy[1])
+        return ll - (X.tt[end] - X.tt[1])*(compensator(0, Pº)-compensator(0, P))
     else
         throw(ArgumentError(""))
     end
@@ -256,10 +257,10 @@ Bridge log-likelihood with respect to reference measure `P.P`.
 function llikelihood(X::SamplePath, P::LocalGammaProcess, c = 0.0)::Float64
     ll = 0.
     for i in 2:length(X.tt)
-        x = X.yy[i]-X.yy[i-1] - c
-        ll = ll - θ(x, P)
+        dx = X.yy[i] - X.yy[i-1] - c
+        ll = ll - θ(dx, P)
     end
-    ll = ll - (X.tt[end]-X.tt[1])*(compensator(1, P)-compensator0(1, P))
+    ll = ll - (X.tt[end] - X.tt[1])*(compensator(1, P) - compensator0(1, P))
     return ll
 end
 
