@@ -1,4 +1,23 @@
 export supnorm, @_isdefined
+
+
+"""
+    runmean(x)
+
+Running mean of the vector `x`.
+"""
+runmean(x, cx = cumsum(x)) = [cx[n]/n for n in 1:length(x)]
+
+function runmean(xx::Matrix) 
+    yy = copy(xx) / 1
+    m = 0 * (copy(xx[1,:])/1)
+    for i in 1:size(yy, 1)
+        m[:] = m + (xx[i, :] - m)/i
+        yy[i, :] = m
+    end
+    yy
+end
+
 """
     cumsum0(x)
 

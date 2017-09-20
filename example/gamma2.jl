@@ -2,7 +2,7 @@
 using Bridge
 using Base.Test
 using Distributions
-runmean(x) = [mean(x[1:n]) for n in 1:length(x)]
+using Bridge: runmean
 
 #srand(1234)
 srand(123)
@@ -12,7 +12,7 @@ PYPLOT && using PyPlot
 import Bridge: increment, expint
 import Distributions.pdf
 
-N = 4 # number of thetas
+N = 3 # number of thetas (so N+1 bins)
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
@@ -98,16 +98,6 @@ function hist1(xx, r; prob = false)
     end
 end
 
-runmean(xx) = [cumsum(xx[1:i]) for i in 1:length(xx)]
-function runmean(xx::Matrix) 
-    yy = copy(xx) / 1
-    m = 0 * (copy(xx[1,:])/1)
-    for i in 1:size(yy, 1)
-        m[:] = m + (xx[i, :] - m)/i
-        yy[i, :] = m
-    end
-    yy
-end
 
 pdf(x, beta, alpha) = beta/x*exp(-alpha*x)
 
@@ -210,7 +200,7 @@ end
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
 b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
 #b = [Inf]
-b = [ 0.1, 1., 2.5, 5.]
+b = [0.3, 0.8, 2.]
 
 #println("P(Y < b1) = ", mean(diff(X.yy) .< b1))
 h = hist1(diff(X.yy), b) # note that P(Y < b[1]) may be inaccurate if dt is chosen small
@@ -222,19 +212,21 @@ if PYPLOT
     plot(XY.tt, XY.yy)
 end
 
-# prior
+## Prior
+
 vpi = 2.0
 epi = 2.0
 
-Pi = Gamma(epi^2/vpi, vpi/epi)
-Pi2 = Normal(0., 1/2)
+Pi = Gamma(epi^2/vpi, vpi/epi) # alpha
+Pi2 = Normal(0., 1.0) # theta
+Pi3 = Normal(0., 1.0) # rho
 
 assert(mean(Pi) ≈ epi)
 assert(var(Pi) ≈ vpi)
 
 
 
-lpi(alpha, theta) = logpdf(Pi, alpha) + sum(logpdf.(Pi2,theta))
+lpi(alpha, theta, rho) = logpdf(Pi, alpha) + sum(logpdf.(Pi2, theta)) + sum(logpdf.(Pi3, rho))
 
 #initialize 
 
@@ -263,7 +255,7 @@ beps = b[1]/5
 #var(yy[yy.< b[1]/4])
 
 
-iterations = 100000
+iterations = 75000
 #beta0 = 0.8beta0
 alpha = alpha0
 
@@ -278,17 +270,18 @@ c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
 
 
 theta = zeros(N)
-#theta = [0.0]
-alphasigma = 0.05
+rho = zeros(N)
+
+# prior chain step std
+alphasigma = 0.15
 thsigma = 0.05
+rhosigma = [0.0, 0.05, 0.05] # variance of rho1 = 0
 
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
     bn = join(["b$i" for i in 1:length(b)], " ")
-    println(f, "alpha0 beta0 T n $bn beps prior1 prior2 ") 
-    println(f, join(round.([alpha0, beta0, T, n, b... ],3)," "), " $beps \"$Pi\" \"$Pi2\" ") 
-
-
+    println(f, "N alpha0 beta0 T n $bn beps prior1 prior2 ") 
+    println(f, N, " ", join(round.([alpha0, beta0, T, n, b... ],3)," "), " $beps \"$Pi\" \"$Pi2\" ") 
 end
 
 # initial augmentation
@@ -308,33 +301,38 @@ if PYPLOT
     plot(X.tt[1:11], X.yy[1:11], "*")
 end
 
-open(joinpath("output",simname,"params.txt"), "w") do f
+# write header line for csv 
+open(joinpath("output", simname, "params.txt"), "w") do f
     thn = join(["theta$i" for i in 1:length(theta)], " ")
-    println(f, "n alpha $thn") 
+    rhon = join(["rho$i" for i in 1:length(rho)], " ")  
+    println(f, "n alpha $thn $rhon") 
 end
 
 P0 = GammaProcess(beta, alpha) 
-P = LocalGammaProcess(P0, theta, b)
+P = LocalGammaProcess(P0, theta, rho, b)
 
-mc = mcstart([alpha; theta])
+mc = mcstart([alpha; theta; rho])
 thacc = 0
 Bacc = 0
 alphaacc = 0
 for iter in 1:iterations
     # logging
-    mc = mcnext(mc, [alpha;theta])
-    open(joinpath("output",simname,"params.txt"), "a") do f; println(f, iter, " ", join(round.([alpha; theta],8)," ")) end
+    mc = mcnext(mc, [alpha; theta; rho])
+    open(joinpath("output", simname, "params.txt"), "a") do f
+        println(f, iter, " ", join(round.([alpha; theta; rho], 8), " ")) 
+    end
    
     # compensator for small jumps
-    #c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps))
+    c = beta*(T/(n*m*alpha)) * (1 - exp(-alpha*beps))
     c = 0.0
+
     # sample bridges
 
     for i in 1:n
         Delta = tt[i+1]-tt[i]
         delta = Delta/m
         P0 = GammaProcess(beta, alpha)
-        P = LocalGammaProcess(P0, theta, b)
+        P = LocalGammaProcess(P0, theta, rho, b)
         Pº = GammaBridge(tt[i+1], yy[i+1], P0)
         #tti = linspace(tt[i], tt[i+1], m+1)
         Bº = SamplePath(B[i].tt, zz)
@@ -349,24 +347,27 @@ for iter in 1:iterations
     end
 
     # sample parameters
-    # update theta
+    # update theta and rho
     if iter % 5 != 2 # remember to update formula for acceptane rates
         P0 = GammaProcess(beta, alpha)
         thetaº = theta + thsigma*randn(length(theta))
+        rhoº = rho + rhosigma.*randn(length(rho))
+        
         if thetaº[end] + alpha < eps() 
             # reject
         else
-            P = LocalGammaProcess(P0, theta, b)
-            Pº = LocalGammaProcess(P0, thetaº, b)
+            P = LocalGammaProcess(P0, theta, rho, b)
+            Pº = LocalGammaProcess(P0, thetaº, rhoº, b)
 
             ll = 0.0
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P, c)
             end
-            print("$iter \t\t\t\t thetaº: ", round(ll, 5), " ", round.(thetaº, 3))
-            if rand() < exp(ll + lpi(alpha, thetaº) - lpi(alpha, theta))
+            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([thetaº; rhoº], 3))
+            if rand() < exp(ll + lpi(alpha, thetaº, rhoº) - lpi(alpha, theta, rho))
                 print("✓")
                 theta = thetaº
+                rho = rhoº
                 thacc += 1
             end
             println()
@@ -377,21 +378,21 @@ for iter in 1:iterations
     if  iter % 5 == 2 # remember to update formula for acceptane rates
         alphaº = alpha + alphasigma*randn()
         
-        if alphaº < 0 || theta[end] + alphaº < eps()
+        if alphaº < 0 || theta[end] + alphaº < eps() # according to Wilkinson
             # reject
         else   
             P0º = GammaProcess(beta, alphaº)
             P0 = GammaProcess(beta, alpha)
             
-            Pº = LocalGammaProcess(P0º, theta, b)
-            P = LocalGammaProcess(P0, theta, b)
+            Pº = LocalGammaProcess(P0º, theta, rho, b)
+            P = LocalGammaProcess(P0, theta, rho, b)
             
             ll = 0.0
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P)
             end
             print("$iter \t alphaº: ", round(ll, 5), " [", round(alphaº, 3), "]")
-            if rand() < exp(ll + lpi(alphaº, theta) - lpi(alpha, theta))
+            if rand() < exp(ll + lpi(alphaº, theta, rho) - lpi(alpha, theta, rho))
                 alpha = alphaº
                 alphaacc += 1
                 print("✓")
