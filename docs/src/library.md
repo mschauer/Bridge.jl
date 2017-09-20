@@ -66,6 +66,7 @@ Bridge.outer
 CSpline
 Bridge.integrate 
 Bridge.logpdfnormal
+Bridge.runmean
 ```
 
 ## Online statistics

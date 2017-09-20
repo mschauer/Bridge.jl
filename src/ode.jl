@@ -59,12 +59,20 @@ end
 @inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' + a(t, P)
 
 """
-    gpHinv!(K::SamplePath, P, v=zero(T))
+    gpHinv!(K::SamplePath, P, KT=zero(T))
 
 Precompute ``K = H^{-1}`` from ``(d/dt)K = BK + KB' + a`` for a guided proposal.
 """
-gpHinv!(K::SamplePath{T}, P, v=zero(T)) where {T} = _solvebackward!(R3(), _dHinv, K, v, P)
-gpV!(V::SamplePath{T}, v::T, P) where {T} = _solvebackward!(R3(), _F, V, v, P)
+gpHinv!(K::SamplePath{T}, P, KT=zero(T)) where {T} = _solvebackward!(R3(), _dHinv, K, KT, P)
+gpH♢! = gpHinv!
+
+"""
+gpV!(K::SamplePath, P, KT=zero(T))
+
+Precompute `V` from ``(d/dt)V = BV + β``, ``V_T = v`` for a guided proposal.
+"""
+gpV!(V::SamplePath{T}, P, v::T) where {T} = _solvebackward!(R3(), _F, V, v, P)
+
 
 
 gpmu(tt, u::T, P) where {T} = solve(R3(), _F, tt, u, P)

@@ -14,7 +14,13 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 #####################
 
 
+"""
+    BridgeProp(Target::ContinuousTimeProcess, tt, v, a, cs)
 
+Simple bridge proposal derived from a linear process with time dependent drift given by a [`CSpline`](@ref)
+and constant diffusion coefficient `a`.
+
+"""
 struct BridgeProp{T} <: ContinuousTimeProcess{T}
     Target
     tt::Vector{Float64}
@@ -61,7 +67,7 @@ end
 """
     GuidedProp
 
-General bridge proposal process
+General bridge proposal process, only assuming that `Pt` defines `H` and `r` in the right way.
 """    
 struct GuidedProp{T} <: ContinuousTimeProcess{T}
     Target
@@ -96,48 +102,40 @@ end
 """
     GuidedBridge
 
-Guided proposal process for diffusion bridge.
-"""
+Guided proposal process for diffusion bridge using backward recursion.
+    
+    GuidedBridge(tt, P, Pt, v)
+
+Constructor of guided proposal process for diffusion bridge of `P` to `v` on 
+the time grid `tt` using guiding term derived from linear process `Pt`.
+
+    GuidedPBridge(tt, P, Pt, V, H♢)
+
+Guided proposal process for diffusion bridge of `P` to `v` on 
+the time grid `tt` using guiding term derived from linear process `Pt`.
+Initialize using [`gpupdate(H♢, V, L, Σ, v)`](@ref)
+"""   
 struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
     Target::R
     Pt::R2
     tt::Vector{Float64}
-    v::Tuple{T,T}
-    K::Vector{S} 
+    H♢::Vector{S} 
     V::Vector{T}
-    lp::Float64
-"""
-    GuidedBridge(tt, (u, v), P, Pt)
 
-Guided proposal process for diffusion bridge of `P` from `u` to `v` on 
-the time grid `tt` using guiding term derived from linear process `Pt`.
-"""    
-    function GuidedBridge(tt_, v::Tuple{T,T}, P::R, Pt::R2) where {T,R,R2}
+    function GuidedBridge(tt_, P::R, Pt::R2, v::T, h♢::S = Bridge.outer(zero(v))) where {T,R,R2,S}
         tt = collect(tt_)
         N = length(tt)
-        S = typeof(Bridge.outer(zero(T)))
-        K = SamplePath(tt, zeros(S, N)) 
+        H♢ = SamplePath(tt, zeros(S, N)) 
         V = SamplePath(tt, zeros(T, N)) 
-        gpHinv!(K, Pt)
-        gpV!(V, v[2], Pt)
-        lp = logpdfnormal(v[2] - gpmu(tt, v[1], Pt), gpK(tt, zero(S), Pt))
-        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy, lp)
-    end
-    function GuidedBridge(tt_, v::Tuple{T,T}, P::R, Pt::R2, KT) where {T,R,R2}
-        tt = collect(tt_)
-        N = length(tt)
-        S = typeof(Bridge.outer(zero(T)))
-        K = SamplePath(tt, zeros(S, N))
-        V = SamplePath(tt, zeros(T, N))
-        gpHinv!(K, Pt, KT)
-        gpV!(V, v[2], Pt)
-        new{T,S,R2,R}(P, Pt, tt, v, K.yy, V.yy, NaN)
+        gpHinv!(H♢, Pt, h♢)
+        gpV!(V, Pt, v)
+        new{T,S,R2,R}(P, Pt, tt, H♢.yy, V.yy)
     end
 end
  
-bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.K[i]\(P.V[i] - x)) 
-ri(i::Integer, x, P::GuidedBridge) = P.K[i]\(P.V[i] - x)
-Hi(i::Integer, x, P::GuidedBridge) = inv(P.K[i])
+bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H♢[i]\(P.V[i] - x)) 
+ri(i::Integer, x, P::GuidedBridge) = P.H♢[i]\(P.V[i] - x)
+Hi(i::Integer, x, P::GuidedBridge) = inv(P.H♢[i])
 
 σ(t, x, P::GuidedBridge) = σ(t, x, P.Target)
 a(t, x, P::GuidedBridge) = a(t, x, P.Target)
@@ -145,7 +143,20 @@ a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
 btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
-lptilde(P::GuidedBridge) = P.lp
+lptilde(P::GuidedBridge, u) = logpdfnormal(v - gpmu(tt, u, P.Pt), gpK(tt, Bridge.outer(zero(u)), P.Pt))
+
+
+"""
+    gpupdate(H♢, V, L, Σ, v)
+    gpupdate(P, L, Σ, v)
+
+Return updated `H♢, V` when observation `v` at time zero with error `Σ` is observed.
+"""
+function gpupdate(H♢, V, L, Σ, v)
+    Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
+    Z*H♢, H♢*L'*inv(Σ)*v + Z*V 
+end
+gpupdate(P::GuidedBridge, L, Σ, v) = gpupdate(P.H♢[1], P.V[1], L, Σ, v)
 
 #################################################
 
