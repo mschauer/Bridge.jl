@@ -357,7 +357,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.nu",
     "category": "Function",
-    "text": " nu(k,P)\n\n(Bin-wise) integral of the Levy measure nu(B_k).\n\n\n\n"
+    "text": " nu(k, P)\n\n(Bin-wise) integral of the Levy measure nu(B_k) (sic).\n\n\n\n"
 },
 
 {
