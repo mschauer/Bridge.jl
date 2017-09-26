@@ -237,7 +237,7 @@ z = Float64[
 p2 = pdf(transitionprob(0.0, u, T, Ptarget), v)
 p = exp(lp(0.0, u, T, v, Ptarget))
 pt = exp(lp(0.0, u, T, v, Pt))
-@test p == p2
+@test p ≈ p2
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 
@@ -246,9 +246,9 @@ push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 push!(Cnames, "GuidedProposal")
 Ptarget = Bridge.Ptilde(cs, sqrt(a))
 Pt = LinPro(-β, 0.2, sqrt(a))
-GP = Bridge.GuidedBridge(tt, (u,v), Ptarget, Pt)
+GP = Bridge.GuidedBridge(tt, Ptarget, Pt, v)
 
-@test norm(GP.K-[inv(Bridge.H(t, T, Pt)) for t in tt], Inf) < 1e-5
+@test norm(GP.H♢-[inv(Bridge.H(t, T, Pt)) for t in tt], Inf) < 1e-5
 @test norm(GP.V-[Bridge.V(t, T, v, Pt) for t in tt], Inf) < 1e-5
 
 
@@ -256,7 +256,7 @@ z = Float64[
     begin
     W = sample(tt, Wiener{Float64}())
     X = copy(W)
-    Bridge.bridge!(Bridge.Euler(), X, W, GP)
+    Bridge.bridge!(X, u, W, GP)
     llikelihood(LeftRule(), X, GP)
     end
     for i in 1:m]
@@ -264,7 +264,7 @@ z = Float64[
 p2 = pdf(transitionprob(0.0, u, T, Ptarget), v)
 p = exp(lp(0.0, u, T, v, Ptarget))
 pt = exp(lp(0.0, u, T, v, Pt))
-@test p == p2
+@test p ≈ p2
 @test pt ≈ exp(lptilde(Po))
 push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
 

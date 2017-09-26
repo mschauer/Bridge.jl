@@ -66,6 +66,7 @@ Bridge.outer
 CSpline
 Bridge.integrate 
 Bridge.logpdfnormal
+Bridge.logpdfnormalprec
 Bridge.runmean
 ```
 
@@ -100,12 +101,15 @@ Bridge.Ptilde
 GuidedProp
 Bridge.GuidedBridge
 BridgePre
+BridgeProp
 Bridge.Mdb
 bridge
 bridge!
 Bridge.Vs
+Bridge.gpV!
 Bridge.r
 Bridge.gpHinv!
+Bridge.gpupdate
 ```
 
 ## Unsorted

@@ -113,7 +113,7 @@ the time grid `tt` using guiding term derived from linear process `Pt`.
 
 Guided proposal process for diffusion bridge of `P` to `v` on 
 the time grid `tt` using guiding term derived from linear process `Pt`.
-Initialize using [`gpupdate(H♢, V, L, Σ, v)`](@ref)
+Initialize using [`Bridge.gpupdate`](@ref)(H♢, V, L, Σ, v)
 """   
 struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
     Target::R
@@ -143,7 +143,13 @@ a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
 btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
-lptilde(P::GuidedBridge, u) = logpdfnormal(v - gpmu(tt, u, P.Pt), gpK(tt, Bridge.outer(zero(u)), P.Pt))
+@inline _traceB(t, x, P) = trace(Bridge.B(t, P))
+traceB(tt, P) = solve(Bridge.R3(), _traceB, tt, 0.0, P)
+
+lptilde(P::GuidedBridge, u) = logpdfnormal(P.V[1] - u, P.H♢[1]) - traceB(P.tt, P.Pt)
+
+# fallback for testing
+lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(P.tt, Bridge.outer(zero(u)), P.Pt))
 
 
 """

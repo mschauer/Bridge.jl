@@ -5,9 +5,13 @@ import Distributions: pdf, logpdf
 
 sumlogdiag(a::Float64, d=1) = log(a)
 sumlogdiag(A,d) = sum(log.(diag(A)))
-sumlogdiag(J::UniformScaling{T},d) where {T} = log(J.λ)*d
+sumlogdiag(J::UniformScaling, d)= log(J.λ)*d
  
+_logdet(A, d) = logdet(A)
+_logdet(J::UniformScaling, d) = log(J.λ) * d
 
+_symmetric(A) = Symmetric(A)
+_symmetric(J::UniformScaling) = J
 
 import Distributions: logpdf, pdf
 mutable struct Gaussian{T}
@@ -37,17 +41,26 @@ end
 """
     logpdfnormal(x, A) 
 
-logpdf of centered gaussian with covariance A
+logpdf of centered Gaussian with covariance A
 """
 function logpdfnormal(x, A) 
 
-    S = chol((A+A')/2)'
+    S = chol(_symmetric(A))'
 
     d = length(x)
      -((norm(S\x))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
 end
-function logpdfnormal(x::Float64, A) 
-    S = sqrt(A)
-     -((norm(S\x))^2 + 2log(S) + log(2pi))/2
+function logpdfnormal(x::Float64, a) 
+     -(x^2/a + log(a) + log(2pi))/2
 end
 
+"""
+logpdfnormalprec(x, A) 
+
+logpdf of centered gaussian with precision A
+"""
+function logpdfnormalprec(x, A) 
+    d = length(x)
+    -(dot(x, S*x) - _logdet(A, d) + d*log(2pi))/2
+end
+logpdfnormalprec(x::Float64, a) =  -(a*x^2 - log(a) + log(2pi))/2
