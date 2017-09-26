@@ -13,11 +13,6 @@ kernel(x, a=0.001) = exp(Bridge.logpdfnormal(x, a*I))
 TEST = false
 CLASSIC = false
 
-@inline _traceB(t, K, P) = trace(Bridge.B(t, P))
-
-traceB(tt, u::T, P) where {T} = solve(Bridge.R3(), _traceB, tt, u, P)
-
-
 
 using Bridge.outer
 
@@ -64,7 +59,7 @@ Bridge.a(t, x, P::Linear) = SM(0.25, 0, 0, outer(gamma(P.T, P.v[2])))
 Bridge.a(t, P::Linear) = SM(0.25, 0, 0, outer(gamma(P.T, P.v[2])))
 Bridge.constdiff(::Linear) = false
 
-Q = Normal()
+
 
 c = 0.0
 κ = 3.0
@@ -83,19 +78,20 @@ tt = t:dt:T
 tt1 = t:dt:S
 tt2 = S:dt:T
 
-m = 200_000
+m = 1_200_000
 
 Ti = n
 Si = n÷2
 
 # observations
 
-Σ = 1.0 # observation noise
+Σ = 0.8 # observation noise
+Q = Normal(0, sqrt(Σ)) # noise distribution
 L = @SMatrix [1.0 0.0]
 
 xt = @SVector [0.1, 0.0]
-vS = @SVector [-0.5]
-xT = @SVector [0.3, -0.6]
+vS = @SVector [0.1]
+xT = @SVector [0.3, -0.4]
 
 # processes
 
@@ -132,7 +128,7 @@ for i in 1:m
     
     eta = rand(Q)
     nrm = norm(xT - X.yy[Ti]) + norm(vS - eta - L*X.yy[Si])
-    l = kernel(xT - X.yy[Ti])*kernel(vS - L*X.yy[Si], 1.0)
+    l = kernel(xT - X.yy[Ti]) * kernel(vS - L*X.yy[Si] - eta)
     push!(p, l)
     if nrm < best
         best = nrm
@@ -151,10 +147,12 @@ for i in 1:m
     W = sample!(W, Wiener{SV}())
     Bridge.solve!(Euler(), Xt, xt, W, Pt)
     eta = rand(Q)
-    l =  kernel(xT - Xt.yy[Ti])*kernel(vS - L*Xt.yy[Si], 1.0) # likelihood
+    l =  kernel(xT - Xt.yy[Ti]) * kernel(vS - L*Xt.yy[Si] - eta) # likelihood
     push!(pt, l)
 end
 lpthat = log(mean(pt))
+
+
 
 @show lpthat
 
@@ -176,10 +174,11 @@ Z = Float64[]
 Xo1 = SamplePath(tt1, zeros(SV, length(tt)))
 Xo2 = SamplePath(tt2, zeros(SV, length(tt)))
 
+GP2 = GuidedBridge(tt2, P, Pt, xT)
+H♢, V = Bridge.gpupdate(GP2, L, Σ, vS)
+GP1 = GuidedBridge(tt1, P, Pt, V, H♢)
+
 @time for i in 1:m
-    GP2 = GuidedBridge(tt2, P, Pt, xT)
-    H♢, V = Bridge.gpupdate(GP2, L, Σ, vS)
-    GP1 = GuidedBridge(tt1, P, Pt, V, H♢)
     
     sample!(W1, Wiener{SV}())
     sample!(W2, Wiener{SV}())
@@ -191,16 +190,21 @@ Xo2 = SamplePath(tt2, zeros(SV, length(tt)))
     push!(Z, exp(ll))
 end
 
-@show log(mean(exp.(pthat))), lphat
+@show log(mean(exp.(lpthat))), lphat
 
 subplot(122)
 step = 10
+lpt = lptilde(GP1, xt) + lptilde(GP2, GP1.V[end]) + log(pdf(Q, L*(GP2.V[1]-GP1.V[end])))
 plot(mean(pt)*runmean(Z)[1:step:end], label="Phi*pt")
 plot(runmean(p)[1:step:end], label="p")
 plot(runmean(pt)[1:step:end], label="pt")
+plot(fill(exp(lpt),length(1:step:m)), label="pt theor.")
 legend()
-axis([1, div(m,step), 0, 2*exp(lpt)])
+axis([1, div(m,step), 0, 3*exp(lpthat)])
 
+@show lpthat
+@show lpt
+@show lptilde(GP1, xt) - Bridge.traceB(tt2, Pt)
 
 error("done")
 
