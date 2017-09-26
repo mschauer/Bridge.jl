@@ -66,8 +66,9 @@ Bridge.outer
 CSpline
 Bridge.integrate 
 Bridge.logpdfnormal
-Bridge.logpdfnormalprec
 Bridge.runmean
+Bridge.PSD
+Bridge.Gaussian
 ```
 
 ## Online statistics

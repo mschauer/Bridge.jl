@@ -1,37 +1,59 @@
 # Gaussian
 using Distributions
-import Base: rand
-import Distributions: pdf, logpdf
+using Base.LinAlg: norm_sqr
 
-sumlogdiag(a::Float64, d=1) = log(a)
-sumlogdiag(A,d) = sum(log.(diag(A)))
+import Base: rand
+import Distributions: pdf, logpdf, sqmahal
+import Base: chol, size
+
+"""
+    PSD{T}
+
+Simple wrapper for the lower triangular Cholesky root of a positive (semi-)definite element `σ`.
+"""
+type PSD{T}
+    σ::T
+    PSD(σ::T) where {T} = istril(σ) ? new{T}(σ) : throw(ArgumentError("Argument not lower triangular"))
+end
+chol(P::PSD) = P.σ' 
+
+sumlogdiag(Σ::Float64, d=1) = log(Σ)
+sumlogdiag(Σ,d) = sum(log.(diag(Σ)))
 sumlogdiag(J::UniformScaling, d)= log(J.λ)*d
- 
-_logdet(A, d) = logdet(A)
+
+_logdet(Σ::PSD, d) = 2*sumlogdiag(Σ.σ, d)
+
+_logdet(Σ, d) = logdet(Σ)
 _logdet(J::UniformScaling, d) = log(J.λ) * d
 
-_symmetric(A) = Symmetric(A)
+_symmetric(Σ) = Symmetric(Σ)
 _symmetric(J::UniformScaling) = J
 
-import Distributions: logpdf, pdf
-mutable struct Gaussian{T}
-    mu::T
-    a
-    sigma
-    Gaussian{T}(mu, a) where T = new(mu, a, chol(a)')
-end
-Gaussian(mu::T, a) where {T} = Gaussian{T}(mu, a)
+"""
+    Gaussian(μ, Σ) -> P
 
-rand(P::Gaussian) = P.mu + P.sigma*randn(typeof(P.mu))
-rand(P::Gaussian{Vector{T}}) where {T} = P.mu + P.sigma*randn(T, length(P.mu))
-function logpdf(P::Gaussian, x)
-    S = P.sigma
-    x = x - P.mu
-    d = length(x)
-     -((norm(S\x))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
-end
+Gaussian distribution with mean `μ`` and covariance `Σ`. Defines `rand(P)` and `(log-)pdf(P, x)`.
+Designed to work with `Number`s, `UniformScaling`s, `StaticArrays` and `PSD`-matrices.
 
-pdf(P::Gaussian,x) = exp(logpdf(P::Gaussian, x))
+Implementation details: On `Σ` the functions `logdet`, `whiten` and `unwhiten`
+(or `chol` as fallback for the latter two) are called.
+"""
+struct Gaussian{T,S}
+    μ::T
+    Σ::S
+    Gaussian(μ::T, Σ::S) where {T,S} = new{T,S}(μ, Σ)
+end
+dim(P::Gaussian) = length(P.μ)
+whiten(Σ::PSD, z) = Σ.σ\z
+whiten(Σ, z) = chol(Σ)'\z
+whiten(Σ::UniformScaling, z) = z/sqrt(Σ.λ)
+sqmahal(P::Gaussian, x) = norm_sqr(whiten(P.Σ,x - P.μ))
+
+rand(P::Gaussian) = P.μ + chol(P.Σ)'*randn(typeof(P.μ))
+rand(P::Gaussian{Vector}) = P.μ + chol(P.Σ)'*randn(T, length(P.μ))
+
+logpdf(P::Gaussian, x) = -(sqmahal(P,x) + _logdet(P.Σ, dim(P)) + dim(P)*log(2pi))/2    
+pdf(P::Gaussian, x) = exp(logpdf(P::Gaussian, x))
 
 function Base.LinAlg.chol(u::SDiagonal{N,T}) where T<:Real where N
     all(u.diag .>= zero(T)) || error(Base.LinAlg.PosDefException(1))
@@ -39,28 +61,18 @@ function Base.LinAlg.chol(u::SDiagonal{N,T}) where T<:Real where N
 end
 
 """
-    logpdfnormal(x, A) 
+    logpdfnormal(x, Σ) 
 
-logpdf of centered Gaussian with covariance A
+logpdf of centered Gaussian with covariance Σ
 """
-function logpdfnormal(x, A) 
+function logpdfnormal(x, Σ) 
 
-    S = chol(_symmetric(A))'
+    S = chol(_symmetric(Σ))'
 
     d = length(x)
      -((norm(S\x))^2 + 2sumlogdiag(S,d) + d*log(2pi))/2
 end
-function logpdfnormal(x::Float64, a) 
-     -(x^2/a + log(a) + log(2pi))/2
+function logpdfnormal(x::Float64, Σ) 
+     -(x^2/Σ + log(Σ) + log(2pi))/2
 end
 
-"""
-logpdfnormalprec(x, A) 
-
-logpdf of centered gaussian with precision A
-"""
-function logpdfnormalprec(x, A) 
-    d = length(x)
-    -(dot(x, S*x) - _logdet(A, d) + d*log(2pi))/2
-end
-logpdfnormalprec(x::Float64, a) =  -(a*x^2 - log(a) + log(2pi))/2
