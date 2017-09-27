@@ -55,11 +55,6 @@ rand(P::Gaussian{Vector}) = P.μ + chol(P.Σ)'*randn(T, length(P.μ))
 logpdf(P::Gaussian, x) = -(sqmahal(P,x) + _logdet(P.Σ, dim(P)) + dim(P)*log(2pi))/2    
 pdf(P::Gaussian, x) = exp(logpdf(P::Gaussian, x))
 
-function Base.LinAlg.chol(u::SDiagonal{N,T}) where T<:Real where N
-    all(u.diag .>= zero(T)) || error(Base.LinAlg.PosDefException(1))
-    return SDiagonal(sqrt.(u.diag))
-end
-
 """
     logpdfnormal(x, Σ) 
 
