@@ -253,6 +253,10 @@ lpt = Bridge.logpdfnormal(u, Upsilon)
 
 @test norm(logdet(U) + Bridge.logdetU(GP1, GP2, L, Σ)) < 1e-8
 
+@test norm(PhiTS*xS + (hTS - muTS)) < 1e-7
+
+@test norm(PhiTS*(VS-xS) - ( xT-PhiTS*xS - hTS ) ) < 1e-7
+
 @test_broken norm(sqmahal(Gaussian( A*xt, Upsilon), z) - sqmahal(Gaussian(GP1.V[1], GP1.H♢[1]) , xt)) < 1e-8
 @show lpt
 @show lpthat
@@ -278,6 +282,7 @@ lpt = Bridge.logpdfnormal(u, Upsilon)
 @test norm(xt'*inv(H♢)*xt - xt'*A'*U*A*xt) < 1e-7
 @test norm(xt'*inv(H♢)*V - xt'*A'*U*z) < 1e-7
 
+@test norm(PhiT*(V-xt) + PhiTS*(VS-VS_)  - ( xT-PhiT*xt - hT ) ) < 1e-7
 
 mh1 = [vS - L*muS;xT - muT]'*U*[vS - L*muS;xT - muT]
 mh2 = (V - xt)'*inv(H♢)*(V - xt)
