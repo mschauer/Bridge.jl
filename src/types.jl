@@ -23,6 +23,15 @@ valtype(::ContinuousTimeProcess{T}) where {T} = T
 valtype(::AbstractPath{T}) where {T} = T
 
 """
+    outertype(P::ContinuousTimeProcess) -> T
+
+Returns the type of `outer(x)`, where `x` is a state of `P`
+"""
+outertype(::ContinuousTimeProcess{Float64}) = Float64
+outertype(P::ContinuousTimeProcess{<:StaticArray}) = typeof(outer(zero(valtype(P))))
+
+
+"""
     SamplePath{T} <: AbstractPath{T}
 
 The struct
@@ -115,6 +124,5 @@ b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 
 # Interoperatibility ODEs
 
-@inline _F(t, x, P) = B(t, P)*x + β(t, P)
 @inline _F(t, x, F::Function) = F(t, x)
 @inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)

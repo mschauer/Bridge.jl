@@ -54,9 +54,12 @@ function kernelbs3(f, t, y, dt, P, k = f(t, y, P))
     yº, k4, err
 end
 
-@inline _dHinv(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
+@inline _F(t, x, P) = B(t, P)*x + β(t, P)
 
+@inline _dHinv(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
 @inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' + a(t, P)
+@inline _dPhi(t, Phi, P) = B(t, P)*Phi 
+
 
 """
     gpHinv!(K::SamplePath, P, KT=zero(T))
@@ -75,10 +78,15 @@ gpV!(V::SamplePath{T}, P, v::T) where {T} = _solvebackward!(R3(), _F, V, v, P)
 
 
 
-gpmu(tt, u::T, P) where {T} = solve(R3(), _F, tt, u, P)
-gpK(tt, u::T, P) where {T} = solve(R3(), _dK, tt, u, P)
+gpmu(tt, u, P) = solve(R3(), _F, tt, u, P)
+gpK(tt, u, P) = solve(R3(), _dK, tt, u, P)
 
+"""
+    fundamental_matrix(tt, P) 
 
+Compute fundamental solution.
+"""
+fundamental_matrix(tt, P, Phi0 = one(outertype(P))) = solve(R3(), _dPhi, tt, Phi0, P)
 
 function solvebackward!(method, F, X, xT, P) 
      _solvebackward!(method, F, X, xT, P) 

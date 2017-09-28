@@ -2,6 +2,14 @@ export supnorm, @_isdefined
 
 
 """
+    refine(tt, n) 
+
+Refine range by decreasing stepsize by a factor `n`.
+"""
+refine(tt, n) =  first(tt):(Base.step(tt)/n):last(tt)
+
+
+"""
     runmean(x)
 
 Running mean of the vector `x`.

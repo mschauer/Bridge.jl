@@ -158,11 +158,27 @@ lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(
 
 Return updated `H♢, V` when observation `v` at time zero with error `Σ` is observed.
 """
+# H♢_ = H♢ -  H♢*L'*inv(Σ + L*H♢*L')*L*H♢
+# V_ = H♢_ * (L'*inv(Σ)*v  + H♢*V)
 function gpupdate(H♢, V, L, Σ, v)
     Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
-    Z*H♢, H♢*L'*inv(Σ)*v + Z*V 
+    Z*H♢, Z*H♢*L'*inv(Σ)*v + Z*V 
 end
 gpupdate(P::GuidedBridge, L, Σ, v) = gpupdate(P.H♢[1], P.V[1], L, Σ, v)
+
+# Alternatives to try
+#   KT =  PhiTS*(KS + GP2.H♢[1])*PhiTS'   
+#   KT = PhiTS*KS*PhiTS' + KTS 
+#   logdet( L*KS*L' + Σ - L*KS*inv(KS + GP2.H♢[1])*KS*L' ) + logdet(KS + GP2.H♢[1]) + 2logdet(PhiTS)
+#   logdet( KS + GP2.H♢[1] - KS*L'*inv(L*KS*L' + Σ)*L*KS  ) + logdet(L*KS*L' + Σ ) + 2logdet(PhiTS)
+function logdetU(GP1, GP2, L, Σ)
+    PhiS = fundamental_matrix(GP1.tt, GP1.Pt)
+    PhiTS = fundamental_matrix(GP2.tt, GP2.Pt)
+    K =  PhiS*GP1.H♢[1]*PhiS' - GP1.H♢[end]
+    H = GP2.H♢[1]
+    logdet(inv(K) + L'*inv(Σ)*L + inv(H)) + logdet(Σ) + logdet(H) + logdet(K) + 2logdet(PhiTS)
+end
+
 
 #################################################
 

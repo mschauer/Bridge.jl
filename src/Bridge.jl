@@ -40,6 +40,7 @@ include("fsa.jl")
 include("gaussian.jl")
 
 include("types.jl")
+include("sizedtype.jl")
 include("misc.jl")
 
 include("cspline.jl")

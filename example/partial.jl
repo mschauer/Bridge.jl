@@ -2,13 +2,15 @@ using Bridge, StaticArrays, Distributions, PyPlot
 using Base.Test
 import Base.Math.gamma # just to use the name
 #import Bridge: b, σ, a, transitionprob
-using Bridge: runmean
+using Bridge: runmean, sqmahal, Gaussian
 
 const percentile = 3.0
 const SV = SVector{2,Float64}
 const SM = SMatrix{2,2,Float64,4}
 
-kernel(x, a=0.001) = exp(Bridge.logpdfnormal(x, a*I))
+kernel(x, a=0.0025) = exp(Bridge.logpdfnormal(x, a*I))
+
+refine(tt, n) =  first(tt):(Base.step(tt)/n):last(tt)
 
 TEST = false
 CLASSIC = false
@@ -75,10 +77,11 @@ S = (t + T)/2
 n = 401
 dt = (T-t)/(n-1)
 tt = t:dt:T
+S = tt[n÷2 + 1]
 tt1 = t:dt:S
 tt2 = S:dt:T
 
-m = 1_200_000
+m = 1_800_000
 
 Ti = n
 Si = n÷2
@@ -91,12 +94,13 @@ L = @SMatrix [1.0 0.0]
 
 xt = @SVector [0.1, 0.0]
 vS = @SVector [0.1]
+xS = @SVector [0.1, -0.2]
 xT = @SVector [0.3, -0.4]
 
 # processes
 
 P = Target(c, κ)
-Pt = Linear(T, xT, -c-0.1, -0.1, κ-0.1, -c/2)
+P̃ = Pt = Linear(T, xT, -c-0.1, -0.1, κ-0.1, -c/2)
 
 # parameters
 
@@ -140,12 +144,14 @@ lphat = log(mean(p))
 
 # Proposal log probability density (forward simulation)
 
-pt = Float64[]
+YtT = SV[]
+p̃ = pt = Float64[]
 Xt = SamplePath(tt, zeros(SV, length(tt)))
 l = 0.0
 for i in 1:m
     W = sample!(W, Wiener{SV}())
     Bridge.solve!(Euler(), Xt, xt, W, Pt)
+    push!(YtT, Xt.yy[end])
     eta = rand(Q)
     l =  kernel(xT - Xt.yy[Ti]) * kernel(vS - L*Xt.yy[Si] - eta) # likelihood
     push!(pt, l)
@@ -156,16 +162,7 @@ lpthat = log(mean(pt))
 
 @show lpthat
 
-# Plot best "bridge"
 
-clf()
-subplot(121)
-plot(Xs.tt, Xs.yy, label="X*")
-plot.(t, xt, "ro")
-plot(S, vS, "ro")
-plot.(T, xT, "ro")
-
-legend()
 
 
 # Proposal
@@ -192,19 +189,123 @@ end
 
 @show log(mean(exp.(lpthat))), lphat
 
+
+@show lpthat
+#@show lpt
+@show lptilde(GP1, xt) - Bridge.traceB(tt2, Pt)
+
+
+PhiS = Bridge.fundamental_matrix(tt1, Pt)
+PhiT = Bridge.fundamental_matrix(tt, Pt)
+PhiTS = Bridge.fundamental_matrix(tt2, Pt)
+
+KS = Bridge.gpK(tt1, zero(SM), Pt)
+KT = Bridge.gpK(tt, zero(SM), Pt)
+KTS = Bridge.gpK(tt2, zero(SM), Pt)
+
+muS = Bridge.gpmu(tt1, xt, Pt)
+muT = Bridge.gpmu(tt, xt, Pt)
+muTS = Bridge.gpmu(tt2, xS, Pt)
+
+hS = Bridge.gpmu(tt1, 0*xt, Pt)
+hT = Bridge.gpmu(tt, 0*xt, Pt)
+hTS = Bridge.gpmu(tt2, 0*xS, Pt)
+
+
+@test norm(PhiTS\(xT - muTS) - (GP2.V[1] - xS)) < 1e-9
+
+#@test norm(muT - mean(YtT)) < 1/sqrt(m)
+
+
+H♢ = GP1.H♢[1]
+H♢S_ = GP1.H♢[end]
+H♢S = GP2.H♢[1]
+V = GP1.V[1]
+VS = GP2.V[1]
+VS_ = GP1.V[end]
+
+u = [vS - L*muS; xT - muT]
+
+Upsilon = [
+L*KS*L' + Σ     L*KS*PhiTS' 
+PhiTS*KS*L'     KT
+]
+
+Upsilon2 = [
+    L*(PhiS*H♢*PhiS' - GP1.H♢[end])*L' + Σ     L*(PhiS*H♢*PhiT' - GP1.H♢[end]*PhiTS') 
+    (PhiT*H♢*PhiS' - PhiTS*GP1.H♢[end])*L'     KT
+    ]
+    
+Upsilon2 = [
+    L*KS*L' + Σ     L*KS 
+    KS*L'     KS + GP2.H♢[1]
+    ]
+@test norm(cat((1,2),eye(1),PhiTS)*Upsilon2*cat((1,2),eye(1),PhiTS)' - Upsilon)<1e-8
+U = inv(Upsilon)
+#0 = logdet(Upsilon2) + 2*logdet(PhiTS) + logdet(U)
+
+A = [L*PhiS; PhiT ]
+
+z = u + A*xt
+
+
+lpt = Bridge.logpdfnormal(u, Upsilon)
+
+@test norm(logdet(U) + Bridge.logdetU(GP1, GP2, L, Σ)) < 1e-8
+
+@test_broken norm(sqmahal(Gaussian( A*xt, Upsilon), z) - sqmahal(Gaussian(GP1.V[1], GP1.H♢[1]) , xt)) < 1e-8
+@show lpt
+@show lpthat
+
+@show logdet(Upsilon)
+@show logdet(KT) + logdet(Σ) + 2*logdet(PhiTS)
+@test -logdet(U) ≈ logdet( L*KS*L' + Σ - L*KS*PhiTS'*inv(KT)*PhiTS*KS*L' ) + 
+    logdet(KT)
+@test -logdet(U) ≈ logdet( KT - PhiTS*KS*L'*inv(L*KS*L' + Σ)*L*KS*PhiTS' ) + 
+    logdet(L*KS*L' + Σ )
+
+@test 1/det(U) ≈  det(L*KS*L' + Σ - 1)*det(KT) +  det(KT -  PhiTS*KS*L'*L*KS*PhiTS')
+
+@test norm(logdet(KTS) - (logdet(GP2.H♢[1]) + 2logdet(PhiTS))) < 1e-8
+
+@test norm(A'*U*A - inv(GP1.H♢[1])) < 1e-7
+
+@test norm(PhiTS\(xT - muTS) - (GP2.V[1] - xS)) < 1e-9
+@test norm(inv(GP1.H♢[end]) - inv(GP2.H♢[1]) -  L'*inv(Σ)*L) < 1e-10
+@test norm(KS - PhiS*H♢*PhiS' + GP1.H♢[end]) < 1e-8
+@test norm(KT - PhiT*H♢*PhiT' - PhiTS*(GP2.H♢[1]- GP1.H♢[end])*PhiTS' ) < 1e-8
+
+@test norm(xt'*inv(H♢)*xt - xt'*A'*U*A*xt) < 1e-7
+@test norm(xt'*inv(H♢)*V - xt'*A'*U*z) < 1e-7
+
+
+mh1 = [vS - L*muS;xT - muT]'*U*[vS - L*muS;xT - muT]
+mh2 = (V - xt)'*inv(H♢)*(V - xt)
+
+r1, r2 = H♢\(V - xt), A'*U*[vS - L*muS;xT - muT]
+@test norm(r1 - r2)  < 1e-7
+
+
+# Plot best "bridge"
+
+clf()
+subplot(121)
+plot(Xs.tt, first.(Xs.yy), label="X₁˟")
+plot(Xs.tt, last.(Xs.yy), label="X₂˟")
+plot.(t, xt, "ro")
+plot(S, vS, "ro")
+plot.(T, xT, "ro")
+legend()
+
 subplot(122)
 step = 10
-lpt = lptilde(GP1, xt) + lptilde(GP2, GP1.V[end]) + log(pdf(Q, L*(GP2.V[1]-GP1.V[end])))
-plot(mean(pt)*runmean(Z)[1:step:end], label="Phi*pt")
+plot(mean(pt)*runmean(Z)[1:step:end], label="Ψ p̃")
 plot(runmean(p)[1:step:end], label="p")
-plot(runmean(pt)[1:step:end], label="pt")
-plot(fill(exp(lpt),length(1:step:m)), label="pt theor.")
+plot(runmean(pt)[1:step:end], label="p̃")
+plot(fill(exp(lpt),length(1:step:m)), label="p̃ theor.")
 legend()
 axis([1, div(m,step), 0, 3*exp(lpthat)])
 
-@show lpthat
-@show lpt
-@show lptilde(GP1, xt) - Bridge.traceB(tt2, Pt)
 
 error("done")
 

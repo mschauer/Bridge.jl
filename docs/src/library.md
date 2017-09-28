@@ -6,6 +6,7 @@
 ContinuousTimeProcess{T}
 SamplePath{T}
 valtype
+Bridge.outertype
 ```
 
 ## Ordinary differential equations and quadrature
@@ -16,6 +17,7 @@ solve!
 Bridge.R3
 Bridge.BS3
 LeftRule
+Bridge.fundamental_matrix
 ```
 
 
@@ -69,6 +71,7 @@ Bridge.logpdfnormal
 Bridge.runmean
 Bridge.PSD
 Bridge.Gaussian
+Bridge.refine
 ```
 
 ## Online statistics
@@ -125,4 +128,5 @@ Bridge.tofs
 Bridge.dotVs
 Bridge.SDESolver
 Bridge.Increments
+Bridge.sizedtype
 ```
