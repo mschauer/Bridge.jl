@@ -218,10 +218,11 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
     Y
 end
 
+bridge(u::T, W::SamplePath, P::GuidedBridge{T}) where {T} = bridge!(samplepath(W.tt, u), W, P)
 """
     bridge!(Y, u, W, P::GuidedBridge) -> v
 
-Integrate guided bridge proposal`P` from `u`, returning endpoint `v`.
+Integrate guided bridge proposal `P` from `u`, returning endpoint `v`.
 """
 function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error

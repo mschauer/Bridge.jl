@@ -5,7 +5,7 @@ Returns ``r(t,x) = \\operatorname{grad}_x \\log p(t,x; T, v)`` where
 ``p`` is the transition density of the process ``P``.
 """ 
 function r(t, x, T, v, P)
-    H(t, T, P, V(t, T, v, P)-x)
+    H(t, T, P, V(t, T, v, P) - x)
 end
 
 tau(s, t, T) = t + (s.-t).*(2-(s-t)/(T-t))
@@ -192,10 +192,10 @@ struct PBridgeProp{T} <: ContinuousTimeProcess{T}
     PBridgeProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs) where T = 
         new(Target, t0, v0, tm, vm, t1, v1, L, L', Σ, cs, a, inv(a))
 end
-PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs=CSpline(t0, t1, zero(T))) where {T} = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
+PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1, L, Σ, a, cs=CSpline(t0, t1, zero(T))) where {T} = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
         
-h1(t,x, P::PBridgeProp) = P.vm - x - integrate(P.cs, t,  P.tm) 
-h2(t,x, P::PBridgeProp) = P.v1 - x - integrate(P.cs, t,  P.t1) 
+h1(t, x, P::PBridgeProp) = P.vm - x - integrate(P.cs, t,  P.tm) 
+h2(t, x, P::PBridgeProp) = P.v1 - x - integrate(P.cs, t,  P.t1) 
 
 N(t, P::PBridgeProp) = inv(P.L*P.a*P.Lt*(P.tm - t) + (P.t1 - t)/(P.t1 - P.tm)*P.Σ)
 Q(t, P::PBridgeProp) = P.Lt*N(t, P)*P.L 
@@ -226,7 +226,7 @@ function lptilde(P::PBridgeProp)
 	n = N(P.t0, P)*(P.tm-P.t0)
 	U = Any[	(P.t1-P.t0)/(P.t1-P.tm)/(P.tm-P.t0)*n 		-n*P.L/(P.t1-P.tm)
 			-P.L'*n/(P.t1-P.tm) 				(P.Γ + P.L'*n*P.L*(P.tm-P.t0)/(P.t1-P.tm))/(P.t1-P.t0)]
-	ldm = sumlogdiag(chol(U[1,1])') +sumlogdiag(chol(U[2, 2] - (U[2,1]*inv(U[1,1])*U[1,2]))')
+	ldm = sumlogdiag(chol(U[1,1])') +sumlogdiag(chol(U[2,2] - (U[2,1]*inv(U[1,1])*U[1,2]))')
 		 	 				
 	mu = [P.L*h1(P.t0, P.v0, P); h2(P.t0, P.v0, P)]
 	-length(mu)/2*log(2pi) + ldm - 0.5*dot(mu,U*mu)

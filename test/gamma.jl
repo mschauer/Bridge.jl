@@ -20,3 +20,13 @@ X3 = sample([0.0, 0.5], GB, 0.2)
 @test  X1.yy[3] ≈ 2.0
 @test  X2.yy[3] >= 2.0
 @test  X3.yy[2] <= 2.0
+
+γᵒ, γ = 0.75, 1.2
+la = 0.5
+tt = linspace(0, γ, 1000)
+P = GammaProcess(γ, la)
+X = sample(tt, P)
+var(diff(X.yy))
+
+Y = copy(X)
+Bridge.uniform_thinning!(Y, P, γᵒ)

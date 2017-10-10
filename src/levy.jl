@@ -59,7 +59,29 @@ struct GammaProcess <: LevyProcess{Float64}
     λ::Float64
 end
 
+"""
+    uniformthinning!(X, P::GammaProcess, γᵒ)
 
+Return a Gamma process `Y` with new intensity `γᵒ`, such that
+`X-Y` has intensity `γ-γᵒ` and `Y` and `X-Y` are independent.
+In the limit ``dt \to \infty`` the new Gamma process has each of is jump removed with
+probability `γᵒ/γ`. Overwrites `X` with `Y`.
+"""
+function uniform_thinning!(X, P::GammaProcess, γᵒ)
+    tt = X.tt
+    yy = X.yy
+    γ = P.γ
+    if γᵒ > γ
+        throw(ArgumentError("γᵒ > γ"))
+    end
+    y = yy[1]
+    for i in 2:length(tt)
+        dt = tt[i] - tt[i-1]
+        y = yy[i]
+        yy[i] = y + (yy[i] - y)*rand(Beta(dt* γᵒ,  dt*γ))
+    end
+    X
+end
 struct VarianceGammaProcess <: LevyProcess{Float64}
     θ::Float64
     σ::Float64

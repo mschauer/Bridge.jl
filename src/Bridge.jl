@@ -11,6 +11,9 @@ export ubridge!, ubridge
 
 export ullikelihood, ullikelihoodtrapez, uinnovations!, ubridge
 
+# LinearProcess
+export LinearProcess
+
 # Levy
 export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaProcess
 

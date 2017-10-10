@@ -12,6 +12,15 @@ a similar role as distribution types like `Exponential` in the package
 abstract type ContinuousTimeProcess{T} end
 const ProcessOrCoefficients = Union{ContinuousTimeProcess,Tuple{Function,Function}}
 
+
+"""
+    a(t, x, P::ProcessOrCoefficients)
+
+Fallback for `a(t, x, P)` calling `σ(t, x, P)*σ(t, x, P)'`.
+"""
+a(t, x, P::ProcessOrCoefficients) = outer(σ(t, x, P))
+
+
 abstract type AbstractPath{T} end
 
 """
@@ -55,6 +64,7 @@ struct SamplePath{T} <: AbstractPath{T}
 end
 SamplePath(tt, yy::Vector{T}) where {T} = SamplePath{T}(tt, yy)
 
+samplepath(tt, v) = SamplePath(tt, fill(v, length(tt))) 
 
 
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))

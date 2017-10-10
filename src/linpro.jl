@@ -1,3 +1,12 @@
+abstract type LinearProcess{T} <: ContinuousTimeProcess{T}
+end
+
+b(s, x, P::LinearProcess) = B(s, P)*x + β(s, P)
+σ(s, x, P::LinearProcess) = σ(s, P)
+a(s, P::LinearProcess) = outer(σ(s, P))
+
+
+
 symmetrize(A) = (A + A')/2
 #####################
 

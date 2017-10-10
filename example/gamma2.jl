@@ -12,7 +12,7 @@ PYPLOT && using PyPlot
 import Bridge: increment, expint
 import Distributions.pdf
 
-N = 3 # number of thetas (so N+1 bins)
+N = 5 # number of thetas (so N+1 bins)
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
@@ -52,6 +52,22 @@ elseif simid == 5
     N = 4
     T = 2500.0
     n = 50000 # number of increments
+elseif simid == 6
+    simname = "danishfire"
+    beta0 = 1.8 # ml 
+    alpha0 = 0.6
+    dt = 0.02
+    n = 500
+    T = dt*n
+    #alpha = 0.6
+elseif simid == 7
+    simname = "dfparam"
+    beta0 = 1.8 # ml 
+    alpha0 = 0.6
+    dt = 0.02
+    n = 500
+    T = dt*n
+    #alpha = 0.6
 end
 
 P0 = GammaProcess(beta0, alpha0)
@@ -94,7 +110,7 @@ function hist1(xx, r; prob = false)
     if prob
         c / sum(c)
     else
-        c
+        c / 1
     end
 end
 
@@ -200,12 +216,11 @@ end
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
 b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
 #b = [Inf]
-b = [0.3, 0.8, 2.]
-
+b = cumsum(0.3:0.4:2.0)
 #println("P(Y < b1) = ", mean(diff(X.yy) .< b1))
 h = hist1(diff(X.yy), b) # note that P(Y < b[1]) may be inaccurate if dt is chosen small
-if any(h .< 200)
-    warn("Less than 200 observations in bin")
+if any(h .< 20)
+    warn("Less than 20 observations in bin")
 end
 
 if PYPLOT
@@ -219,7 +234,7 @@ epi = 2.0
 
 Pi = Gamma(epi^2/vpi, vpi/epi) # alpha
 Pi2 = Normal(0., 1.0) # theta
-Pi3 = Normal(0., 1.0) # rho
+Pi3 = Normal(0., 5.0) # rho
 
 assert(mean(Pi) ≈ epi)
 assert(var(Pi) ≈ vpi)
@@ -255,7 +270,7 @@ beps = b[1]/5
 #var(yy[yy.< b[1]/4])
 
 
-iterations = 75000
+iterations = 100_000
 #beta0 = 0.8beta0
 alpha = alpha0
 
@@ -275,8 +290,8 @@ rho = zeros(N)
 # prior chain step std
 alphasigma = 0.15
 thsigma = 0.05
-rhosigma = [0.0, 0.05, 0.05] # variance of rho1 = 0
-
+rhosigma = 0.05*ones(N) # variance of rho1 = 0
+rhosigma[1] = 0.0
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
     bn = join(["b$i" for i in 1:length(b)], " ")
