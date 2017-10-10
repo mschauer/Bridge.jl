@@ -31,6 +31,7 @@ Pages = ["/wiener.jl"]
 ## Stochastic differential equations
 
 ```@docs
+Bridge.a
 sample
 sample!
 quvar
@@ -54,7 +55,8 @@ GammaProcess
 GammaBridge
 Bridge.ExpCounting
 Bridge.CompoundPoisson
-Bridge.nu 
+Bridge.nu
+Bridge.uniform_thinning!
 ```
 
 ## Miscellaneous

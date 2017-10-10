@@ -11,6 +11,6 @@ include("guip.jl")
 include("linpro.jl")
 include("timechange.jl")
 include("uniformscaling.jl")
-include("gamma.jl")
+include("gamma.jl") 
 include("gaussian.jl")
 include("with_srand.jl") # run last
