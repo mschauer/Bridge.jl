@@ -220,8 +220,8 @@ XX3d = visualize(
 _view(XX3d, window, camera=:perspective)
 
 XXmean3d = visualize(
-    XXmeanxyz, :lines,
-    intensity = XXintensities,
+    XXmeanxyz[1:skippoints:end], :lines,
+    intensity = XXintensities[1:skippoints:end],
     color_map = [RGBA{Float64}(0.04, 0.35,0.14, 0.4)],
     color_norm = Vec2f0(0, 1), # normalize intensities. Lookup in cmap will be between 0-1
     model = rotation
