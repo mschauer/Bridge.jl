@@ -1,4 +1,4 @@
-import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof
+import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof, keys, values
 
 import Base: valtype
 """
@@ -94,6 +94,9 @@ function endpoint!(X::SamplePath, v)
     X
 end
 
+keys(X::SamplePath) = X.tt
+values(X::SamplePath) = X.yy
+SamplePath(X::Vector{Pair{Float64,T}}) where {T} = SamplePath{T}(map(first, X), map(last, X))
 
 struct VSamplePath{T} <: Bridge.AbstractPath{T}
     tt::Vector{Float64}

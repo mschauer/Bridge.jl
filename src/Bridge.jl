@@ -57,6 +57,9 @@ include("levy.jl")
 include("linpro.jl")
 include("timechange.jl")
 include("mclog.jl")
+
+include("Models.jl")
+
 include("deprecated.jl")
 
 end

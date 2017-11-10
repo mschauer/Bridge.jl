@@ -98,6 +98,38 @@ function lptilde(P::GuidedProp)
 end
 
 #################################################
+"""
+    LinearNoiseAppr(tt, P, x, a, forward = true) 
+
+Precursor of the linear noise approximation of `P`. For now no attempt is taken to add in a linearization around the deterministic path.
+"""
+struct LinearNoiseAppr{R,S,T} <: ContinuousTimeProcess{T}
+    Target::R
+    Y::SamplePath{T}
+    a::S
+    function LinearNoiseAppr(tt_, P::R, x::T, a::S, forward = true) where {R,S,T}
+        tt = collect(tt_)
+        N = length(tt)
+        Y = SamplePath(tt, zeros(T, N)) 
+        if forward
+            solve!(R3(), b, Y, x, P) 
+        else
+            solvebackward!(R3(), b, Y, x, P) 
+        end
+        new{R,S,T}(P, Y, a)
+    end
+end
+
+
+bi(i, x, P::LinearNoiseAppr) = βi(max(i,2), P)
+Bi(i, P::LinearNoiseAppr) = 0I
+βi(i, P::LinearNoiseAppr) = (P.Y.yy[i]-P.Y.yy[i-1])/(P.Y.tt[i]-P.Y.tt[i-1])
+ai(i, P::LinearNoiseAppr) = P.a
+a(t, x, P::LinearNoiseAppr) = P.a
+constdiff(::LinearNoiseAppr) = true
+hasbi(::LinearNoiseAppr) = true
+hasbi(::Any) = false
+
 
 """
     GuidedBridge
@@ -131,6 +163,15 @@ struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
         gpV!(V, Pt, v)
         new{T,S,R2,R}(P, Pt, tt, H♢.yy, V.yy)
     end
+    function GuidedBridge(tt_, P::R, Pt::LinearNoiseAppr, v::T, h♢::S = Bridge.outer(zero(v))) where {T,R,S}
+        tt = collect(tt_)
+        N = length(tt)
+        H♢ = SamplePath(tt, zeros(S, N)) 
+        V = SamplePath(tt, zeros(T, N)) 
+        solvebackwardi!(R3(), (t, K, iP) ->  Bi(iP...)*K + K*Bi(iP...)' - ai(iP...), H♢, h♢, Pt)
+        solvebackwardi!(R3(), (t, v, iP) ->  bi(iP[1], v, iP[2]), V, v, Pt)
+        new{T,S,typeof(Pt),R}(P, Pt, tt, H♢.yy, V.yy)
+    end
 end
  
 bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H♢[i]\(P.V[i] - x)) 
@@ -143,10 +184,15 @@ a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
 btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
+bitilde(i, x, P::GuidedBridge) = bi(i, x, P.Pt)
+
 @inline _traceB(t, x, P) = trace(Bridge.B(t, P))
 traceB(tt, P) = solve(Bridge.R3(), _traceB, tt, 0.0, P)
 
 lptilde(P::GuidedBridge, u) = logpdfnormal(P.V[1] - u, P.H♢[1]) - traceB(P.tt, P.Pt)
+
+hasbi(::GuidedBridge) = true
+hasbitilde(P::GuidedBridge) = hasbi(P.Pt)
 
 # fallback for testing
 lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(P.tt, Bridge.outer(zero(u)), P.Pt))
@@ -346,18 +392,22 @@ function llikelihoodleft(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgePro
     som
 end
 
-
+# modern implementation 
 # using left approximation
-function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge) 
+function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge; skip = 0) 
     tt = Xcirc.tt
     xx = Xcirc.yy
 
     som::Float64 = 0.
-    for i in 1:length(tt)-1 #skip last value, summing over n-1 elements
+    for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
         r = Bridge.ri(i, x, Po)
-        som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
+        if hasbitilde(Po)
+            som += ( dot(b(s, x, Po.Target) - bitilde(i, x, Po), r) ) * (tt[i+1]-tt[i])
+        else
+            som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
+        end    
         if !constdiff(Po)
             H = Hi(i, x, Po)
             som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
@@ -366,6 +416,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge)
     end
     som
 end
+
 
 
 #using trapezoidal rule

@@ -102,6 +102,18 @@ end
     X
 end
 
+function solvebackwardi!(::R3, Fi, X::SamplePath{T}, xT, P) where {T}
+   tt = X.tt
+   yy = X.yy
+   yy[end] = y::T = xT
+   for i in length(tt)-1:-1:1
+       y = kernelr3(Fi, tt[i+1], y, tt[i] - tt[i+1], (i+1, P))  
+       yy[i] = y  
+   end
+   X
+end
+
+
 """
     solve!(method, F, X::SamplePath, x0, P) -> X, [err]
     solve!(method, X::SamplePath, x0, F) -> X, [err]

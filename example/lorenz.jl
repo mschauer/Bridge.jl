@@ -3,7 +3,7 @@
 #using Bridge, PyPlot, StaticVector
 #end
 
-using Bridge, StaticArrays, Examples
+using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 
 t = 1.0
@@ -16,7 +16,7 @@ m = 50_000
 npath = 2
 
 P = Lorenz(ℝ{3}(10, 20, 8/3), ℝ{3}(2,2,2))
-x0 = Examples.x0(P)
+x0 = Models.x0(P)
     
 crit(θ1, θ3) = θ1*(θ1 + θ3 + 3)/(θ1 - θ3 - 1)
 
