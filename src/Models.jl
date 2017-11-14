@@ -50,4 +50,5 @@ Bridge.constdiff(::Lorenz) = true
 
 x0(P::Lorenz) = ℝ{3}(1.508870, -1.531271, 25.46091)
 
+
 end # Module

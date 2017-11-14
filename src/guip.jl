@@ -402,11 +402,14 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge; skip = 0)
     for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
+#        x2 = xx[i+1]
         r = Bridge.ri(i, x, Po)
+#        r2 = Bridge.ri(i+1, x2, Po)
+        
         if hasbitilde(Po)
-            som += ( dot(b(s, x, Po.Target) - bitilde(i, x, Po), r) ) * (tt[i+1]-tt[i])
+            som += dot( b(s, x, Po.Target) - bitilde(i, x, Po), r ) * (tt[i+1]-tt[i])
         else
-            som += ( dot(b(s, x, Po.Target) - btilde(s, x, Po), r) ) * (tt[i+1]-tt[i])
+            som += dot(b(s, x, Po.Target) - btilde(s, x, Po), r ) * (tt[i+1]-tt[i])
         end    
         if !constdiff(Po)
             H = Hi(i, x, Po)

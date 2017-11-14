@@ -3,7 +3,7 @@ using Distributions
 using Base.LinAlg: norm_sqr
 
 import Base: rand
-import Distributions: pdf, logpdf, sqmahal
+import Distributions: pdf, logpdf, sqmahal, cdf, quantile
 import Base: chol, size
 
 """
@@ -43,6 +43,8 @@ struct Gaussian{T,S}
     Σ::S
     Gaussian(μ::T, Σ::S) where {T,S} = new{T,S}(μ, Σ)
 end
+Gaussian() = Gaussian(0.0, 1.0)
+
 dim(P::Gaussian) = length(P.μ)
 whiten(Σ::PSD, z) = Σ.σ\z
 whiten(Σ, z) = chol(Σ)'\z
@@ -54,6 +56,7 @@ rand(P::Gaussian{Vector}) = P.μ + chol(P.Σ)'*randn(T, length(P.μ))
 
 logpdf(P::Gaussian, x) = -(sqmahal(P,x) + _logdet(P.Σ, dim(P)) + dim(P)*log(2pi))/2    
 pdf(P::Gaussian, x) = exp(logpdf(P::Gaussian, x))
+cdf(P::Gaussian{Float64,Float64}, x) = Distributions.normcdf(P.μ, sqrt(P.\Sigma), x)
 
 """
     logpdfnormal(x, Σ) 
