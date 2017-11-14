@@ -8,7 +8,7 @@ const R = ℝ
 srand(1)
 
 iterations = 5000
-rho = 0.5 # 
+rho = 0.25 # 
 independent = false # true independent proposals
 t = 1.0
 T = 5.00
