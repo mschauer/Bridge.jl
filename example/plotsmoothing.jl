@@ -6,7 +6,7 @@ function showpath(follow = true)
     window = glscreen()
     timesignal = loop(1:2:div(length(tt),2))
 
-
+    extra = 15
 
     Yxyz = collect(Point3f0, Iterators.flatten(Pt[i].Y.yy[1:end-1] for i in 1:m))
     XXxyz = collect(Point3f0, Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m))
@@ -36,7 +36,7 @@ function showpath(follow = true)
     end
 =#
     eyeposition = map(timesignal) do i
-        Vec{3,Float32}(XXmeanxyz[i])
+        Vec{3,Float32}(XXmeanxyz[i] )
     end
 
     # create the camera lookat and up vector
@@ -61,7 +61,7 @@ function showpath(follow = true)
     )
     X3d = visualize(
         Xxyz[1:skippoints:end], :lines,
-        color = RGBA{Float32}(0.04, 0.15, 0.44, 0.4),
+        color = RGBA{Float32}(0.04, 0.15, 0.44, 0.6),
         model = rotation
     )
 
@@ -79,16 +79,16 @@ function showpath(follow = true)
    
     circle = Sphere(Point2f0(0), 1.0f0)
     XXmean3d = visualize(
-        (circle, XXmeanxyz[1:10skippoints:end]),
-        scale = Float32(2*sca)*XXstdr[1:10skippoints:end],
+        (circle, XXmeanxyz[1:5extra*skippoints:end]),
+        scale = Float32(2*sca)*XXstdr[1:5extra*skippoints:end],
         color = RGBA{Float32}(0.04, 0.35, 0.14, 0.15),
         model = rotation
     )
 
     XXdist = visualize(
-        collect(Iterators.flatten(zip(XXmeanxyz[1:10skippoints:end],
-         Xxyz[1:10skippoints:end-1]))), :linesegment,
-        color = RGBA{Float32}(0.34, 0.05, 0.14, 0.55),
+        collect(Iterators.flatten(zip(XXmeanxyz[1:extra*skippoints:end],
+         Xxyz[1:extra*skippoints:end-1]))), :linesegment,
+        color = RGBA{Float32}(0.34, 0.05, 0.14, 0.40),
         model = rotation
     )
  

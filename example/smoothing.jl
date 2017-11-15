@@ -7,12 +7,12 @@ using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 srand(1)
 
-iterations = 5000
+iterations = 25000
 rho = 0.25 # 
 independent = false # true independent proposals
 t = 1.0
 T = 5.00
-n = 10001 # total imputed length
+n = 50001 # total imputed length
 m = 100 # number of segments
 M = div(n-1,m)
 skiplast = 0
