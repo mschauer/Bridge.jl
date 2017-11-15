@@ -5,10 +5,10 @@
 
 using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
-srand(1)
+srand(2)
 
-iterations = 25000
-rho = 0.25 # 
+iterations = 10000
+rho = 0.05 # 
 independent = false # true independent proposals
 t = 1.0
 T = 5.00
@@ -22,6 +22,7 @@ tt = t:dt:T
 npath = 1
 si = 3.
 P = Bridge.Models.Lorenz(ℝ{3}(10, 20, 8/3), ℝ{3}(si,si,si))
+P2 = Psmooth = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(0,0,0))
 
 
 x0 = Models.x0(P)
@@ -34,7 +35,8 @@ X = SamplePath(tt, zeros(ℝ{3}, length(tt)))
 Bridge.solve!(Euler(), X, x0, W, P)
 W = sample(tt, Wiener{ℝ{3}}())
 X2 = SamplePath(tt, zeros(ℝ{3}, length(tt)))
-Bridge.solve!(Euler(), X2, x0, W, P)
+Bridge.solve!(Euler(), X2, x0, W, P2)
+X2.yy[:] *= 0.7
 
 
 # Observation scheme and subsample
@@ -85,7 +87,6 @@ H♢ = Bridge.outer(zero(x0))
 #v = Xtrue.yy[end]
 v = ( L' * inv(Σ) * L)\(L' * inv(Σ) *  V.yy[end])
 H♢ = one(Bridge.outer(zero(x0)))*inv( L' * inv(Σ) * L)
-#zero(ℝ{3})
 
 for i in m:-1:1
     XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
@@ -101,52 +102,63 @@ y = x0
 for i in 1:m
     sample!(WW[i], Wiener{ℝ{3}}())
     y = Bridge.bridge!(XX[i], y, WW[i], Pᵒ[i])
-    XXᵒ[i] = copy(XX[i])
-    WWᵒ[i] = copy(WW[i])
-    XXmean[i] = SamplePath(XX[i].tt, zeros(XX[i].yy))
 end
+XXmean = [zero(XX[i]) for i in 1:m]
 
-Y = []
-mcstate = [mcstart(XX[i].yy) for i in 1:m]
-acc = 0
-for it in 1:iterations
-    y = x0
-    for i in 1:m
-        sample!(WWᵒ[i], Wiener{ℝ{3}}())
-        if !independent
-            rho_ = rho * rand()
-            WWᵒ[i].yy[:] = sqrt(rho_)*WWᵒ[i].yy + (sqrt(1-rho_))*WW[i].yy
-        end
-        y = Bridge.bridge!(XXᵒ[i], y, WWᵒ[i], Pᵒ[i])
-    end
-    push!(Y, y)
+function smooth(q0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
+    m = length(XX)
 
-    ll = 0.0
-    for i in 1:m-1
-        ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i]) - llikelihood(LeftRule(), XX[i],  Pᵒ[i])
-    end
-    let i = m
-        ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i], skip=skiplast) - llikelihood(LeftRule(), XX[i],  Pᵒ[i], skip=skiplast)
-    end
-    print("$it ll $(round(ll,2)) ")
+    # create workspace
+    XXᵒ = deepcopy(XX)
+    WWᵒ = deepcopy(WW)
 
-    #if true
-    if  rand() < exp(ll) 
-        acc += 1
-        print("\t X")
+    # initialize
+    mcstate = [mcstart(XX[i].yy) for i in 1:m]
+    acc = 0
+
+
+    for it in 1:iterations
+        y = q0()
         for i in 1:m
-            XX[i], XXᵒ[i] = XXᵒ[i], XX[i]
-            WW[i], WWᵒ[i] = WWᵒ[i], WW[i]
+            sample!(WWᵒ[i], Wiener{ℝ{3}}())
+            if !independent
+                rho_ = rho * rand()
+                WWᵒ[i].yy[:] = sqrt(rho_)*WWᵒ[i].yy + (sqrt(1-rho_))*WW[i].yy
+            end
+            y = Bridge.bridge!(XXᵒ[i], y, WWᵒ[i], Pᵒ[i])
         end
-    else 
-        print("\t .")
+
+
+        ll = 0.0
+        for i in 1:m-1
+            ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i]) - llikelihood(LeftRule(), XX[i],  Pᵒ[i])
+        end
+        let i = m
+            ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i], skip=skiplast) - llikelihood(LeftRule(), XX[i],  Pᵒ[i], skip=skiplast)
+        end
+        print("$it ll $(round(ll,2)) ")
+
+        #if true
+        if  rand() < exp(ll) 
+            acc += 1
+            verbose && print("\t X")
+            for i in 1:m
+                XX[i], XXᵒ[i] = XXᵒ[i], XX[i]
+                WW[i], WWᵒ[i] = WWᵒ[i], WW[i]
+            end
+        else 
+            verbose && print("\t .")
+        end
+        println()
+        for i in 1:m
+            mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
+        end
     end
-    println()
-    for i in 1:m
-        #XXmean[i].yy[:] += XX[i].yy
-        mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
-    end
+    mcstate, acc
 end
+
+mcstate, acc = smooth(() -> x0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
+
 XXstd = Vector{Any}(m)
 for i in 1:m
     xx, vv = Bridge.mcstats(mcstate[i])

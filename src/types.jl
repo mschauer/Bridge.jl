@@ -1,4 +1,5 @@
 import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof, keys, values
+import Base: zero
 
 import Base: valtype
 """
@@ -97,6 +98,9 @@ end
 keys(X::SamplePath) = X.tt
 values(X::SamplePath) = X.yy
 SamplePath(X::Vector{Pair{Float64,T}}) where {T} = SamplePath{T}(map(first, X), map(last, X))
+
+zero(X::SamplePath) = SamplePath(X.tt, X.yy)
+
 
 struct VSamplePath{T} <: Bridge.AbstractPath{T}
     tt::Vector{Float64}
