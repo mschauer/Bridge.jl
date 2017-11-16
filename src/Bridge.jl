@@ -37,6 +37,14 @@ using Compat
 import Base.rand
 import Distributions: sample, sample!
 
+function Btilde
+end
+function βtilde
+end
+
+hasbi(::Any) = false
+hasai(::Any) = false
+
 include("expint.jl")
 
 include("fsa.jl")
@@ -51,10 +59,11 @@ include("wiener.jl")
 include("ellipse.jl")
 include("ode.jl")
 include("diffusion.jl")
+include("linpro.jl")
 include("guip.jl")
 include("euler.jl")
 include("levy.jl")
-include("linpro.jl")
+
 include("timechange.jl")
 include("mclog.jl")
 

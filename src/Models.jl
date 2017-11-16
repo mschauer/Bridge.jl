@@ -45,10 +45,22 @@ struct Lorenz <: ContinuousTimeProcess{ℝ{3}}
 end
 
 Bridge.b(t, x, P::Lorenz) = ℝ{3}(P.θ[1]*(x[2] - x[1]), x[1]*(P.θ[2]-x[3]) - x[2], x[1]*x[2] - P.θ[3]*x[3])
+
+Bridge.bderiv(t, x, P::Lorenz) = @SMatrix Float64[
+    -P.θ[1]         P.θ[1]  0
+    (P.θ[2]-x[3])   -1      -x[1]
+    x[2]            x[1]    -P.θ[3]
+]
+    
+
+
 Bridge.σ(t, x, P::Lorenz) = SDiagonal(P.σ)
 Bridge.constdiff(::Lorenz) = true
 
 x0(P::Lorenz) = ℝ{3}(1.508870, -1.531271, 25.46091)
+
+critlorenz(θ1, θ3) = θ1*(θ1 + θ3 + 3)/(θ1 - θ3 - 1)
+
 
 struct Pendulum <: ContinuousTimeProcess{ℝ{2}}
     θ²::Float64

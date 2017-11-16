@@ -7,7 +7,7 @@ using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 srand(2)
 
-iterations = 10000
+iterations = 5000
 rho = 0.05 # 
 independent = false # true independent proposals
 t = 1.0
@@ -16,10 +16,9 @@ n = 50001 # total imputed length
 m = 100 # number of segments
 M = div(n-1,m)
 skiplast = 0
-skippoints = 1
+skippoints = 2
 dt = (T-t)/(n-1)
 tt = t:dt:T
-npath = 1
 si = 3.
 P = Bridge.Models.Lorenz(ℝ{3}(10, 20, 8/3), ℝ{3}(si,si,si))
 P2 = Psmooth = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(0,0,0))
@@ -27,8 +26,6 @@ P2 = Psmooth = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(0,0,0))
 
 x0 = Models.x0(P)
 #x0 =  ℝ{3}(6, 0, 2)
-    
-crit(θ1, θ3) = θ1*(θ1 + θ3 + 3)/(θ1 - θ3 - 1)
 
 W = sample(tt, Wiener{ℝ{3}}())
 X = SamplePath(tt, zeros(ℝ{3}, length(tt)))
@@ -43,7 +40,7 @@ X2.yy[:] *= 0.7
 _pairs(collection) = Base.Generator(=>, keys(collection), values(collection))
 
 L = I
-Σ = 0.5I
+Σ = SDiagonal(50., 1., 1.)
 lΣ = chol(Σ)'
 RV = ℝ{3}
 
@@ -57,21 +54,7 @@ XXᵒ = Vector{typeof(X)}(m)
 WW = Vector{typeof(W)}(m)
 WWᵒ = Vector{typeof(W)}(m)
 
-
-
 Xtrue = copy(X)
-
-
-#=
-GP = Bridge.GuidedBridge(tt, X.yy[1], X.yy[end], P, Pt)
-V = SamplePath(tt[9500:end], zeros(R{3}, n))
-solvebackward!(Bridge.R3(), Bridge.b, V, X.yy[end], P)
-V = SamplePath(tt, zeros(R{3}, n))
-solve!(Bridge.R3(), Bridge.b, V, X.yy[1], P)
-=#
-
-
-
 
 # Create linear noise approximations
 
@@ -92,11 +75,14 @@ for i in m:-1:1
     XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
     WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
     # short-cut, take v later
-    # Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], Bridge.a(XX[i].tt[end], XX[i].yy[end], P), forward)
-    Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, Bridge.a(XX[i].tt[end], v, P), forward)
+     Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], Bridge.a(XX[i].tt[end], XX[i].yy[end], P), forward)
+    #Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, Bridge.a(XX[i].tt[end], v, P), forward)
     Pᵒ[i] = Bridge.GuidedBridge(XX[i].tt, P, Pt[i], v, H♢)
     H♢, v = Bridge.gpupdate(Pᵒ[i], L, Σ, V.yy[i])
 end
+ 
+v0 = V.yy[1]
+#v0 = v
 
 y = x0
 for i in 1:m
@@ -105,9 +91,16 @@ for i in 1:m
 end
 XXmean = [zero(XX[i]) for i in 1:m]
 
-function smooth(q0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
-    m = length(XX)
+μ0 = ℝ{3}(0,0,0)
+Σ0 = SDiagonal(40., 40., 40.)
+π0 = Bridge.Gaussian(μ0 + Σ0*L'*inv(L*Σ0*L' + Σ)*(v0 - L*μ0), Σ0 - Σ0*L'*inv(L*Σ0*L' + Σ)*L*Σ0)
 
+H♢, v = Bridge.gpupdate(Pᵒ[1], L, Σ0, V.yy[1])
+π0 = Bridge.Gaussian(v, H♢)
+
+function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
+    m = length(XX)
+    rho0 = rho/10
     # create workspace
     XXᵒ = deepcopy(XX)
     WWᵒ = deepcopy(WW)
@@ -115,15 +108,20 @@ function smooth(q0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independen
     # initialize
     mcstate = [mcstart(XX[i].yy) for i in 1:m]
     acc = 0
-
+    y0 = 0*rand(π0)
 
     for it in 1:iterations
-        y = q0()
+        if !independent
+            y0ᵒ = π0.μ + sqrt(rho0)*(rand(π0) - π0.μ) + sqrt(1-rho0)*(y0 - π0.μ) 
+        else
+            y0ᵒ = rand(π0) 
+        end
+        y = y0ᵒ
         for i in 1:m
             sample!(WWᵒ[i], Wiener{ℝ{3}}())
             if !independent
                 rho_ = rho * rand()
-                WWᵒ[i].yy[:] = sqrt(rho_)*WWᵒ[i].yy + (sqrt(1-rho_))*WW[i].yy
+                WWᵒ[i].yy[:] = sqrt(rho_)*WWᵒ[i].yy + sqrt(1-rho_)*WW[i].yy
             end
             y = Bridge.bridge!(XXᵒ[i], y, WWᵒ[i], Pᵒ[i])
         end
@@ -142,6 +140,7 @@ function smooth(q0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independen
         if  rand() < exp(ll) 
             acc += 1
             verbose && print("\t X")
+            y0 = y0ᵒ
             for i in 1:m
                 XX[i], XXᵒ[i] = XXᵒ[i], XX[i]
                 WW[i], WWᵒ[i] = WWᵒ[i], WW[i]
@@ -157,7 +156,7 @@ function smooth(q0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independen
     mcstate, acc
 end
 
-mcstate, acc = smooth(() -> x0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
+mcstate, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
 
 XXstd = Vector{Any}(m)
 for i in 1:m

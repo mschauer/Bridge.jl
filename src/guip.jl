@@ -128,7 +128,6 @@ ai(i, P::LinearNoiseAppr) = P.a
 a(t, x, P::LinearNoiseAppr) = P.a
 constdiff(::LinearNoiseAppr) = true
 hasbi(::LinearNoiseAppr) = true
-hasbi(::Any) = false
 
 
 """
@@ -163,7 +162,7 @@ struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
         gpV!(V, Pt, v)
         new{T,S,R2,R}(P, Pt, tt, H♢.yy, V.yy)
     end
-    function GuidedBridge(tt_, P::R, Pt::LinearNoiseAppr, v::T, h♢::S = Bridge.outer(zero(v))) where {T,R,S}
+    function GuidedBridge(tt_, P::R, Pt::Union{LinearNoiseAppr, LinearAppr}, v::T, h♢::S = Bridge.outer(zero(v))) where {T,R,S}
         tt = collect(tt_)
         N = length(tt)
         H♢ = SamplePath(tt, zeros(S, N)) 

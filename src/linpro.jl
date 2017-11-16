@@ -130,3 +130,25 @@ function dotV(t, T, v, P::LinPro)
 end
 
 
+#################################################
+
+"""
+LinearAppr(tt, B, β, a) 
+"""
+struct LinearAppr{R,S,T} <: ContinuousTimeProcess{T}
+    tt::Vector{Float64}
+    xx::Vector{T}
+    B::Vector{S}
+    β::Vector{T}
+    Σ::Vector{R}
+end
+
+bi(i, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.β[i]
+Bi(i, P::LinearAppr) = P.B[i]
+βi(i, P::LinearAppr) = P.β[i]
+ai(i, P::LinearAppr) = outer(P.Σ[i])
+constdiff(::LinearAppr) = false
+hasbi(::LinearAppr) = true
+hasai(::LinearAppr) = true
+
+LinearAppr(Y, P) = LinearAppr(Y.tt, Y.yy, map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy))

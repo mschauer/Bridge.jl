@@ -4,12 +4,18 @@ using GLAbstraction, Colors, GeometryTypes, GLVisualize, Reactive
 function showpath(;follow = true, movie = false, truth = true, obs = true, smooth = true, sample = true, ode = true, nu = true, rotating = false)
         
     window = glscreen()
-    ss = 1:1:div(length(tt),2)
+    if follow
+        ss = 1:2:div(length(tt),2)
+    else
+        ss = 1:4:5000
+    end
     timesignal = loop(ss)
 
-    extra = 20
+    extra = 10
 
-    Yxyz = collect(Point3f0, Iterators.flatten(Pt[i].Y.yy[1:end-1] for i in 1:m))
+    #Yxyz = collect(Point3f0, Iterators.flatten(Pt[i].Y.yy[1:end-1] for i in 1:m)) # Y
+    Yxyz = collect(Point3f0, Iterators.flatten(Pᵒ[i].V[1:end-1] for i in 1:m)) # V
+
     XXxyz = collect(Point3f0, Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m))
     XXmeanxyz = collect(Point3f0, Iterators.flatten(XXmean[i].yy[1:end-1] for i in 1:m))
     XXstdr = vcat([Point3f0.( XXstd[i][1:end-1] ) for i in 1:m]...)
@@ -26,10 +32,11 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
 
     if rotating
         rotation = map(timesignal) do i
-            phi = 20tt[i]
-            @SMatrix Float32[ sca*cos(phi)  -sca*sin(phi)    0.0     0.0
-            sca*sin(phi)   sca*cos(phi)    0.0       0.0
-            0.0            0.0             sca*1.0   -1.25
+            phi = 25.5tt[i]
+            sca_ = sca+ sca*(i>3000)*(2*atan((i-3000)/1000)/pi)
+            @SMatrix Float32[ sca_*cos(phi)  -sca_*sin(phi)    0.0     0.0
+            sca_*sin(phi)   sca_*cos(phi)    0.0       0.0
+            0.0            0.0             sca_*1.0   -sca_/sca*1.25
             0.0            0.0             0.0       1.0]       
         end
     else
@@ -65,45 +72,58 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         Signal(100f0), # Max distance (clip distance)
     )
     if movie
-        Xcolor = map(timesignal) do i; (500 < i < 900 || i > 3000)* RGBA{Float32}(0.04, 0.15, 0.44, 0.4) end
-        Xsmcolor = map(timesignal) do i; (i < 400)* RGBA{Float32}(0.04, 0.15, 0.44, 0.4) end
-        Ycolor = map(timesignal) do i; (1500 < i < 1900) * RGBA{Float32}(0.34, 0.05, 0.14, 0.4) end
-        XXcolor =  map(timesignal) do i; (2000 < i < 2400)*RGBA{Float32}(0.04, 0.35, 0.14, 0.4) end
-        XXmeancolor = map(timesignal) do i; (i > 2500)*RGBA{Float32}(0.04, 0.35, 0.14, 0.15) end
-        XXdistcolor = map(timesignal) do i; (i > 3500)*RGBA{Float32}(0.34, 0.05, 0.14, 0.20) end
-        Vcolor = map(timesignal) do i; (1000 < i < 3000)*RGBA{Float32}(0.7, 0.3, 0., 0.8) end
+        Xvisible = map(timesignal) do i; (500 < i < 950 || i > 3000) end
+        Xsmvisible = map(timesignal) do i; (i < 450) end
+        Yvisible = map(timesignal) do i; (1500 < i < 1950) end
+        XXvisible =  map(timesignal) do i; (2000 < i < 2450) end
+        XXmeanvisible = map(timesignal) do i; (i > 2500) end
+        XXdistvisible = map(timesignal) do i; (i > 3500) end
+        Vvisible = map(timesignal) do i; (1000 < i < 3000) end
 
     else
-        Xcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.6)
-        Xsmcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.6)
-        Ycolor = RGBA{Float32}(0.34, 0.05, 0.14, 0.4)
-        XXcolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.4)
-        XXmeancolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.15)
-        XXdistcolor =  RGBA{Float32}(0.34, 0.05, 0.14, 0.40)
-        Vcolor = RGBA{Float32}(0.7, 0.3, 0., 0.8)
+        Xvisible = 
+        Xvisible = 
+        Xsmvisible = 
+        Yvisible = 
+        XXvisible = 
+        XXmeanvisible =
+        XXdistvisible =
+        Vvisible = map(timesignal) do i; true end
     end
+    
+    Xcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.6)
+    Xsmcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.8)
+    Ycolor = RGBA{Float32}(0.34, 0.05, 0.14, 0.4)
+    XXcolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.4)
+    XXmeancolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.15)
+    XXdistcolor =  RGBA{Float32}(0.34, 0.05, 0.14, 0.40)
+    Vcolor = RGBA{Float32}(0.7, 0.3, 0., 0.8)
 
     X3d = visualize(
         Xxyz[1:skippoints:end], :lines,
         color = Xcolor, 
-        model = rotation
+        model = rotation,
+        visible = Xvisible
     )
     Xsm3d = visualize(
         Point3f0.(X2.yy[1:skippoints:end]), :lines,
         color = Xsmcolor,
-        model = rotation
+        model = rotation,
+        visible = Xsmvisible
     )
 
     Y3d = visualize(
         Yxyz[1:skippoints:end], :lines,
         color = Ycolor,
-        model = rotation
+        model = rotation,
+        visible = Yvisible
     )
 
     XX3d = visualize(
         XXxyz[1:skippoints:end], :lines,
         color = XXcolor,
-        model = rotation
+        model = rotation,
+        visible = XXvisible
     )
    
     circle = Sphere(Point2f0(0), 1.0f0)
@@ -111,14 +131,16 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         (circle, XXmeanxyz[1:5extra*skippoints:end]),
         scale = Float32(2*sca)*XXstdr[1:5extra*skippoints:end],
         color = XXmeancolor,
-        model = rotation
+        model = rotation,
+        visible = XXmeanvisible
     )
 
     XXdist = visualize(
         collect(Iterators.flatten(zip(XXmeanxyz[1:extra*skippoints:end],
          Xxyz[1:extra*skippoints:end-1]))), :linesegment,
         color = XXdistcolor,
-        model = rotation
+        model = rotation,
+        visible = XXdistvisible
     )
  
     circle2 = Sphere(Point2f0(0), 1f0)
@@ -126,7 +148,8 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         (circle2, Vxyz), 
         scale = fill(sca*0.5Point2f0(1,1), length(Vxyz)),
         color = Vcolor,
-        model = rotation
+        model = rotation,
+        visible = Vvisible
     )
 
     if follow 
@@ -157,7 +180,36 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         _view(V3d, window, camera=camera)
     end
     
-    renderloop(window)
+    if !movie
+        renderloop(window)
+    else
+
+        # save video to report dir, or in some tmp dir we'll delete later
+        path = "./output"
+
+        isdir(path) || mkdir(path)
+        name = path * "/$(randstring()).mkv"
+
+        #@async renderloop(window)
+
+        # create a stream to which we can add frames
+        io, buffer = GLVisualize.create_video_stream(name, window)
+        for i in 1:div(3900,2)
+            # do something
+               #render current frame
+            # if you call @async renderloop(window) you can replace this part with yield
+            #yield()
+            GLWindow.render_frame(window)
+            GLWindow.swapbuffers(window)
+            GLWindow.reactive_run_till_now()
+
+            # add the frame from the current window
+            GLVisualize.add_frame!(io, window, buffer)
+        end
+        # closing the stream will trigger writing the video!
+        close(io)
+        GLWindow.destroy!(window)
+    end    
 end
 
-showpath(follow = false, rotating = true)
+showpath(;follow = false, movie = false, truth = true, obs = true, smooth = true, sample = false, ode = false, nu = true, rotating = false)

@@ -74,3 +74,8 @@ function logpdfnormal(x::Float64, Σ)
      -(x^2/Σ + log(Σ) + log(2pi))/2
 end
 
+function conditional(P::Gaussian, A, B, xB)
+    assert(length(b) == length(xB))   
+    Z = P.Σ[A,B]*inv(P.Σ[B,B]) 
+    Gaussian(P.μ[A] + Z*(xB - P.μ[B]), P.Σ[A,A] - Z*P.Σ[B,A])
+end    
