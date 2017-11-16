@@ -50,5 +50,16 @@ Bridge.constdiff(::Lorenz) = true
 
 x0(P::Lorenz) = ℝ{3}(1.508870, -1.531271, 25.46091)
 
+struct Pendulum <: ContinuousTimeProcess{ℝ{2}}
+    θ²::Float64
+    γ::Float64
+end
+
+Bridge.Btilde(t, x, P::Pendulum) = SMatrix{2,2}(0.0,0.0,1.0,0.0)
+Bridge.βtilde(t, x, P::Pendulum) = ℝ{2}(0.0, 0.0)
+
+Bridge.b(t, x, P::Pendulum) = ℝ{2}(x[2], -P.θ²*sin(x[1]))
+Bridge.σ(t, x, P::Pendulum) = ℝ{2}(0.0, P.γ)
+Bridge.constdiff(::Lorenz) = true
 
 end # Module
