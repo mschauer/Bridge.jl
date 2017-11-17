@@ -1,7 +1,7 @@
 
 using GLAbstraction, Colors, GeometryTypes, GLVisualize, Reactive
 
-function showpath(;follow = true, movie = false, truth = true, obs = true, smooth = true, sample = true, ode = true, nu = true, rotating = false)
+function showpath(;follow = true, movie = false, x0 = false, truth = true, obs = true, smooth = true, sample = true, ode = true, nu = true, rotating = false)
         
     window = glscreen()
     if follow
@@ -19,6 +19,10 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
     XXxyz = collect(Point3f0, Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m))
     XXmeanxyz = collect(Point3f0, Iterators.flatten(XXmean[i].yy[1:end-1] for i in 1:m))
     XXstdr = vcat([Point3f0.( XXstd[i][1:end-1] ) for i in 1:m]...)
+    XXscale = vcat([Point3f0.(XXscal[i][1:end-1]) for i in 1:m]...)
+    XXrotation = vcat([Vec4f0.(XXrot[i][1:end-1]) for i in 1:m]...)
+    
+    
     Xxyz = Point3f0.(Xtrue.yy)
     
     Vxyz = Point3f0.(V.yy)
@@ -90,14 +94,16 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         XXdistvisible =
         Vvisible = map(timesignal) do i; true end
     end
-    
+    X0visible = map(timesignal) do i; true end
+
     Xcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.6)
     Xsmcolor = RGBA{Float32}(0.04, 0.15, 0.44, 0.8)
     Ycolor = RGBA{Float32}(0.34, 0.05, 0.14, 0.4)
     XXcolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.4)
     XXmeancolor = RGBA{Float32}(0.04, 0.35, 0.14, 0.15)
     XXdistcolor =  RGBA{Float32}(0.34, 0.05, 0.14, 0.40)
-    Vcolor = RGBA{Float32}(0.7, 0.3, 0., 0.8)
+    Vcolor = RGBA{Float32}(0.7, 0.3, 0., 0.5)
+
 
     X3d = visualize(
         Xxyz[1:skippoints:end], :lines,
@@ -126,10 +132,12 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         visible = XXvisible
     )
    
-    circle = Sphere(Point2f0(0), 1.0f0)
+    sphere = Sphere(Point3f0(0,0,0), 1.0f0)
     XXmean3d = visualize(
-        (circle, XXmeanxyz[1:5extra*skippoints:end]),
-        scale = Float32(2*sca)*XXstdr[1:5extra*skippoints:end],
+        (sphere, XXmeanxyz[1:5extra*skippoints:end]),
+        #scale = Float32(2*sca)*XXstdr[1:5extra*skippoints:end],
+        scale = Float32(1)*XXscale[1:5extra*skippoints:end],      
+        rotation = XXrotation[1:5extra*skippoints:end],          
         color = XXmeancolor,
         model = rotation,
         visible = XXmeanvisible
@@ -143,13 +151,21 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
         visible = XXdistvisible
     )
  
-    circle2 = Sphere(Point2f0(0), 1f0)
+    sphere2 = Sphere(Point3f0(0), 1f0)
     V3d = visualize(
-        (circle2, Vxyz), 
-        scale = fill(sca*0.5Point2f0(1,1), length(Vxyz)),
+        (sphere2, Vxyz), 
+        scale = fill(0.5Point3f0(1,1,1), length(Vxyz)),
         color = Vcolor,
         model = rotation,
         visible = Vvisible
+    )
+
+    sphere3 = Sphere(Point3f0(0), 0.1f0)    
+    X03d = visualize(
+        (sphere3, Point3f0.(X0[1:10:end])), 
+        color = Xcolor,
+        model = rotation,
+        visible = X0visible
     )
 
     if follow 
@@ -162,6 +178,9 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
     end
     if sample
         _view(XX3d, window, camera=:perspective)
+    end
+    if x0
+        _view(X03d, window, camera=:perspective)
     end
     if nu
         _view(Y3d, window, camera=camera)
@@ -212,4 +231,4 @@ function showpath(;follow = true, movie = false, truth = true, obs = true, smoot
     end    
 end
 
-showpath(;follow = false, movie = false, truth = true, obs = true, smooth = true, sample = false, ode = false, nu = true, rotating = false)
+showpath(;follow = false, movie = false, truth = true, obs = false, smooth = true, sample = false, x0 = false, ode = false, nu = false, rotating = false)

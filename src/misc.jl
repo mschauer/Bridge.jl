@@ -83,3 +83,18 @@ mat(yy::Vector{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, yy), d, lengt
 
 unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1),T}, A[:])
 unmat(::Type{SVector{d,T}}, A::Matrix{T}) where {d,T} = reinterpret(SVector{d,T}, A[:])
+
+
+"""
+    quaternion(m::SMatrix{3,3})
+
+Compute the (rotation-) quarternion of a 3x3 rotation matrix. Useful to create
+isodensity ellipses from spheres in GL visualizations.
+"""
+function quaternion(m)
+    qw = √(1 + m[1,1] + m[2,2] + m[3,3])/2
+    qx = (m[3,2] - m[2,3])/(4qw)
+    qy = (m[1,3] - m[3,1])/(4qw)
+    qz = (m[2,1] - m[1,2])/(4qw)
+    SVector{4}(qx,qy,qz,qw)
+end

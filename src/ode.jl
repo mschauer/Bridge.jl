@@ -142,6 +142,17 @@ end
     X
 end
 
+function solvei!(::R3, Fi, X::SamplePath{T}, x0, P) where {T}
+    tt = X.tt
+    yy = X.yy
+    yy[1] = y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(Fi, tt[i-1], y, tt[i] - tt[i-1], (i, P))  
+        yy[i] = y  
+    end
+    X
+end
+
 function solve(::R3, F, tt, x0::T, P) where {T}
     y::T = x0
     for i in 2:length(tt)
@@ -150,6 +161,13 @@ function solve(::R3, F, tt, x0::T, P) where {T}
     y
 end
 
+function solvei(::R3, Fi, tt, x0::T, P) where {T}
+    y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(Fi, tt[i-1], y, tt[i] - tt[i-1], (i,P))
+    end
+    y
+end
 
 
 solve!(method::ODESolver, X, x0, F::Function) = solve!(method, _F, X, x0, F) 

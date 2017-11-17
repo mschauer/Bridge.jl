@@ -26,6 +26,7 @@ Bridge.solve!(Euler(), X, x0, W, P)
 Y = Bridge.solve!(Bridge.R3(), copy(X), x0, P)
 
 
+
 # Observation scheme and subsample
 _pairs(collection) = Base.Generator(=>, keys(collection), values(collection))
 
@@ -58,7 +59,9 @@ forward = false # direction of the linear noise approximation
 TPt = Any
 TPᵒ = Any
 
+𝕃 = typeof(Bridge.outer(zero(x0)))
 
+Phi = Vector{Any}(m)
 Pt = Vector{TPt}(m)
 Pᵒ = Vector{TPᵒ}(m)
 H♢ = Bridge.outer(zero(x0))
@@ -71,6 +74,7 @@ for i in m:-1:1
     WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
     # short-cut, take v later
     Pt[i] =  Bridge.LinearAppr(Y[1 + (i-1)*M:1 + i*M], P)
+    Phi[i] = Bridge.solvei(Bridge.R3(), (i,C,iP) -> Bridge.Bi(iP[1],iP[2])*C, XX[i].tt, one(𝕃), Pt[i])
     #Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], Bridge.a(XX[i].tt[end], XX[i].yy[end], P), forward)
     #Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, Bridge.a(XX[i].tt[end], v, P), forward)
     Pᵒ[i] = Bridge.GuidedBridge(XX[i].tt, P, Pt[i], v, H♢)
@@ -94,7 +98,7 @@ XXmean = [zero(XX[i]) for i in 1:m]
 H♢, v = Bridge.gpupdate(Pᵒ[1], L, Σ0, V.yy[1])
 π0 = Bridge.Gaussian(v, H♢)
 
-if true
+if false
     using GLVisualize, Colors, GeometryTypes
     window = glscreen()
     sca = 1/15

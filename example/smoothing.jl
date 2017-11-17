@@ -7,7 +7,7 @@ using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 srand(2)
 
-iterations = 5000
+iterations = 25000
 rho = 0.05 # 
 independent = false # true independent proposals
 t = 1.0
@@ -81,8 +81,6 @@ for i in m:-1:1
     H♢, v = Bridge.gpupdate(Pᵒ[i], L, Σ, V.yy[i])
 end
  
-v0 = V.yy[1]
-#v0 = v
 
 y = x0
 for i in 1:m
@@ -91,16 +89,18 @@ for i in 1:m
 end
 XXmean = [zero(XX[i]) for i in 1:m]
 
-μ0 = ℝ{3}(0,0,0)
-Σ0 = SDiagonal(40., 40., 40.)
-π0 = Bridge.Gaussian(μ0 + Σ0*L'*inv(L*Σ0*L' + Σ)*(v0 - L*μ0), Σ0 - Σ0*L'*inv(L*Σ0*L' + Σ)*L*Σ0)
+#v0 = V.yy[1]
+#v0 = v
+#μ0 = ℝ{3}(0,0,0)
+#Σ0 = SDiagonal(40., 40., 40.)
+#π0 = Bridge.Gaussian(μ0 + Σ0*L'*inv(L*Σ0*L' + Σ)*(v0 - L*μ0), Σ0 - Σ0*L'*inv(L*Σ0*L' + Σ)*L*Σ0)
 
-H♢, v = Bridge.gpupdate(Pᵒ[1], L, Σ0, V.yy[1])
+#H♢, v = Bridge.gpupdate(Pᵒ[1], L, Σ0, V.yy[1])
 π0 = Bridge.Gaussian(v, H♢)
-
+X0 = ℝ{3}[]
 function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
     m = length(XX)
-    rho0 = rho/10
+    rho0 = rho
     # create workspace
     XXᵒ = deepcopy(XX)
     WWᵒ = deepcopy(WW)
@@ -111,6 +111,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independe
     y0 = 0*rand(π0)
 
     for it in 1:iterations
+        push!(X0, y0)
         if !independent
             y0ᵒ = π0.μ + sqrt(rho0)*(rand(π0) - π0.μ) + sqrt(1-rho0)*(y0 - π0.μ) 
         else
@@ -159,12 +160,22 @@ end
 mcstate, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
 
 XXstd = Vector{Any}(m)
+XXrot = Vector{Any}(m)
+XXscal = Vector{Any}(m)
+
 for i in 1:m
     xx, vv = Bridge.mcstats(mcstate[i])
     XXmean[i].yy[:] = xx
     XXstd[i] = map(x->sqrt.(diag(x)), vv)
+    #XXchol[i] = chol.(Hermitian.(vv))
+    XXscal[i] = map(x->sqrt.(svd(x)[2]), vv)
+    XXrot[i] = map(x->(Bridge.quaternion(svd(x)[1])), vv)  
 end
-@show acc/iterations    
+@show acc/iterations  
+V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
+#XXmean[1].yy[1] = mean(Bridge.mat(X0[end÷2:end]),2)
+#XXscal[1][1] = 2sqrt.(svd(V0)[2])
+#XXrot[1][1] = (Bridge.quaternion(svd(V0)[1]))
 
 # Plot result
 include("plotsmoothing.jl")
