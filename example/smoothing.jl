@@ -75,7 +75,7 @@ for i in m:-1:1
     XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
     WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
     # short-cut, take v later
-     Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], Bridge.a(XX[i].tt[end], XX[i].yy[end], P), forward)
+    Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], Bridge.a(XX[i].tt[end], XX[i].yy[end], P), forward)
     #Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, Bridge.a(XX[i].tt[end], v, P), forward)
     Pᵒ[i] = Bridge.GuidedBridge(XX[i].tt, P, Pt[i], v, H♢)
     H♢, v = Bridge.gpupdate(Pᵒ[i], L, Σ, V.yy[i])
@@ -100,7 +100,7 @@ XXmean = [zero(XX[i]) for i in 1:m]
 X0 = ℝ{3}[]
 function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
     m = length(XX)
-    rho0 = rho
+    rho0 = rho / 2 
     # create workspace
     XXᵒ = deepcopy(XX)
     WWᵒ = deepcopy(WW)
@@ -108,7 +108,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independe
     # initialize
     mcstate = [mcstart(XX[i].yy) for i in 1:m]
     acc = 0
-    y0 = 0*rand(π0)
+    y0 = π0.μ
 
     for it in 1:iterations
         push!(X0, y0)
@@ -149,7 +149,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independe
         else 
             verbose && print("\t .")
         end
-        println()
+        println("\t\t", round(y0, 2))
         for i in 1:m
             mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
         end

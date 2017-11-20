@@ -13,8 +13,8 @@ function showpath(;follow = true, movie = false, x0 = false, truth = true, obs =
 
     extra = 10
 
-    #Yxyz = collect(Point3f0, Iterators.flatten(Pt[i].Y.yy[1:end-1] for i in 1:m)) # Y
-    Yxyz = collect(Point3f0, Iterators.flatten(Pᵒ[i].V[1:end-1] for i in 1:m)) # V
+    Yxyz = collect(Point3f0, Iterators.flatten(Pt[i].Y.yy[1:end-1] for i in 1:m)) # Y
+    #Yxyz = collect(Point3f0, Iterators.flatten(Pᵒ[i].V[1:end-1] for i in 1:m)) # V
 
     XXxyz = collect(Point3f0, Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m))
     XXmeanxyz = collect(Point3f0, Iterators.flatten(XXmean[i].yy[1:end-1] for i in 1:m))
@@ -212,7 +212,7 @@ function showpath(;follow = true, movie = false, x0 = false, truth = true, obs =
         #@async renderloop(window)
 
         # create a stream to which we can add frames
-        io, buffer = GLVisualize.create_video_stream(name, window)
+        io = GLVisualize.create_video_stream(name, window)
         for i in 1:div(3900,2)
             # do something
                #render current frame
@@ -223,12 +223,14 @@ function showpath(;follow = true, movie = false, x0 = false, truth = true, obs =
             GLWindow.reactive_run_till_now()
 
             # add the frame from the current window
-            GLVisualize.add_frame!(io, window, buffer)
+            GLVisualize.add_frame!(io)
         end
         # closing the stream will trigger writing the video!
-        close(io)
+        close(io.io)
         GLWindow.destroy!(window)
     end    
 end
 
-showpath(;follow = false, movie = false, truth = true, obs = false, smooth = true, sample = false, x0 = false, ode = false, nu = false, rotating = false)
+showpath(;follow = false, movie = false, truth = true, obs = false, smooth = true, sample = false, x0 = false, ode = false, nu = true, rotating = false)
+
+#showpath(;follow = false, movie = true, rotating = true)
