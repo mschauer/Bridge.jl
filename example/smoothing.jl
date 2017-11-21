@@ -106,14 +106,15 @@ for i in m:-1:1
 end
  
 
-y = x0
+π0 = Bridge.Gaussian(v, H♢)
+
+y = π0.μ
 for i in 1:m
     sample!(WW[i], Wiener{ℝ{3}}())
     y = Bridge.bridge!(XX[i], y, WW[i], Pᵒ[i])
 end
 XXmean = [zero(XX[i]) for i in 1:m]
 
-π0 = Bridge.Gaussian(v, H♢)
 #X0 = ℝ{3}[]
 
 function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive = true, adaptit = 5000, independent = false, skiplast = 0, hwindow=20)
