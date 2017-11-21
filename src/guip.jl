@@ -99,22 +99,26 @@ end
 
 #################################################
 """
-    LinearNoiseAppr(tt, P, x, a, forward = true) 
+    LinearNoiseAppr(tt, P, x, a, direction = forward) 
 
-Precursor of the linear noise approximation of `P`. For now no attempt is taken to add in a linearization around the deterministic path.
+Precursor of the linear noise approximation of `P`. For now no attempt is taken 
+to add in a linearization around the deterministic path. `direction` can be one of
+`:forward`, `:backward` or `:nothing`. The latter corresponds to choosing `β == 0`.
 """
 struct LinearNoiseAppr{R,S,T} <: ContinuousTimeProcess{T}
     Target::R
     Y::SamplePath{T}
     a::S
-    function LinearNoiseAppr(tt_, P::R, x::T, a::S, forward = true) where {R,S,T}
+    function LinearNoiseAppr(tt_, P::R, x::T, a::S, direction = forward) where {R,S,T}
         tt = collect(tt_)
         N = length(tt)
         Y = SamplePath(tt, zeros(T, N)) 
-        if forward
+        if direction == :forward
             solve!(R3(), b, Y, x, P) 
-        else
-            solvebackward!(R3(), b, Y, x, P) 
+        elseif direction == :backward
+            solvebackward!(R3(), b, Y, x, P)
+        elseif direction != :nothing
+            throw(ArgumentError("Wrong `direction`"))
         end
         new{R,S,T}(P, Y, a)
     end
@@ -206,8 +210,14 @@ Return updated `H♢, V` when observation `v` at time zero with error `Σ` is ob
 # H♢_ = H♢ -  H♢*L'*inv(Σ + L*H♢*L')*L*H♢
 # V_ = H♢_ * (L'*inv(Σ)*v  + H♢*V)
 function gpupdate(H♢, V, L, Σ, v)
-    Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
-    Z*H♢, Z*H♢*L'*inv(Σ)*v + Z*V 
+    if all(diag(H♢) .== Inf)
+        H♢_ = SMatrix(inv(L' * inv(Σ) * L))
+        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        H♢_, V_
+    else
+        Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
+        Z*H♢, Z*H♢*L'*inv(Σ)*v + Z*V
+    end
 end
 gpupdate(P::GuidedBridge, L, Σ, v) = gpupdate(P.H♢[1], P.V[1], L, Σ, v)
 
