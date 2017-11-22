@@ -7,13 +7,13 @@ using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 srand(2)
 
-iterations = 50000
+iterations = 25000
 rho = 0.01 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
 adaptive = true # adaptive proposals
 adaptit = 1000 # adapt every `it`th step
 #adaptmax = 4000
-adaptmax = 20000
+adaptmax = 10000
 cheating = false # take a posteriori good value of Pt
 showpath = false
 partial = true
@@ -98,7 +98,7 @@ for i in m:-1:1
       
 #    Σ_= Bridge.σ(XX[i].tt[end], v, P)     
 
-    x_ = Models.foci(P)[1 + (v[1]+v[2] > 0)]
+    x_ = Models.foci(P)[1 + ( V.yy[i][1] > 0)]
 #    B_ = -Bridge.bderiv(0, x_, P)'
 #    β_ = zero(ℝ{3})  #-B_*f
 #
@@ -152,8 +152,8 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
                 H♢, v = Bridge.gpupdate(Pᵒ[i], L, Σ, V.yy[i])
             end
             π0 = Bridge.Gaussian(v, Hermitian(H♢))
-            y0ᵒ = rand(π0) 
-            doaccept = true
+            #y0ᵒ = rand(π0) 
+            #doaccept = true
         end
 
         #push!(X0, y0)
@@ -183,7 +183,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
         print("$it ll $(round(ll,2)) ")
 
         #if true
-        if  doaccept || rand() < exp(ll) 
+        if doaccept || rand() < exp(ll) 
             acc += 1
             verbose && print("\t X")
             y0 = y0ᵒ
@@ -242,5 +242,5 @@ if true
     for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz + XXstandard, i), color = :lightblue); end
     for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz - XXstandard, i),   color = :lightblue); end
     for i in 1:2; plot(V.tt, getindex.(V.yy,i), ".",  color = :black); end
-    for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(Nu, i), color = :lightred); end
+    for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(Nu, i), color = :palevioletred); end
 end
