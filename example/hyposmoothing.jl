@@ -8,12 +8,12 @@ const R = ℝ
 srand(2)
 
 iterations = 50000
-rho = 0.002 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
+rho = 0.01 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
 adaptive = true # adaptive proposals
-adaptit = 500 # adapt every `it`th step
+adaptit = 1000 # adapt every `it`th step
 #adaptmax = 4000
-adaptmax = 15000
+adaptmax = 20000
 cheating = false # take a posteriori good value of Pt
 showpath = false
 partial = true
@@ -234,7 +234,8 @@ end
 # Plot result
 include("makie.jl")
 
-if false
+if true
+    using PyPlot
     clf()
     for i in 1:3; plot(Xtrue.tt, getindex.(Xtrue.yy, i), label = "$i", color = :red); end
     for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz, i), label = "$i", color = :blue); end
