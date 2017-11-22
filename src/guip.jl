@@ -187,6 +187,7 @@ a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
 btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
 atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
+aitilde(t, x, P::GuidedBridge) = ai(t, x, P.Pt)
 bitilde(i, x, P::GuidedBridge) = bi(i, x, P.Pt)
 
 @inline _traceB(t, x, P) = trace(Bridge.B(t, P))
@@ -196,6 +197,7 @@ lptilde(P::GuidedBridge, u) = logpdfnormal(P.V[1] - u, P.H♢[1]) - traceB(P.tt,
 
 hasbi(::GuidedBridge) = true
 hasbitilde(P::GuidedBridge) = hasbi(P.Pt)
+hasaitilde(P::GuidedBridge) = hasai(P.Pt)
 
 # fallback for testing
 lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(P.tt, Bridge.outer(zero(u)), P.Pt))
@@ -422,8 +424,13 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge; skip = 0)
         end    
         if !constdiff(Po)
             H = Hi(i, x, Po)
-            som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
-            som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
+            if hasaitilde(Po)
+                som -= 0.5*trace( (a(s, x, Po.Target) - aitilde(i, x, Po))*(H) ) * (tt[i+1]-tt[i])
+                som += 0.5*( r'*(a(s, x, Po.Target) - aitilde(i, x, Po))*r ) * (tt[i+1]-tt[i])
+            else
+                som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
+                som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
+            end
         end
     end
     som

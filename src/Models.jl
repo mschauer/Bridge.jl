@@ -1,6 +1,6 @@
 module Models
 using Bridge, StaticArrays, Distributions
-export Lorenz, ℝ
+export Lorenz, ℝ, foci
 
 const ℝ{N} = SVector{N, Float64}
 
@@ -39,7 +39,7 @@ Bridge.constdiff(::Linear2) = true
 
 
 struct Lorenz <: ContinuousTimeProcess{ℝ{3}}
-    θ::ℝ{3}
+    θ::ℝ{3} # σ ρ β
     σ::SDiagonal{3,Float64}
     Lorenz(θ=ℝ{3}(10,28,8/3),σ=ℝ{3}(1,1,1)) = new(θ,σ)
 end
@@ -61,6 +61,10 @@ x0(P::Lorenz) = ℝ{3}(1.508870, -1.531271, 25.46091)
 
 critlorenz(θ1, θ3) = θ1*(θ1 + θ3 + 3)/(θ1 - θ3 - 1)
 
+function foci(P::Lorenz)
+    σ, ρ, β = P.θ
+    ℝ{3}(-√β*√(ρ-1), -√β*√(ρ-1), ρ-1), ℝ{3}(√β*√(ρ-1), √β*√(ρ-1), ρ-1)
+end
 
 struct Pendulum <: ContinuousTimeProcess{ℝ{2}}
     θ²::Float64

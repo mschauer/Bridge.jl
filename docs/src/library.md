@@ -74,6 +74,8 @@ Bridge.runmean
 Bridge.PSD
 Bridge.Gaussian
 Bridge.refine
+Bridge.quaternion
+Bridge._viridis
 ```
 
 ## Online statistics
@@ -91,6 +93,7 @@ mcstart
 mcnext
 mcband
 mcbandmean
+Bridge.mcstats
 ```
 
 ## Linear Processes
@@ -98,6 +101,8 @@ mcbandmean
 ```@docs
 LinPro
 Bridge.Ptilde
+Bridge.LinearNoiseAppr
+Bridge.LinearAppr
 ```
 
 
@@ -132,3 +137,6 @@ Bridge.SDESolver
 Bridge.Increments
 Bridge.sizedtype
 ```
+
+    
+

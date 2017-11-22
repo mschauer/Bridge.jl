@@ -133,22 +133,31 @@ end
 #################################################
 
 """
-LinearAppr(tt, B, β, a) 
+    LinearAppr(tt, B, β, a) 
 """
 struct LinearAppr{R,S,T} <: ContinuousTimeProcess{T}
     tt::Vector{Float64}
     xx::Vector{T}
     B::Vector{S}
-    β::Vector{T}
+    b::Vector{T}
     Σ::Vector{R}
 end
 
-bi(i, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.β[i]
+bi(i, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.b[i]
 Bi(i, P::LinearAppr) = P.B[i]
-βi(i, P::LinearAppr) = P.β[i]
+βi(i, P::LinearAppr) = P.b[i] - P.B[i]*P.xx[i]
+ai(i, x, P::LinearAppr) = outer(P.Σ[i])
 ai(i, P::LinearAppr) = outer(P.Σ[i])
 constdiff(::LinearAppr) = false
 hasbi(::LinearAppr) = true
 hasai(::LinearAppr) = true
 
-LinearAppr(Y, P) = LinearAppr(Y.tt, Y.yy, map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy))
+linearappr(Y, P) = LinearAppr(Y.tt, Y.yy, map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy))
+function linearappr!(Pt::LinearAppr, Y, P) 
+    Pt.tt[:] = Y.tt
+    Pt.xx[:] = Y.yy
+    Pt.B[:] = map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy)
+    Pt.b[:] = map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy)
+    Pt.Σ[:] = map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy)
+    Pt
+end
