@@ -8,10 +8,10 @@ const R = ℝ
 srand(2)
 
 iterations = 25000
-rho = 0.01 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
+rho = 0.005 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
-adaptive = true # adaptive proposals
-adaptit = 1000 # adapt every `it`th step
+adaptive = false # adaptive proposals
+adaptit = 500 # adapt every `it`th step
 #adaptmax = 4000
 adaptmax = 10000
 cheating = false # take a posteriori good value of Pt
@@ -125,7 +125,7 @@ XXmean = [zero(XX[i]) for i in 1:m]
 
 #X0 = ℝ{3}[]
 
-function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive = true, adaptit = 5000, independent = false, skiplast = 0, hwindow=20)
+function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive = true, adaptmax = iterations, adaptit = 5000, independent = false, hwindow=20)
     m = length(XX)
     rho0 = rho 
     # create workspace
@@ -156,7 +156,6 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
             #doaccept = true
         end
 
-        #push!(X0, y0)
         if !independent
             y0ᵒ = π0.μ + sqrt(rho0)*(rand(π0) - π0.μ) + sqrt(1-rho0)*(y0 - π0.μ) 
         else
@@ -174,13 +173,10 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
 
 
         ll = 0.0
-        for i in 1:m-1
+        for i in 1:m
             ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i]) - llikelihood(LeftRule(), XX[i],  Pᵒ[i])
         end
-        let i = m
-            ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i], skip=skiplast) - llikelihood(LeftRule(), XX[i],  Pᵒ[i], skip=skiplast)
-        end
-        print("$it ll $(round(ll,2)) ")
+        verbose && print("$it ll $(round(ll,2)) ")
 
         #if true
         if doaccept || rand() < exp(ll) 
@@ -215,32 +211,28 @@ end
     
 
 
-mcstate, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
-
-XXstd = Vector{Any}(m)
-XXrot = Vector{Any}(m)
-XXscal = Vector{Any}(m)
-
-for i in 1:m
-    xx, vv = Bridge.mcstats(mcstate[i])
-    XXmean[i].yy[:] = xx
-    XXstd[i] = map(x->sqrt.(diag(x)), vv)
-    XXscal[i] = map(x->sqrt.(svd(x)[2]), vv)
-    XXrot[i] = map(x->(Bridge.quaternion(svd(x)[1])), vv)  
-end
+mcstates, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho;
+    adaptive = adaptive,
+    adaptit = adaptit,
+    adaptmax = adaptmax,
+    verbose = true, independent = independent)
 @show acc/iterations  
-#V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
+
+include("../extra/makie.jl")
+
+Xmean, Xrot, Xscal = mcsvd3(mcstates)
 
 # Plot result
 include("makie.jl")
+Xmean, Xstd = mcmarginalstats(mcstates)
 
 if true
     using PyPlot
     clf()
     for i in 1:3; plot(Xtrue.tt, getindex.(Xtrue.yy, i), label = "$i", color = :red); end
-    for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz, i), label = "$i", color = :blue); end
-    for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz + XXstandard, i), color = :lightblue); end
-    for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(XXmeanxyz - XXstandard, i),   color = :lightblue); end
+    for i in 1:3; plot(Xtrue.tt, getindex.(Xmean, i), label = "$i", color = :blue); end
+    for i in 1:3; plot(Xtrue.tt, getindex.(Xmean + Xstd, i), color = :lightblue); end
+    for i in 1:3; plot(Xtrue.tt, getindex.(Xmean - Xstd, i),   color = :lightblue); end
     for i in 1:2; plot(V.tt, getindex.(V.yy,i), ".",  color = :black); end
     for i in 1:3; plot(Xtrue.tt[1:end-1], getindex.(Nu, i), color = :palevioletred); end
 end

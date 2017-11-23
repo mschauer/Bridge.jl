@@ -1,8 +1,9 @@
 using Makie, GLVisualize
 using GeometryTypes, Colors
 using Bridge: _viridis
+
 skippoints = 1
-extra = 10
+extra = 50
 d2 = length(valtype(V))
 scene = Scene(resolution = (400, 400))
 
@@ -21,36 +22,19 @@ elseif d2 == 2
     viri = _viridis[round.(Int,linspace(1,256, length(V)))]
     scatter(map(v->Point3f0(0, v...), V.yy), marker=sphere2, markersize = 0.2,  strokewidth = 0.02, strokecolor = :white, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri)) 
 end
-
-#for X in XXmean
-#    lines((@view X.yy[1:skippoints:end]), linewidth = 0.2, color = :darkgreen)
-#end
 #for pt in Pt
 #    lines((@view pt.Y.yy[1:skippoints:end]), linewidth = 0.2, color = :darkred)
 #end
 
-#for pᵒ in Pᵒ
-#    lines((@view pᵒ.V[1:skippoints:end]), linewidth = 0.2, color = :darkred)
-#end
 
-XXmeanxyz = collect(Point3f0, Iterators.flatten(XXmean[i].yy[1:end-1] for i in 1:m))
-lines((@view XXmeanxyz[1:skippoints:end]), linewidth = 0.2, color = :darkgreen)
-
-XXscale = vcat([Point3f0.(XXscal[i][1:end-1]) for i in 1:m]...)
-XXrotation = vcat([Vec4f0.(XXrot[i][1:end-1]) for i in 1:m]...)
-XXstandard = vcat([Point3f0.(XXstd[i][1:end-1]) for i in 1:m]...)
 Nu = vcat([Point3f0.(Pᵒ[i].V[1:end-1]) for i in 1:m]...)
 lines((@view Nu[1:skippoints:end]), linewidth = 0.2, color = :darkred)
 
+lines((@view Xmean[1:skippoints:end]), linewidth = 0.2, color = :darkgreen)
+
+visualize_uncertainty(scene, (Xmean, Xrot, Xscal), extra*skippoints; color = RGBA(0.2f0, 0.4f0, 0.9f0, 0.1f0))
 
 sphere = Sphere(Point3f0(0,0,0), 1.0f0)
-viz = visualize(
-    (sphere, XXmeanxyz[1:5extra*skippoints:end]),
-    scale = Float32(1)*XXscale[1:5extra*skippoints:end],      
-    rotation = XXrotation[1:5extra*skippoints:end],          
-    color = RGBA(0.2f0, 0.4f0, 0.9f0, 0.1f0),
-).children[]
-Makie.insert_scene!(scene, :mesh, viz, Dict(:show=>true, :camera=>:auto))
 
 if d2 == 3
     axis(map(x -> UnitRange(round.(Int,x)...), extrema(Bridge.mat(V.yy), 2))...)
@@ -64,7 +48,7 @@ else
     end
 end
 
-scatter(collect(Models.foci(P)), marker=Sphere(Point2f0(0), 1.0f0), markersize = 1.,  strokewidth = 0.02, strokecolor = :white, color = :green)
+scatter(collect(Models.foci(P)), marker=Sphere(Point2f0(0), 1.0f0), markersize = 1.,  strokewidth = 0.1, strokecolor = :white, color = :green)
 
 
 center!(scene)

@@ -76,6 +76,6 @@ Bridge.βtilde(t, x, P::Pendulum) = ℝ{2}(0.0, 0.0)
 
 Bridge.b(t, x, P::Pendulum) = ℝ{2}(x[2], -P.θ²*sin(x[1]))
 Bridge.σ(t, x, P::Pendulum) = ℝ{2}(0.0, P.γ)
-Bridge.constdiff(::Lorenz) = true
+Bridge.constdiff(::Pendulum) = true
 
 end # Module

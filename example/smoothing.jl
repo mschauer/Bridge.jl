@@ -7,11 +7,12 @@ using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
 srand(2)
 
-iterations = 25000
+iterations = 5000
 rho = 0.02 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
 adaptive = true # adaptive proposals
 adaptit = 1000 # adapt every `it`th step
+adaptmax = iterations
 cheating = false # take a posteriori good value of Pt
 direction = (:nothing, :backward)[1] # influences the starting value of Pt
 
@@ -24,7 +25,6 @@ T = 5.00
 n = 50001 # total imputed length
 m = 100 # number of segments
 M = div(n-1,m)
-skiplast = 0
 skippoints = 2
 dt = (T-t)/(n-1)
 tt = t:dt:T
@@ -117,7 +117,7 @@ XXmean = [zero(XX[i]) for i in 1:m]
 
 #X0 = ℝ{3}[]
 
-function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive = true, adaptit = 5000, independent = false, skiplast = 0, hwindow=20)
+function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive = true, adaptmax = iterations, adaptit = 5000, independent = false, hwindow=20)
     m = length(XX)
     rho0 = rho / 2 
     # create workspace
@@ -132,7 +132,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
 
     for it in 1:iterations
 
-        if adaptive && it % adaptit == 0 # adaptive smoothing
+        if adaptive && it < adaptmax && it % adaptit == 0 # adaptive smoothing
             H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])            
             for i in m:-1:1
                 xx = mcstate[i][1]
@@ -162,11 +162,8 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
 
 
         ll = 0.0
-        for i in 1:m-1
+        for i in 1:m
             ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i]) - llikelihood(LeftRule(), XX[i],  Pᵒ[i])
-        end
-        let i = m
-            ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i], skip=skiplast) - llikelihood(LeftRule(), XX[i],  Pᵒ[i], skip=skiplast)
         end
         print("$it ll $(round(ll,2)) ")
 
@@ -190,21 +187,17 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
     mcstate, acc
 end
 
-mcstate, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, independent = false, skiplast = 0)
+mcstates, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho;
+adaptive = adaptive,
+adaptit = adaptit,
+adaptmax = adaptmax,
+verbose = true, independent = independent)
 
-XXstd = Vector{Any}(m)
-XXrot = Vector{Any}(m)
-XXscal = Vector{Any}(m)
-
-for i in 1:m
-    xx, vv = Bridge.mcstats(mcstate[i])
-    XXmean[i].yy[:] = xx
-    XXstd[i] = map(x->sqrt.(diag(x)), vv)
-    XXscal[i] = map(x->sqrt.(svd(x)[2]), vv)
-    XXrot[i] = map(x->(Bridge.quaternion(svd(x)[1])), vv)  
-end
-@show acc/iterations  
 #V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
 
 # Plot result
+include("../extra/makie.jl")
+
+Xmean, Xrot, Xscal = mcsvd3(mcstates)
+
 include("makie.jl")

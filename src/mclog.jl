@@ -70,7 +70,6 @@ end
 
 Compute marginal 95% coverage interval for the chain from normal approximation.
 """
-
 function mcband(mc) 
     m, m2, k = mc
     Q = sqrt(2.)*erfinv(0.95)
@@ -88,4 +87,23 @@ function mcstats(mc)
     m, m2, k = mc
     cov = m2/(k - 1)
     m, cov
+end
+
+
+"""
+    mcmarginalstats(mcstates) -> mean, std
+
+Compute `mean`` and marginal standard deviations `std` for 2d plots. 
+"""
+function mcmarginalstats(states) 
+    xx, vv = Bridge.mcstats(states[1])
+    Xmean = copy(xx)
+    Xstd = map(x->sqrt.(diag(x)), vv)
+    for i in 2:length(states)
+        pop!(Xmean); pop!(Xstd)
+        xx, vv = Bridge.mcstats(states[i])
+        append!(Xmean, xx)
+        append!(Xstd, map(x->sqrt.(diag(x)), vv))
+    end 
+    Xmean, Xstd
 end
