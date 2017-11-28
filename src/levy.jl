@@ -59,6 +59,7 @@ struct GammaProcess <: LevyProcess{Float64}
     λ::Float64
 end
 
+
 """
     uniformthinning!(X, P::GammaProcess, γᵒ)
 
@@ -77,7 +78,7 @@ function uniform_thinning!(X, P::GammaProcess, γᵒ)
     y = yy[1]
     for i in 2:length(tt)
         dt = tt[i] - tt[i-1]
-        y, yy[i] = yy[i], yy[i-1] + (yy[i] - y)*rand(Beta(dt*γ,  dt*γᵒ))
+        y, yy[i] = yy[i], yy[i-1] + (yy[i] - y)*rand(Beta(dt*γ,  dt*(γᵒ-γ)))
     end
     X
 end
@@ -122,7 +123,6 @@ function sample!(X, P::LevyProcess{T}, x1=zero(T)) where {T}
     end
     X
 end
-
 
 increment(t, P::GammaProcess) = Gamma(t*P.γ, 1/P.λ)
 
