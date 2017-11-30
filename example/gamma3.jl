@@ -13,9 +13,30 @@ import Bridge: increment, expint, lp
 import Distributions.pdf
 
 N = 5 # number of thetas (so N+1 bins)
+#b = cumsum(0.3:0.4:2.0)
+if !isdefined(:simid)
+    error("provide simid = {1,3,6}")
+end
+
+sim = [:gamma, :sumgamma, :fire][simid]
+
+if sim == :fire
+    N = 2
+    b = [0.2, 1.0]
+end
+
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
+if sim == :fire
+    m = 400
+end
+
+tt = linspace(0.0, T, n + 1)
+
+
+iterations = 20_000
+
 
 # two gamma processes
 beta0a = 0.4
@@ -24,14 +45,8 @@ alpha0a = 2.0
 alpha0b = alpha0a/10
 
 
-b1 = 0.1 # prior b1
-
-if !isdefined(:simid)
-    error("provide simid = {1,3,6}")
-end
 
 transdim = true
-sim = [:gamma, :sumgamma, :fire][simid]
 
 if sim == :gamma
     simname = "gammap"
@@ -41,18 +56,31 @@ elseif sim == :sumgamma
     simname = "sumgamma"
     beta0 = beta0a + beta0b
     alpha0 = (beta0a*alpha0a + beta0b*alpha0b)/(beta0a + beta0b)
+    
 elseif sim == :fire
     simname = "danishfire"
-    beta0 = 1.8 # ml 
-    alpha0 = 0.6
-    dt = 0.02
-    n = 500
-    T = dt*n
+    
+    data = readcsv("output/danish.csv", header=true)[1]
+
+    tt_ = Float64.(Dates.value.(Date.(data[:,1])))/365
+    dt = tt_[2]-tt_[1]
+    tt_ -= (tt_[1] - dt)
+    prepend!(tt_, 0.0)
+
+    dxx = Float64.(data[:,2])
+  
+    
+    n = length(tt_)-1
+    T = tt_[end]
+    tt = tt_
+
+    beta0 = 1/dt*1.812 # ml 
+    alpha0 = 0.588942 
+
 end
 
 beta = beta0
 
-tt = linspace(0, T, n + 1)
 
 P0a = GammaProcess(beta0a, alpha0a)
 dxxa = rand.(increment.(diff(tt), P0a))
@@ -64,6 +92,10 @@ P0b = GammaProcess(beta0b, alpha0b)
 #X0b = sample(tt, P0b) 
 dxxb = rand.(increment.(diff(tt), P0b))
 X0b = SamplePath(tt, Bridge.cumsum0(dxxb))
+
+P0 = GammaProcess(beta0, alpha0)
+dxx0 = rand.(increment.(diff(tt), P0))
+X0 = SamplePath(tt, Bridge.cumsum0(dxx0))
 
 
 dt = mean(diff(X0a.tt))
@@ -134,15 +166,19 @@ elseif sim == :sumgamma
     X = addprc(X0a, X0b)
     dxx = dxxa + dxxb
 else
-    error("$simname not implemented")
+    X = SamplePath(tt, Bridge.cumsum0(dxx))
 end
 
 
 # grid points
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
-b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
-#b = [Inf]
-b = cumsum(0.3:0.4:2.0)
+if simid != 3 && N >= 1
+    b = cumsum(0.3:0.4:2.0)[1:N]
+    #b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
+elseif N == 0
+    b = Float64[]
+end
+
 #println("P(Y < b1) = ", mean(diff(X.yy) .< b1))
 h = hist1(diff(X.yy), b) # note that P(Y < b[1]) may be inaccurate if dt is chosen small
 if any(h .< 20)
@@ -161,7 +197,7 @@ epi = 2.0
 Pi = Gamma(epi^2/vpi, vpi/epi) # alpha
 Pi2 = Normal(0., 1.0) # theta
 Pi3 = Normal(0., 5.0) # rho
-Pi4 = Uniform(0.1, 10.0) # beta
+Pi4 = Uniform(0.1, 1000.0) # beta
 
 assert(mean(Pi) ≈ epi)
 assert(var(Pi) ≈ vpi)
@@ -195,23 +231,21 @@ try # save cp of this file as documentation
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
-
-beps = b[1]/5
+beps = 0.0
+#beps = b[1]/5
 #yy = diff(vcat(B...).yy)
 #var(yy[yy.< b[1]/4])
 
 
-iterations = 10_000
-
 alpha = alpha0
 beta = beta0
 
-alpha = alpha*2
+alpha = alpha*1.2
 if transdim
-    beta = 1.4beta
+    beta = 1.2beta
 end
 
-c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
+#c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
 epsij = 1e-50
 
 theta = zeros(N)
@@ -221,8 +255,15 @@ rho = zeros(N)
 alphasigma = 0.15
 thsigma = 0.05
 rhosigma = 0.05*ones(N) # variance of rho1 = 0
-rhosigma[1] = 0.0
+if N > 0 && sim != :fire
+    rhosigma[1] = 0.0
+end
 betasigma = 0.01
+
+if simid == 3
+    alphasigma = 0.075
+    betasigma = 0.5
+end    
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
     bn = join(["b$i" for i in 1:length(b)], " ")
@@ -232,7 +273,6 @@ end
 
 # initial augmentation
 
-dtti = step(linspace(tt[1], tt[2], m+1))
 
 for i in 1:n
     P0 = GammaProcess(beta, alpha)
@@ -280,7 +320,7 @@ for iter in 1:iterations
     end
    
     # compensator for small jumps
-    c = beta*(T/(n*m*alpha)) * (1 - exp(-alpha*beps))
+    #c = beta*(T/(n*m*alpha)) * (1 - exp(-alpha*beps))
     c = 0.0
 
     P0 = GammaProcess(beta, alpha)
@@ -309,7 +349,7 @@ for iter in 1:iterations
         thetaº = theta + thsigma*randn(length(theta))
         rhoº = rho + rhosigma.*randn(length(rho))
         
-        if thetaº[end] + alpha < eps() 
+        if N == 0 || thetaº[end] + alpha < eps() 
             # reject
         else
             P = LocalGammaProcess(P0, theta, rho, b)
@@ -356,6 +396,8 @@ for iter in 1:iterations
                 for i in 1:n
                     
                     Zº[i].yy[1] = 0.0
+                    dtti = step(linspace(tt[i], tt[i+1], m+1))
+                    
 
                     Be = Beta(dtti*betaº, dtti*(beta-betaº))
                     for j in 2:length(Zº[i].tt)
@@ -388,7 +430,7 @@ for iter in 1:iterations
     if  iter % 5 == 2 # remember to update formula for acceptane rates
         alphaº = alpha + alphasigma*randn()
         
-        if alphaº < 0 || theta[end] + alphaº < eps() # according to Wilkinson
+        if alphaº < 0 || (N > 0 && theta[end] + alphaº < eps()) # according to Wilkinson
             # reject
         else   
             P0º = GammaProcess(beta, alphaº)
@@ -415,6 +457,7 @@ end
 
 
 println("alpha acc ", alphaacc/(iterations/5))
+println("beta acc ", betaacc/(iterations/5))
 println("theta acc ", thacc/(4iterations/5))
 println("posterior band")
 display(hcat(mcband(mc)...))
@@ -434,3 +477,8 @@ function plotparams(simname = "gammap")
 
     params
 end
+
+Ph = GammaProcess( mean(params,1)[2:-1:1]... )
+dxxh = rand.(increment.(diff(tt), Ph))
+Xh = SamplePath(tt, Bridge.cumsum0(dxxh))
+

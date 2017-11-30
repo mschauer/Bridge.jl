@@ -205,7 +205,9 @@ end
 (Bin-wise) integral of the Levy measure ``\\nu(B_k)`` (sic).
 """
 function nu(k, P)
-    if k == 0
+    if k == 0 && length(P.b) == 0
+        P.P.γ*(-log(P.P.λ))
+    elseif k == 0
         P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to constant
     elseif k == length(P.θ) 
         assert((P.P.λ + P.θ[k]) > 0.0)
@@ -238,7 +240,7 @@ For `kstart == 1` (only choice) this is ``\\nu_0([b_1,\\infty)``.
 """
 function compensator0(kstart, P::LocalGammaProcess)
     if kstart == 1
-        return P.P.γ * (expint1(P.P.λ * P.b[1]))
+        return length(P.b) > 0.0 ? P.P.γ * (expint1(P.P.λ * P.b[1])) : 0.0
     else
         throw(ArgumentError("k != 1"))
     end
