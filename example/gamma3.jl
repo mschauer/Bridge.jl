@@ -15,27 +15,34 @@ import Distributions.pdf
 N = 5 # number of thetas (so N+1 bins)
 #b = cumsum(0.3:0.4:2.0)
 if !isdefined(:simid)
-    error("provide simid = {1,3,6}")
+    error("provide simid = {1,2,3}")
 end
 
 sim = [:gamma, :sumgamma, :fire][simid]
 
 if sim == :fire
-    N = 2
-    b = [0.2, 1.0]
+    N = 3
+    #b = [0.4, 1.2, 3.6]
+    b = [0.75, 2.5, 3.6]
+    b = [0.5, 1.5, 3]
+    b = [0.5, 1, 1.5, 2, 2.5, 3., 3.5]
+    b = [0.75, 2, 4]
+    #b = [0.5, 1.5, 3.5, 5]
+    
 end
 
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
 if sim == :fire
+    m = 800
     m = 400
 end
 
 tt = linspace(0.0, T, n + 1)
 
 
-iterations = 20_000
+iterations = 200_000
 
 
 # two gamma processes
@@ -240,9 +247,9 @@ beps = 0.0
 alpha = alpha0
 beta = beta0
 
-alpha = alpha*1.2
+alpha = alpha
 if transdim
-    beta = 1.2beta
+    beta = beta
 end
 
 #c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
@@ -264,6 +271,9 @@ if simid == 3
     alphasigma = 0.075
     betasigma = 0.5
 end    
+if isdefined(:norun)
+    error("don't run")
+end
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
     bn = join(["b$i" for i in 1:length(b)], " ")

@@ -18,6 +18,7 @@ function PyObject(t::Color)
     return o
 end
 cd = 40
+cd = 30
 trqs(x) = 1-sqrt(1-x)
 
 i = 1
@@ -192,6 +193,60 @@ grid(linestyle=":", axis="y")
 
 savefig(joinpath("output", simname, "traceplot2$(bstr).pdf"))
 
+    
+if oneplot 
+    subplot(132)
+else
+    savefig(joinpath("output", simname, "traceplot1$(bstr).pdf"))
+    figure()
+    subplot(121)
+end
+
+for i in 1:N
+    dcol = PyObject(RGB(trqs.(Bridge._viridis[cd*i])...))
+    col = PyObject(RGB((Bridge._viridis[cd*i])...))
+    lcol = PyObject(RGB(sqrt.(Bridge._viridis[cd*i])...))
+    
+    plot(params[:, 2 + i] + params[:, 1], color=lcol, lw = 0.2)
+    annotate(latexstring("\\theta_$i + \\alpha"),
+        xy=[div(2n, 3); params[div(2n, 3), 2 + i] + params[div(2n, 3), 1]],
+        xytext=[0, -10],
+        textcoords="offset points",
+        fontsize=10.0,
+        ha="right",
+        va="bottom")
+ 
+end    
+
+legend()
+grid(linestyle=":", axis="y")
+
+if oneplot
+    subplot(133)
+else
+    subplot(122)
+end
+
+for i in (2-withrho1):N
+    dcol = PyObject(RGB(trqs.(Bridge._viridis[cd*i])...))
+    col = PyObject(RGB((Bridge._viridis[cd*i])...))
+    lcol = PyObject(RGB(sqrt.(Bridge._viridis[cd*i])...))
+    
+    plot(params[:, 2+N + i] - log.(params[:,2]), color = lcol, lw = 0.2)
+
+    annotate(latexstring("\\rho_$i - \\log \\beta"),
+        xy=[div(2n, 3); params[div(2n, 3), 2+N+i]-log( params[div(2n, 3), 2])],
+        xytext=[0, -10],
+        textcoords="offset points",
+        fontsize=10.0,
+        ha="right",
+        va="bottom")
+end
+grid(linestyle=":", axis="y")
+
+savefig(joinpath("output", simname, "traceplot3$(bstr).pdf"))
+
+
 truth = readdlm(joinpath("output", simname, "truth.txt"), header=true)
 
 b = truth[1][6:6+N-1] # bin boundaries
@@ -211,7 +266,7 @@ end
 theta0(x, alpha1, beta1, alpha2, beta2) = -log((beta1*exp(-alpha1*x) + beta2*exp(-alpha2*x))/(beta1+beta2)) - (beta1*alpha1 + beta2*alpha2)/(beta1 + beta2)*x
 phi0(x, alpha1, beta1, alpha2, beta2) = -log((beta1*exp(-alpha1*x) + beta2*exp(-alpha2*x))/(beta1+beta2)) 
 
-xx = 2*(0.01:0.01:2)*b[end]
+xx = (0.01:0.01:2)*b[end]
 
 
 thetahat(xx, p) = [θ(x, p, b) for x in xx]
@@ -264,7 +319,8 @@ if false
 end
 
 println([quantile(params[:,1] + params[:,4], q) for q in [0.05, 0.5, 0.95]])
-n1 = div(n,2)
+#n1 = div(n,2)
+n1 = 20000
 n2 = n
 
 A = zeros(length(xx), length(n1:skip:n2))
@@ -286,7 +342,11 @@ fill_between(xx, upper[:], lower[:], edgecolor=lcol2, facecolor=(lcol2..., 0.2),
 if simid == 2
     plot(xx, logxv0.(xx, alpha1, beta1, alpha2, beta2), label=L"-\log(x v_0(x))", color=:darkorange)
 elseif simid == 3
-    plot(xx, logxv0.(xx, alpha0, beta0), label=L"-\log(x \hat v(x))", color=:darkorange)
+    sa, sb = [0.0376041, 0.1005920]*1.96
+
+    plot(xx, logxv0.(xx,  0.5889420, 1.8127392 *365/7 ), label=L"-\log(x \hat v(x))", color=:darkorange)
+  #  fill_between(xx,  logxv0.(xx, 0.5889420+sa,(1.8127392 -sb)*365/7), logxv0.(xx, 0.5889420-sa ,(1.8127392 + sb)*365/7), edgecolor=:orange, facecolor=:None, label="freq. band")
+    
 end  
 legend()
 savefig(joinpath("output", simname, "bands$(bstr)1.pdf"))
