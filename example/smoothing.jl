@@ -29,7 +29,8 @@ skippoints = 2
 dt = (T-t)/(n-1)
 tt = t:dt:T
 si = 3.
-P = Bridge.Models.Lorenz(ℝ{3}(10, 20, 8/3), ℝ{3}(si,si,si))
+# 10, 20, 8/3 srand(2)
+P = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(si,si,si))
 P2 = Psmooth = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(0,0,0))
 
 
