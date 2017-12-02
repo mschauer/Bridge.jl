@@ -319,8 +319,8 @@ if false
 end
 
 println([quantile(params[:,1] + params[:,4], q) for q in [0.05, 0.5, 0.95]])
-#n1 = div(n,2)
-n1 = 20000
+n1 = div(n,4)
+#n1 = 20000
 n2 = n
 
 A = zeros(length(xx), length(n1:skip:n2))
