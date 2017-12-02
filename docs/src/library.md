@@ -94,6 +94,7 @@ mcnext
 mcband
 mcbandmean
 Bridge.mcstats
+Bridge.mcmarginalstats
 ```
 
 ## Linear Processes
