@@ -87,7 +87,7 @@ end
 ## Tutorials and Notebooks
 
 A detailed tutorial script:
-[./example/tutorial.jl](https://www.github.com/mschauer/Bridge.jl/example/tutorial.jl)
+[./example/tutorial.jl](https://www.github.com/mschauer/Bridge.jl/blob/master/example/tutorial.jl)
 
 A nice notebook detailing the generation of the logo using ordinary and stochastic differential equations (and, in fact, *diffusion bridges* (sic) to create a seamless loop):
 [./example/Bridge+Logo.ipynb](https://github.com/mschauer/Bridge.jl/blob/master/example/Bridge%2BLogo.ipynb)

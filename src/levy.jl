@@ -60,6 +60,28 @@ struct GammaProcess <: LevyProcess{Float64}
 end
 
 
+"""
+    uniformthinning!(X, P::GammaProcess, γᵒ)
+
+Return a Gamma process `Y` with new intensity `γᵒ`, such that
+`X-Y` has intensity `γ-γᵒ` and `Y` and `X-Y` are independent.
+In the limit ``dt \to \infty`` the new Gamma process has each of is jump removed with
+probability `γᵒ/γ`. Overwrites `X` with `Y`.
+"""
+function uniform_thinning!(X, P::GammaProcess, γᵒ)
+    tt = X.tt
+    yy = X.yy
+    γ = P.γ
+    if γᵒ > γ
+        throw(ArgumentError("γᵒ > γ"))
+    end
+    y = yy[1]
+    for i in 2:length(tt)
+        dt = tt[i] - tt[i-1]
+        y, yy[i] = yy[i], yy[i-1] + (yy[i] - y)*rand(Beta(dt*γᵒ,  dt*(γ-γᵒ)))
+    end
+    X
+end
 struct VarianceGammaProcess <: LevyProcess{Float64}
     θ::Float64
     σ::Float64
@@ -101,7 +123,6 @@ function sample!(X, P::LevyProcess{T}, x1=zero(T)) where {T}
     end
     X
 end
-
 
 increment(t, P::GammaProcess) = Gamma(t*P.γ, 1/P.λ)
 
@@ -184,7 +205,9 @@ end
 (Bin-wise) integral of the Levy measure ``\\nu(B_k)`` (sic).
 """
 function nu(k, P)
-    if k == 0
+    if k == 0 && length(P.b) == 0
+        P.P.γ*(-log(P.P.λ))
+    elseif k == 0
         P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to constant
     elseif k == length(P.θ) 
         assert((P.P.λ + P.θ[k]) > 0.0)
@@ -217,7 +240,7 @@ For `kstart == 1` (only choice) this is ``\\nu_0([b_1,\\infty)``.
 """
 function compensator0(kstart, P::LocalGammaProcess)
     if kstart == 1
-        return P.P.γ * (expint1(P.P.λ * P.b[1]))
+        return length(P.b) > 0.0 ? P.P.γ * (expint1(P.P.λ * P.b[1])) : 0.0
     else
         throw(ArgumentError("k != 1"))
     end

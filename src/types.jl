@@ -1,4 +1,5 @@
-import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof
+import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof, keys, values
+import Base: zero
 
 import Base: valtype
 """
@@ -12,6 +13,15 @@ a similar role as distribution types like `Exponential` in the package
 abstract type ContinuousTimeProcess{T} end
 const ProcessOrCoefficients = Union{ContinuousTimeProcess,Tuple{Function,Function}}
 
+
+"""
+    a(t, x, P::ProcessOrCoefficients)
+
+Fallback for `a(t, x, P)` calling `σ(t, x, P)*σ(t, x, P)'`.
+"""
+a(t, x, P::ProcessOrCoefficients) = outer(σ(t, x, P))
+
+
 abstract type AbstractPath{T} end
 
 """
@@ -21,6 +31,15 @@ Returns statespace (type) of a `ContinuousTimeProcess{T]`.
 """
 valtype(::ContinuousTimeProcess{T}) where {T} = T
 valtype(::AbstractPath{T}) where {T} = T
+
+"""
+    outertype(P::ContinuousTimeProcess) -> T
+
+Returns the type of `outer(x)`, where `x` is a state of `P`
+"""
+outertype(::ContinuousTimeProcess{Float64}) = Float64
+outertype(P::ContinuousTimeProcess{<:StaticArray}) = typeof(outer(zero(valtype(P))))
+
 
 """
     SamplePath{T} <: AbstractPath{T}
@@ -46,6 +65,7 @@ struct SamplePath{T} <: AbstractPath{T}
 end
 SamplePath(tt, yy::Vector{T}) where {T} = SamplePath{T}(tt, yy)
 
+samplepath(tt, v) = SamplePath(tt, fill(v, length(tt))) 
 
 
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))
@@ -74,6 +94,12 @@ function endpoint!(X::SamplePath, v)
     X.yy[end] = v
     X
 end
+
+keys(X::SamplePath) = X.tt
+values(X::SamplePath) = X.yy
+SamplePath(X::Vector{Pair{Float64,T}}) where {T} = SamplePath{T}(map(first, X), map(last, X))
+
+zero(X::SamplePath) = SamplePath(X.tt, X.yy)
 
 
 struct VSamplePath{T} <: Bridge.AbstractPath{T}
@@ -115,6 +141,5 @@ b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 
 # Interoperatibility ODEs
 
-@inline _F(t, x, P) = B(t, P)*x + β(t, P)
 @inline _F(t, x, F::Function) = F(t, x)
 @inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)

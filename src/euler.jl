@@ -218,6 +218,37 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
     Y
 end
 
+bridge(u::T, W::SamplePath, P::GuidedBridge{T}) where {T} = bridge!(samplepath(W.tt, u), W, P)
+"""
+    bridge!(Y, u, W, P::GuidedBridge) -> v
+
+Integrate guided bridge proposal `P` from `u`, returning endpoint `v`.
+"""
+function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+    
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y::T = u
+    
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+    end
+    if norm(P.H♢[end], 1) < eps()
+        yy[.., N] = P.V[end]
+    else
+        yy[.., N] = y
+    end
+    yy[.., N]
+end
+
 """
     bridge!(method, Y, W, P) -> Y
 

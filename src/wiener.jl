@@ -14,14 +14,14 @@ function sample(tt, P::Wiener{T}) where T
     sample!(SamplePath{T}(tt, yy), P)
 end
 
-function sample(tt, P::Wiener{T},y1) where T
+function sample(tt, P::Wiener{T}, y1) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P, y1)
 end
 
 
-function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = W.yy[1]) where {d,T}
+function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = zero(SVector{d,T})) where {d,T}
     sz = d
     W.yy[1] = y1
     yy = mat(W.yy) 

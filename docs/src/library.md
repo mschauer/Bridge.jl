@@ -6,6 +6,7 @@
 ContinuousTimeProcess{T}
 SamplePath{T}
 valtype
+Bridge.outertype
 ```
 
 ## Ordinary differential equations and quadrature
@@ -16,6 +17,7 @@ solve!
 Bridge.R3
 Bridge.BS3
 LeftRule
+Bridge.fundamental_matrix
 ```
 
 
@@ -29,6 +31,7 @@ Pages = ["/wiener.jl"]
 ## Stochastic differential equations
 
 ```@docs
+Bridge.a
 sample
 sample!
 quvar
@@ -52,7 +55,8 @@ GammaProcess
 GammaBridge
 Bridge.ExpCounting
 Bridge.CompoundPoisson
-Bridge.nu 
+Bridge.nu
+Bridge.uniform_thinning!
 ```
 
 ## Miscellaneous
@@ -66,6 +70,12 @@ Bridge.outer
 CSpline
 Bridge.integrate 
 Bridge.logpdfnormal
+Bridge.runmean
+Bridge.PSD
+Bridge.Gaussian
+Bridge.refine
+Bridge.quaternion
+Bridge._viridis
 ```
 
 ## Online statistics
@@ -83,6 +93,8 @@ mcstart
 mcnext
 mcband
 mcbandmean
+Bridge.mcstats
+Bridge.mcmarginalstats
 ```
 
 ## Linear Processes
@@ -90,6 +102,8 @@ mcbandmean
 ```@docs
 LinPro
 Bridge.Ptilde
+Bridge.LinearNoiseAppr
+Bridge.LinearAppr
 ```
 
 
@@ -99,12 +113,15 @@ Bridge.Ptilde
 GuidedProp
 Bridge.GuidedBridge
 BridgePre
+BridgeProp
 Bridge.Mdb
 bridge
 bridge!
 Bridge.Vs
+Bridge.gpV!
 Bridge.r
 Bridge.gpHinv!
+Bridge.gpupdate
 ```
 
 ## Unsorted
@@ -119,4 +136,8 @@ Bridge.tofs
 Bridge.dotVs
 Bridge.SDESolver
 Bridge.Increments
+Bridge.sizedtype
 ```
+
+    
+

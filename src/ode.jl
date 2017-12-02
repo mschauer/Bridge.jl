@@ -54,23 +54,39 @@ function kernelbs3(f, t, y, dt, P, k = f(t, y, P))
     yº, k4, err
 end
 
-@inline _dHinv(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
+@inline _F(t, x, P) = B(t, P)*x + β(t, P)
 
+@inline _dHinv(t, K, P) = B(t, P)*K + K*B(t, P)' - a(t, P)
 @inline _dK(t, K, P) = B(t, P)*K + K*B(t, P)' + a(t, P)
+@inline _dPhi(t, Phi, P) = B(t, P)*Phi 
+
 
 """
-    gpHinv!(K::SamplePath, P, v=zero(T))
+    gpHinv!(K::SamplePath, P, KT=zero(T))
 
 Precompute ``K = H^{-1}`` from ``(d/dt)K = BK + KB' + a`` for a guided proposal.
 """
-gpHinv!(K::SamplePath{T}, P, v=zero(T)) where {T} = _solvebackward!(R3(), _dHinv, K, v, P)
-gpV!(V::SamplePath{T}, v::T, P) where {T} = _solvebackward!(R3(), _F, V, v, P)
+gpHinv!(K::SamplePath{T}, P, KT=zero(T)) where {T} = _solvebackward!(R3(), _dHinv, K, KT, P)
+gpH♢! = gpHinv!
+
+"""
+gpV!(K::SamplePath, P, KT=zero(T))
+
+Precompute `V` from ``(d/dt)V = BV + β``, ``V_T = v`` for a guided proposal.
+"""
+gpV!(V::SamplePath{T}, P, v::T) where {T} = _solvebackward!(R3(), _F, V, v, P)
 
 
-gpmu(tt, u::T, P) where {T} = solve(R3(), _F, tt, u, P)
-gpK(tt, u::T, P) where {T} = solve(R3(), _dK, tt, u, P)
 
+gpmu(tt, u, P) = solve(R3(), _F, tt, u, P)
+gpK(tt, u, P) = solve(R3(), _dK, tt, u, P)
 
+"""
+    fundamental_matrix(tt, P) 
+
+Compute fundamental solution.
+"""
+fundamental_matrix(tt, P, Phi0 = one(outertype(P))) = solve(R3(), _dPhi, tt, Phi0, P)
 
 function solvebackward!(method, F, X, xT, P) 
      _solvebackward!(method, F, X, xT, P) 
@@ -85,6 +101,18 @@ end
     end
     X
 end
+
+function solvebackwardi!(::R3, Fi, X::SamplePath{T}, xT, P) where {T}
+   tt = X.tt
+   yy = X.yy
+   yy[end] = y::T = xT
+   for i in length(tt)-1:-1:1
+       y = kernelr3(Fi, tt[i+1], y, tt[i] - tt[i+1], (i+1, P))  
+       yy[i] = y  
+   end
+   X
+end
+
 
 """
     solve!(method, F, X::SamplePath, x0, P) -> X, [err]
@@ -114,6 +142,17 @@ end
     X
 end
 
+function solvei!(::R3, Fi, X::SamplePath{T}, x0, P) where {T}
+    tt = X.tt
+    yy = X.yy
+    yy[1] = y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(Fi, tt[i-1], y, tt[i] - tt[i-1], (i, P))  
+        yy[i] = y  
+    end
+    X
+end
+
 function solve(::R3, F, tt, x0::T, P) where {T}
     y::T = x0
     for i in 2:length(tt)
@@ -122,6 +161,13 @@ function solve(::R3, F, tt, x0::T, P) where {T}
     y
 end
 
+function solvei(::R3, Fi, tt, x0::T, P) where {T}
+    y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(Fi, tt[i-1], y, tt[i] - tt[i-1], (i,P))
+    end
+    y
+end
 
 
 solve!(method::ODESolver, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
