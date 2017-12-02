@@ -78,7 +78,7 @@ function uniform_thinning!(X, P::GammaProcess, γᵒ)
     y = yy[1]
     for i in 2:length(tt)
         dt = tt[i] - tt[i-1]
-        y, yy[i] = yy[i], yy[i-1] + (yy[i] - y)*rand(Beta(dt*γ,  dt*(γᵒ-γ)))
+        y, yy[i] = yy[i], yy[i-1] + (yy[i] - y)*rand(Beta(dt*γᵒ,  dt*(γ-γᵒ)))
     end
     X
 end
