@@ -129,11 +129,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.outertype",
+    "page": "Library",
+    "title": "Bridge.outertype",
+    "category": "Function",
+    "text": "outertype(P::ContinuousTimeProcess) -> T\n\nReturns the type of outer(x), where x is a state of P\n\n\n\n"
+},
+
+{
     "location": "library.html#Important-concepts-1",
     "page": "Library",
     "title": "Important concepts",
     "category": "section",
-    "text": "ContinuousTimeProcess{T}\nSamplePath{T}\nvaltype"
+    "text": "ContinuousTimeProcess{T}\nSamplePath{T}\nvaltype\nBridge.outertype"
 },
 
 {
@@ -177,11 +185,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.fundamental_matrix",
+    "page": "Library",
+    "title": "Bridge.fundamental_matrix",
+    "category": "Function",
+    "text": "fundamental_matrix(tt, P)\n\nCompute fundamental solution.\n\n\n\n"
+},
+
+{
     "location": "library.html#Ordinary-differential-equations-and-quadrature-1",
     "page": "Library",
     "title": "Ordinary differential equations and quadrature",
     "category": "section",
-    "text": "Bridge.ODESolver\nsolve!\nBridge.R3\nBridge.BS3\nLeftRule"
+    "text": "Bridge.ODESolver\nsolve!\nBridge.R3\nBridge.BS3\nLeftRule\nBridge.fundamental_matrix"
 },
 
 {
@@ -190,6 +206,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Brownian motion",
     "category": "section",
     "text": "Modules = [Bridge]\nPages = [\"/wiener.jl\"]"
+},
+
+{
+    "location": "library.html#Bridge.a",
+    "page": "Library",
+    "title": "Bridge.a",
+    "category": "Function",
+    "text": "a(t, x, P::ProcessOrCoefficients)\n\nFallback for a(t, x, P) calling σ(t, x, P)*σ(t, x, P)'.\n\n\n\n"
 },
 
 {
@@ -317,7 +341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Stochastic differential equations",
     "category": "section",
-    "text": "sample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nEulerMaruyama\nEuler\nStochasticRungeKutta\nStochasticHeun"
+    "text": "Bridge.a\nsample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nEulerMaruyama\nEuler\nStochasticRungeKutta\nStochasticHeun"
 },
 
 {
@@ -361,11 +385,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.uniform_thinning!",
+    "page": "Library",
+    "title": "Bridge.uniform_thinning!",
+    "category": "Function",
+    "text": "uniformthinning!(X, P::GammaProcess, γᵒ)\n\nReturn a Gamma process Y with new intensity γᵒ, such that X-Y has intensity γ-γᵒ and Y and X-Y are independent. In the limit dt 	o infty the new Gamma process has each of is jump removed with probability γᵒ/γ. Overwrites X with Y.\n\n\n\n"
+},
+
+{
     "location": "library.html#Levy-processes-1",
     "page": "Library",
     "title": "Levy processes",
     "category": "section",
-    "text": "GammaProcess\nGammaBridge\nBridge.ExpCounting\nBridge.CompoundPoisson\nBridge.nu "
+    "text": "GammaProcess\nGammaBridge\nBridge.ExpCounting\nBridge.CompoundPoisson\nBridge.nu\nBridge.uniform_thinning!"
 },
 
 {
@@ -429,7 +461,55 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.logpdfnormal",
     "category": "Function",
-    "text": "logpdfnormal(x, A)\n\nlogpdf of centered gaussian with covariance A\n\n\n\n"
+    "text": "logpdfnormal(x, Σ)\n\nlogpdf of centered Gaussian with covariance Σ\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.runmean",
+    "page": "Library",
+    "title": "Bridge.runmean",
+    "category": "Function",
+    "text": "runmean(x)\n\nRunning mean of the vector x.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.PSD",
+    "page": "Library",
+    "title": "Bridge.PSD",
+    "category": "Type",
+    "text": "PSD{T}\n\nSimple wrapper for the lower triangular Cholesky root of a positive (semi-)definite element σ.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.Gaussian",
+    "page": "Library",
+    "title": "Bridge.Gaussian",
+    "category": "Type",
+    "text": "Gaussian(μ, Σ) -> P\n\nGaussian distribution with mean μand covarianceΣ. Definesrand(P)and(log-)pdf(P, x). Designed to work withNumbers,UniformScalings,StaticArraysandPSD`-matrices.\n\nImplementation details: On Σ the functions logdet, whiten and unwhiten (or chol as fallback for the latter two) are called.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.refine",
+    "page": "Library",
+    "title": "Bridge.refine",
+    "category": "Function",
+    "text": "refine(tt, n)\n\nRefine range by decreasing stepsize by a factor n.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.quaternion",
+    "page": "Library",
+    "title": "Bridge.quaternion",
+    "category": "Function",
+    "text": "quaternion(m::SMatrix{3,3})\n\nCompute the (rotation-) quarternion of a 3x3 rotation matrix. Useful to create isodensity ellipses from spheres in GL visualizations.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge._viridis",
+    "page": "Library",
+    "title": "Bridge._viridis",
+    "category": "Constant",
+    "text": "_viridis\n\nColor data of the Viridis map by Nathaniel J. Smith, Stefan van Der Walt, Eric Firing from https://github.com/BIDS/colormap/blob/master/colormaps.py .\n\n\n\n"
 },
 
 {
@@ -437,7 +517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Miscellaneous",
     "category": "section",
-    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate \nBridge.logpdfnormal"
+    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate \nBridge.logpdfnormal\nBridge.runmean\nBridge.PSD\nBridge.Gaussian\nBridge.refine\nBridge.quaternion\nBridge._viridis"
 },
 
 {
@@ -473,11 +553,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.mcstats",
+    "page": "Library",
+    "title": "Bridge.mcstats",
+    "category": "Function",
+    "text": "mcstats(mc)\n\nCompute mean and covariance estimates.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.mcmarginalstats",
+    "page": "Library",
+    "title": "Bridge.mcmarginalstats",
+    "category": "Function",
+    "text": "mcmarginalstats(mcstates) -> mean, std\n\nCompute meanand marginal standard deviationsstd` for 2d plots. \n\n\n\n"
+},
+
+{
     "location": "library.html#Online-statistics-1",
     "page": "Library",
     "title": "Online statistics",
     "category": "section",
-    "text": "Online updating of the tuple state = (m, m2, n) wherem - mean(x[1:n])m2 - sum of squares of differences from the current mean, textstylesum_i=1^n (x_i - bar x_n)^2n - number of iterationsmcstart\nmcnext\nmcband\nmcbandmean"
+    "text": "Online updating of the tuple state = (m, m2, n) wherem - mean(x[1:n])m2 - sum of squares of differences from the current mean, textstylesum_i=1^n (x_i - bar x_n)^2n - number of iterationsmcstart\nmcnext\nmcband\nmcbandmean\nBridge.mcstats\nBridge.mcmarginalstats"
 },
 
 {
@@ -497,11 +593,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.LinearNoiseAppr",
+    "page": "Library",
+    "title": "Bridge.LinearNoiseAppr",
+    "category": "Type",
+    "text": "LinearNoiseAppr(tt, P, x, a, direction = forward)\n\nPrecursor of the linear noise approximation of P. For now no attempt is taken  to add in a linearization around the deterministic path. direction can be one of :forward, :backward or :nothing. The latter corresponds to choosing β == 0.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.LinearAppr",
+    "page": "Library",
+    "title": "Bridge.LinearAppr",
+    "category": "Type",
+    "text": "LinearAppr(tt, B, β, a)\n\n\n\n"
+},
+
+{
     "location": "library.html#Linear-Processes-1",
     "page": "Library",
     "title": "Linear Processes",
     "category": "section",
-    "text": "LinPro\nBridge.Ptilde"
+    "text": "LinPro\nBridge.Ptilde\nBridge.LinearNoiseAppr\nBridge.LinearAppr"
 },
 
 {
@@ -509,7 +621,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.GuidedProp",
     "category": "Type",
-    "text": "GuidedProp\n\nGeneral bridge proposal process\n\n\n\n"
+    "text": "GuidedProp\n\nGeneral bridge proposal process, only assuming that Pt defines H and r in the right way.\n\n\n\n"
 },
 
 {
@@ -517,7 +629,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.GuidedBridge",
     "category": "Type",
-    "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge.\n\n\n\n"
+    "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nGuidedBridge(tt, P, Pt, v)\n\nConstructor of guided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt.\n\nGuidedPBridge(tt, P, Pt, V, H♢)\n\nGuided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt. Initialize using Bridge.gpupdate(H♢, V, L, Σ, v)\n\n\n\n"
 },
 
 {
@@ -526,6 +638,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Bridge.BridgePre",
     "category": "Type",
     "text": "BridgePre() <: SDESolver\n\nPrecomputed Euler-Maruyama scheme for bridges using bi.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.BridgeProp",
+    "page": "Library",
+    "title": "Bridge.BridgeProp",
+    "category": "Type",
+    "text": "BridgeProp(Target::ContinuousTimeProcess, tt, v, a, cs)\n\nSimple bridge proposal derived from a linear process with time dependent drift given by a CSpline and constant diffusion coefficient a.\n\n\n\n"
 },
 
 {
@@ -561,6 +681,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.gpV!",
+    "page": "Library",
+    "title": "Bridge.gpV!",
+    "category": "Function",
+    "text": "gpV!(K::SamplePath, P, KT=zero(T))\n\nPrecompute V from (ddt)V = BV + , V_T = v for a guided proposal.\n\n\n\n"
+},
+
+{
     "location": "library.html#Bridge.r",
     "page": "Library",
     "title": "Bridge.r",
@@ -573,7 +701,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.gpHinv!",
     "category": "Function",
-    "text": "gpHinv!(K::SamplePath, P, v=zero(T))\n\nPrecompute K = H^-1 from (ddt)K = BK + KB + a for a guided proposal.\n\n\n\n"
+    "text": "gpHinv!(K::SamplePath, P, KT=zero(T))\n\nPrecompute K = H^-1 from (ddt)K = BK + KB + a for a guided proposal.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.gpupdate",
+    "page": "Library",
+    "title": "Bridge.gpupdate",
+    "category": "Function",
+    "text": "gpupdate(H♢, V, L, Σ, v)\ngpupdate(P, L, Σ, v)\n\nReturn updated H♢, V when observation v at time zero with error Σ is observed.\n\n\n\n"
 },
 
 {
@@ -581,7 +717,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nBridge.GuidedBridge\nBridgePre\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.r\nBridge.gpHinv!"
+    "text": "GuidedProp\nBridge.GuidedBridge\nBridgePre\nBridgeProp\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.gpV!\nBridge.r\nBridge.gpHinv!\nBridge.gpupdate"
 },
 
 {
@@ -657,11 +793,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.sizedtype",
+    "page": "Library",
+    "title": "Bridge.sizedtype",
+    "category": "Function",
+    "text": "sizedtype(x) -> T\n\nReturn an extended type which preserves size information. Makes one(T) and zero(T) for vectors possible.\n\n\n\n"
+},
+
+{
     "location": "library.html#Unsorted-1",
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype"
 },
 
 ]}
