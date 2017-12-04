@@ -2,76 +2,54 @@
 #module Visualize
 #using Bridge, PyPlot, StaticVector
 #end
+using JLD
 
-using Bridge, StaticArrays, Bridge.Models
-const R = ℝ
-srand(2)
+simid = 2
+sim = [:lorenz1, :lorenz2, :lorenz3][simid]
+simname = String(sim)
 
-iterations = 5000
+mkpath(joinpath("output", simname))
+try # save cp of this file as documentation
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+end
+
+iterations = 50000
+saveit = 5000
 rho = 0.02 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
 adaptive = true # adaptive proposals
 adaptit = 1000 # adapt every `it`th step
 adaptmax = iterations
-cheating = false # take a posteriori good value of Pt
-direction = (:nothing, :backward)[1] # influences the starting value of Pt
+  # take a posteriori good value of Pt
 
-partial = true
-
-πH = 2000. # prior
-
-t = 1.0
-T = 5.00
-n = 50001 # total imputed length
-m = 100 # number of segments
-M = div(n-1,m)
-skippoints = 2
-dt = (T-t)/(n-1)
-tt = t:dt:T
-si = 3.
-# 10, 20, 8/3 srand(2)
-P = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(si,si,si))
-P2 = Psmooth = Bridge.Models.Lorenz(ℝ{3}(10, 28, 8/3), ℝ{3}(0,0,0))
-
-
-x0 = Models.x0(P)
-#x0 =  ℝ{3}(6, 0, 2)
-
-W = sample(tt, Wiener{ℝ{3}}())
-X = SamplePath(tt, zeros(ℝ{3}, length(tt)))
-Bridge.solve!(Euler(), X, x0, W, P)
-W = sample(tt, Wiener{ℝ{3}}())
-X2 = SamplePath(tt, zeros(ℝ{3}, length(tt)))
-Bridge.solve!(Euler(), X2, x0, W, P2)
-
-
-Xtrue = copy(X)
-
-# Observation scheme and subsample
-_pairs(collection) = Base.Generator(=>, keys(collection), values(collection))
-SV = ℝ{3}
-SM = typeof(one(Bridge.outer(zero(SV))))
-
-if !partial
-    L = I
-    Σ = SDiagonal(50., 1., 1.)
-    lΣ = chol(Σ)'
-    RV = SV
-    RM = SM
- 
-    V = SamplePath(collect(_pairs(Xtrue))[1:M:end])
-    map!(y -> L*y + lΣ*randn(RV), V.yy, V.yy)
+if simid == 4
+    partial = true
+    initnu = :backwards
+elseif simid == 3
+    partial = false
+    adaptive = true
+    initnu = :backwards
+    #julia> acc/iterations
+    #0.11502
+elseif simid == 2
+    partial = false
+    adaptive = false
+    initnu = :backwards
+    rho = 0.01
+elseif simid == 1
+    partial = false
+    adaptive = false
+    initnu = :brown
+    #julia> acc/iterations
+    #0.08496
+    rho = 0.01
 else 
-    L = @SMatrix [0.0 1.0 0.0; 0.0 0.0 1.0]
-    Σ = SDiagonal(1., 1.)
-    lΣ = chol(Σ)'
-    RV = ℝ{2}
-    RM = typeof(one(Bridge.outer(zero(RV))))
- 
-    V_ = SamplePath(collect(_pairs(Xtrue))[1:M:end])
-    V = SamplePath(V_.tt, map(y -> L*y + lΣ*randn(RV), V_.yy))
-
+    error("provide `simid in 1:3`")
 end
+
+
+include("lorenz.jl")
+
 XX = Vector{typeof(X)}(m)
 XXmean = Vector{typeof(X)}(m)
 XXᵒ = Vector{typeof(X)}(m)
@@ -95,13 +73,12 @@ for i in m:-1:1
     XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
     WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
     
-    if cheating # short-cut, take v later
-        a_ = Bridge.a(XX[i].tt[end], XX[i].yy[end], P)
-        Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, XX[i].yy[end], a_, direction)
-    else
-        a_ = Bridge.a(XX[i].tt[end], v, P)
-        Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, a_, direction) 
-    end 
+    a_ = Bridge.a(XX[i].tt[end], v, P)
+    Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, a_, :backward) 
+    if initnu == :brown
+        Pt[i].Y.yy[:] *= 0
+    end
+
     Pᵒ[i] = Bridge.GuidedBridge(XX[i].tt, P, Pt[i], v, H♢)
     H♢, v = Bridge.gpupdate(Pᵒ[i], L, Σ, V.yy[i])
 end
@@ -118,7 +95,9 @@ XXmean = [zero(XX[i]) for i in 1:m]
 
 #X0 = ℝ{3}[]
 
-function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive = true, adaptmax = iterations, adaptit = 5000, independent = false, hwindow=20)
+function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive = true, adaptmax = iterations, adaptit = 5000, saveit = 500, independent = false, hwindow=20)
+    Paths = []
+    
     m = length(XX)
     rho0 = rho / 2 
     # create workspace
@@ -130,10 +109,15 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive =
     mcstate = [mcstart(XX[i].yy) for i in 1:m]
     acc = 0
     y0 = π0.μ
-
+    X0 = typeof(y0)[]
+    Xt = typeof(y0)[]
     for it in 1:iterations
+        if it % saveit == 0
+            push!(Paths, collect(Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m)))
+        end
 
         if adaptive && it < adaptmax && it % adaptit == 0 # adaptive smoothing
+            error()
             H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])            
             for i in m:-1:1
                 xx = mcstate[i][1]
@@ -145,7 +129,9 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive =
             π0 = Bridge.Gaussian(v, H♢)
         end
 
-        #push!(X0, y0)
+        push!(X0, y0)
+        push!(Xt, XX[div(end,2)].yy[1])
+
         if !independent
             y0ᵒ = π0.μ + sqrt(rho0)*(rand(π0) - π0.μ) + sqrt(1-rho0)*(y0 - π0.μ) 
         else
@@ -185,14 +171,20 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true,adaptive =
             mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
         end
     end
-    mcstate, acc
+    Paths, X0, Xt, mcstate, acc
 end
 
-mcstates, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho;
+Paths, X0, Xt, mcstates, acc = smooth(π0, XX, WW, P, Pᵒ, iterations, rho;
 adaptive = adaptive,
 adaptit = adaptit,
 adaptmax = adaptmax,
+saveit = saveit, 
 verbose = true, independent = independent)
+
+writecsv(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
+writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
+#writecsv(joinpath("output","simid"), )
+JLD.save(joinpath("output", simname, "results.jld"), "Path", Paths, "mcstates", mcstates)
 
 #V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
 

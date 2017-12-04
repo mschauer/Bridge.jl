@@ -40,8 +40,8 @@ if d2 == 3
     axis(map(x -> UnitRange(round.(Int,x)...), extrema(Bridge.mat(V.yy), 2))...)
 else 
     #axis(map(x -> UnitRange(round.(Int,x)...), extrema(Bridge.mat(Xtrue.yy), 2))...)
-    ma = maximum(Bridge.mat(Xtrue.yy), 2) 
-    axis(map(x -> UnitRange(0, round.(Int,x)), maximum(Bridge.mat(Xtrue.yy), 2))..., showaxis = (true,true,true), showgrid = (false,false,false))
+    ma = maximum(Bridge.mat(X2.yy), 2) 
+    axis(map(x -> UnitRange(0, round.(Int,x)), ma)..., showaxis = (true,true,true), showgrid = (false,false,false))
     
     for (x, c) in zip(ℝ{3}[(ma[1], 0, 0), (0, ma[2], 0),(0, 0, ma[3]), (0,0,0)], ['x', 'y', 'z', '•'])
         scatter([x], marker = c, markersize = 1., color = :black)
