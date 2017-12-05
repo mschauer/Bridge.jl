@@ -92,7 +92,16 @@ Compute the (rotation-) quarternion of a 3x3 rotation matrix. Useful to create
 isodensity ellipses from spheres in GL visualizations.
 """
 function quaternion(m)
-    qw = √(1 + m[1,1] + m[2,2] + m[3,3])/2
+    qw2 = 1 + m[1,1] + m[2,2] + m[3,3]
+    if qw2 < 0
+        if abs(det(m) - 1) < sqrt(eps())
+            qw2 = -qw2
+        else
+            throw(DomainError())
+        end
+    end
+
+    qw = sqrt(qw2)/2
     qx = (m[3,2] - m[2,3])/(4qw)
     qy = (m[1,3] - m[3,1])/(4qw)
     qz = (m[2,1] - m[1,2])/(4qw)
