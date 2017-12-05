@@ -67,7 +67,7 @@ Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 # simulate OrnsteinUhlenbeck using Euler scheme
 W = sample(0:0.01:10, Wiener{Float64}()) 
-X = euler(0.1, W, OrnsteinUhlenbeck(20., 1.))
+X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(20., 1.))
 
 plot(X.tt, X.yy)
 
@@ -83,7 +83,7 @@ plot(Float64[β for (β, ll) in LL], Float64[ll for (β, ll) in LL])
 
 
 # sample OrnsteinUhlenbeck exactly. compare with euler scheme which degrates as dt = 0.07
-X = euler(0.1, sample(0:0.07:10, Wiener{Float64}()), OrnsteinUhlenbeck(20., 1.))
+X = solve(EulerMaruyama(), 0.1, sample(0:0.07:10, Wiener{Float64}()), OrnsteinUhlenbeck(20., 1.))
 X2 =  sample(0:0.07:10, OrnsteinUhlenbeck(20., 1.), 0.1)
 plot(X.tt, 1+X.yy)
 oplot(X2.tt, X2.yy)
@@ -93,14 +93,14 @@ W2 = sample(0:0.1:10, Wiener{SVector{4,Float64}}())
 llikelihood(W2,Wiener{SVector{4,Float64}}())
 
 P = BridgeProp(OrnsteinUhlenbeck(3., 1.), 0:0.01:1,  (0., 1.), 1.)
-X = euler(0.1, sample(0:0.01:1, Wiener{Float64}()),P)
+X = solve(EulerMaruyama(), 0.1, sample(0:0.01:1, Wiener{Float64}()),P)
 
 P2 = PBridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 2., 2., 0., 1., 0.3, 1.)
-Y = euler(0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
+Y = solve(EulerMaruyama(), 0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
 plot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3))
 
 for i in 1:100
-    Y = euler(0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
+    Y = solve(EulerMaruyama(), 0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
     oplot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3), linewidth=0.2)
 end
 oplot()
@@ -122,7 +122,10 @@ Bridge.σ(t, x, P::VOrnsteinUhlenbeck) = P.σ*I
 Bridge.a(t, x, P::VOrnsteinUhlenbeck) = P.σ*P.σ'*I
 
 # Simulate
-X = euler(SVector(0., 0.), sample(0.:0.003:10., Wiener{SVector{2,Float64}}()),VOrnsteinUhlenbeck{2}(3., 1.)) 
+tt = 0.:0.003:10.
+X = solve(EulerMaruyama(), SVector(0., 0.), sample(tt, Wiener{SVector{2,Float64}}()), VOrnsteinUhlenbeck{2}(3., 1.)) 
+
+
 yy = Bridge.mat(X.yy)
 plot(yy[1,:], yy[2,:], xrange=(-2, 2), yrange=(-2,2),  linewidth=0.5)
 
