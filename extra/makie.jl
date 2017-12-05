@@ -1,4 +1,4 @@
-using Makie, GeometryTypes
+using Makie, GeometryTypes, Distributions
 import Makie.to_positions
 import Bridge: mcsvd3, visualize_uncertainty
 
@@ -31,12 +31,13 @@ function mcsvd3(states)
     Xmean, Xrot, Xscal
 end
 
-function visualize_uncertainty(scene, X, skip = 10; args...)
+function visualize_uncertainty(scene, X, skip = 10, qu = 0.95; args...)
+    c = sqrt(quantile(Chisq(3), qu))
     Xmean, Xrot, Xscal = X
     sphere = Sphere(Point3f0(0,0,0), 1.0f0)
     viz = visualize(
         (sphere, (Xmean[1:skip:end])),
-        scale = (Xscal[1:skip:end]),      
+        scale = c*(Xscal[1:skip:end]),      
         rotation = (Xrot[1:skip:end]);         
         args...
     ).children[]

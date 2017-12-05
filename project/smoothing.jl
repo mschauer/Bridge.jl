@@ -13,7 +13,7 @@ try # save cp of this file as documentation
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
 end
 
-iterations = 50000
+iterations = 100000
 saveit = 5000
 alpha = 0.5 # 1 - exp(-alpha Exp) is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
@@ -22,6 +22,7 @@ adaptit = 1000 # adapt every `it`th step
 adaptmax = iterations
   # take a posteriori good value of Pt
 
+ 
 if simid == 4
     partial = true
     initnu = :backward
@@ -34,18 +35,21 @@ elseif simid == 2
     partial = false
     adaptive = false
     initnu = :backward
+    alpha = 5.0
 elseif simid == 1
     partial = false
     adaptive = false
     initnu = :brown
-    #julia> acc/iterations
-    alpha = 5.0
+    alpha = 5.0 # 0.25
+    #alpha = 10.0 # 0.5
 else 
     error("provide `simid in 1:3`")
 end
 
-
 include("lorenz.jl")
+
+#M = div(M,10)
+#M = M*4
 
 XX = Vector{typeof(X)}(m)
 XXmean = Vector{typeof(X)}(m)
@@ -70,8 +74,11 @@ Pᵒ = Vector(m)
 H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])
 
 for i in m:-1:1
-    XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
-    WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
+    #XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
+    #WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
+    tt_ = linspace(V.tt[i], V.tt[i+1], M+1) 
+    XX[i] = Bridge.samplepath(tt_, zero(SV))
+    WW[i] = Bridge.samplepath(tt_, zero(RV))
     
     a_ = Bridge.a(XX[i].tt[end], v, P)
 
@@ -96,6 +103,8 @@ end
  
 
 π0 = Bridge.Gaussian(v, Hermitian(H♢))
+
+# initialize
 
 y = π0.μ
 for i in 1:m
@@ -123,9 +132,9 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive
     y0 = π0.μ
     X0 = typeof(y0)[]
     Xt = typeof(y0)[]
+    newblock = false
     for it in 1:iterations
         doaccept = false
-        newblock = false
         if it % saveit == 0
             push!(Paths, collect(Iterators.flatten(XX[i].yy[1:end-1] for i in 1:m)))
         end
@@ -204,7 +213,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive
         else 
             verbose && print("\t .")
         end
-        verbose && println([" ", "N"][1+newblock], "\t", round(acc/it,2), "\t", round.(y0 - x0, 2))
+        verbose && println([" ", "N"][1 + newblock], "\t", round(acc/it,2), "\t", round.(y0 - x0, 2))
         for i in 1:m
             mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
         end
@@ -228,7 +237,7 @@ end
 writecsv(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
 writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
 #writecsv(joinpath("output","simid"), )
-JLD.save(joinpath("output", simname, "results.jld"), "Path", Paths, "mcstates", mcstates)
+
 
 #V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
 
@@ -240,4 +249,6 @@ Xmeanm, Xstdm = Bridge.mcmarginalstats(mcstates)
 
 Xmean, Xrot, Xscal = mcsvd3(mcstates)
 
-include("makie.jl")
+JLD.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld"), "Path", Paths)
+JLD.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld"), "mcstates", mcstates)
+#include("makie.jl")

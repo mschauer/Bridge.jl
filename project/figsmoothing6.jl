@@ -6,7 +6,7 @@ using Makie, GLVisualize
 using GeometryTypes, Colors
 using Bridge: _viridis
 skippoints = 1;
-extra = 40
+extra = 80
 scene = Scene(resolution = (800, 800))
 eyeposition = Float32[-37.2262, 65.8173, 37.4411]
 sphere = Sphere(Point3f0(0,0,0), 1.0f0)
@@ -30,7 +30,7 @@ viri = _viridis[round.(Int,linspace(1,maxviri, length(Xmean)))]
 scatter( Xmean[1:extra*skippoints:en], marker = circle, markersize=0.2, color = map(x->RGBA(Float32.(x)..., 0.5f0), viri[1:extra*skippoints:en]) )
 
 viri = _viridis[round.(Int,linspace(1,maxviri, length(Xscal)))]
-visualize_uncertainty(scene, (Xmean[1:en], Xrot[1:en], Xscal[1:en] .* 1.96f0), extra*skippoints; color = map(x->RGBA(Float32.(x)..., 0.05f0), viri[1:extra*skippoints:en]) )
+visualize_uncertainty(scene, (Xmean[1:en], Xrot[1:en], Xscal[1:en]), extra*skippoints; color = map(x->RGBA(Float32.(x)..., 0.05f0), viri[1:extra*skippoints:en]) )
 
 
 ma = Float32[10,10,10] 
