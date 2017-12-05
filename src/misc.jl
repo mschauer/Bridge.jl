@@ -94,11 +94,11 @@ isodensity ellipses from spheres in GL visualizations.
 function quaternion(m)
     qw2 = 1 + m[1,1] + m[2,2] + m[3,3]
     if qw2 < 0
-        if abs(det(m) - 1) < sqrt(eps())
+        #if abs(det(m) - 1) < sqrt(eps()) # might fail with svd() for any reasonable values of `eps`
             qw2 = -qw2
-        else
-            throw(DomainError())
-        end
+        #else
+        #    throw(DomainError())
+        #end
     end
 
     qw = sqrt(qw2)/2
