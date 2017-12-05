@@ -118,3 +118,18 @@ function girsanov(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousT
     end
     som
 end
+
+
+"""
+    NoDrift(tt, B, β, a) 
+"""
+struct NoDrift{S,T} <: ContinuousTimeProcess{T}
+    P::S
+    NoDrift(P::S) where {S<:ContinuousTimeProcess{T}} where{T} = new{S,T}(P)
+end
+
+b(t, x, P::NoDrift) = zero(valtype(P))
+bderiv(t, x, P::NoDrift) = zero(outertype(P))
+bi(i, x, P::NoDrift) = zero(valtype(P))
+σ(t, x, P::NoDrift) = σ(t, x, P.P)
+σi(i, x, P::NoDrift) = σi(i, x, P.P)

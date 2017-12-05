@@ -145,6 +145,10 @@ function b(s, x, P::Wiener{T}) where T
     zero(T)
 end
 
+function bderiv(s, x, P::Wiener{T}) where T
+    zero(outertype(P))
+end
+
 function σ(s, x, P::Wiener)
     I
 end
