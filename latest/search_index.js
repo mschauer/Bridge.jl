@@ -337,11 +337,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.NoDrift",
+    "page": "Library",
+    "title": "Bridge.NoDrift",
+    "category": "Type",
+    "text": "NoDrift(tt, B, β, a)\n\n\n\n"
+},
+
+{
     "location": "library.html#Stochastic-differential-equations-1",
     "page": "Library",
     "title": "Stochastic differential equations",
     "category": "section",
-    "text": "Bridge.a\nsample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nEulerMaruyama\nEuler\nStochasticRungeKutta\nStochasticHeun"
+    "text": "Bridge.a\nsample\nsample!\nquvar\nbracket\nito\ngirsanov\nlp\nllikelihood\nsolve\neuler\neuler!\nEulerMaruyama\nEuler\nStochasticRungeKutta\nStochasticHeun\nBridge.NoDrift"
 },
 
 {
