@@ -4,7 +4,7 @@
 #end
 using JLD2
 
-simid = 2
+simid = 3
 sim = [:lorenz1, :lorenz2, :lorenz3][simid]
 simname = String(sim)
 
@@ -20,7 +20,6 @@ independent = false # independent proposals
 adaptive = true # adaptive proposals
 adaptit = 1000 # adapt every `it`th step
 adaptmax = iterations
-  # take a posteriori good value of Pt
 
  
 if simid == 4
@@ -40,8 +39,7 @@ elseif simid == 1
     partial = false
     adaptive = false
     initnu = :brown
-    alpha = 5.0 # 0.25
-    #alpha = 10.0 # 0.5
+    alpha = 5.0
 else 
     error("provide `simid in 1:3`")
 end
@@ -74,16 +72,13 @@ Pᵒ = Vector(m)
 H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])
 
 for i in m:-1:1
-    #XX[i] = SamplePath(X.tt[1 + (i-1)*M:1 + i*M], X.yy[1 + (i-1)*M:1 + i*M])
-    #WW[i] = SamplePath(W.tt[1 + (i-1)*M:1 + i*M], W.yy[1 + (i-1)*M:1 + i*M])
     tt_ = linspace(V.tt[i], V.tt[i+1], M+1) 
     XX[i] = Bridge.samplepath(tt_, zero(SV))
     WW[i] = Bridge.samplepath(tt_, zero(RV))
     
     a_ = Bridge.a(XX[i].tt[end], v, P)
 
- #   Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, a_, :backward) 
-    if initnu == :brown
+     if initnu == :brown
         Pt[i] = Bridge.linearappr(SamplePath(XX[i].tt, zeros(ℝ{3}, M+1)), Bridge.NoDrift(P))
     elseif initnu == :backward
         Pt[i] = Bridge.LinearNoiseAppr(XX[i].tt, P, v, a_, :backward) 
@@ -113,14 +108,13 @@ for i in 1:m
 end
 XXmean = [zero(XX[i]) for i in 1:m]
 
-#X0 = ℝ{3}[]
 
 function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive = true, adaptmax = iterations, adaptit = 5000, saveit = 500, independent = false, 
     smoothmean = false, hwindow=20)
     Paths = []
     
     m = length(XX)
-    #rho0 = 1 / alpha 
+
     # create workspace
     XXᵒ = deepcopy(XX)
     WWᵒ = deepcopy(WW)
@@ -149,7 +143,6 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive
                     else
                         Pᵒ[i].Pt.Y.yy[:] = xx
                     end
-#                Pt[i].Y.yy[:] /= 2
                 elseif isa(Pᵒ[i].Pt, Bridge.LinearAppr)
                     if smoothmean
                         Y = SamplePath(XX[i].tt, [mean(xx[max(1, j-hwindow):min(end, j+hwindow)]) for j in 1:length(xx)])
@@ -236,10 +229,8 @@ end
 
 writecsv(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
 writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
-#writecsv(joinpath("output","simid"), )
 
 
-#V0 = cov(Bridge.mat(X0[end÷2:end]),2)  
 
 # Plot result
 include("../extra/makie.jl")
@@ -249,6 +240,5 @@ Xmeanm, Xstdm = Bridge.mcmarginalstats(mcstates)
 
 Xmean, Xrot, Xscal = mcsvd3(mcstates)
 
-FileIO.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld"), "Path", Paths)
-FileIO.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld"), "mcstates", mcstates)
-#include("makie.jl")
+save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld2"), "Path", Paths)
+save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld2"), "mcstates", mcstates)
