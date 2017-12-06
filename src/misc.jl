@@ -81,8 +81,8 @@ Reinterpret `X` or `yy` to an array without change in memory.
 """
 mat(yy::Vector{SVector{d,T}}) where {d,T} = reshape(reinterpret(T, yy), d, length(yy))
 
-unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1),T}, A[:])
-unmat(::Type{SVector{d,T}}, A::Matrix{T}) where {d,T} = reinterpret(SVector{d,T}, A[:])
+unmat(A::Matrix{T}) where {T} = reinterpret(SVector{size(A, 1), T}, A, (size(A, 2),))
+unmat(::Type{SVector{d,T}}, A::Matrix{T}) where {d,T} = reinterpret(SVector{d,T}, A, (div(length(A), d),))
 
 
 """
