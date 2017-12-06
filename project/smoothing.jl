@@ -17,13 +17,13 @@ iterations = 100000
 saveit = 5000
 alpha = 0.5 # 1 - exp(-alpha Exp) is AR(1) coefficient of Brownian motion valued random walk  
 independent = false # independent proposals
-adaptive = true # adaptive proposals
 adaptit = 1000 # adapt every `it`th step
 adaptmax = iterations
 
  
 if simid == 4
     partial = true
+    adaptive = true
     initnu = :backward
 elseif simid == 3
     partial = false
