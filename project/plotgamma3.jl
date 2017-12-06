@@ -48,6 +48,7 @@ beta = beta1 + beta2
 alpha = (beta1*alpha1 + beta2*alpha2)/(beta1 + beta2)
 @show alpha
 =#
+######## alpha and beta
 
 if oneplot
 
@@ -133,6 +134,8 @@ else
     subplot(121)
 end
 
+######## theta and rho (added or not)
+
 for i in 1:N
     dcol = PyObject(RGB(trqs.(Bridge._viridis[cd*i])...))
     col = PyObject(RGB((Bridge._viridis[cd*i])...))
@@ -157,7 +160,7 @@ for i in 1:N
         va="bottom")
 end    
 
-legend()
+#legend()
 grid(linestyle=":", axis="y")
 
 if oneplot
@@ -193,6 +196,10 @@ grid(linestyle=":", axis="y")
 
 savefig(joinpath("output", simname, "traceplot2$(bstr).pdf"))
 
+
+######## theta and rho stabilized
+
+if false # stabilized
     
 if oneplot 
     subplot(132)
@@ -218,8 +225,10 @@ for i in 1:N
  
 end    
 
-legend()
+#legend()
 grid(linestyle=":", axis="y")
+
+
 
 if oneplot
     subplot(133)
@@ -246,6 +255,7 @@ grid(linestyle=":", axis="y")
 
 savefig(joinpath("output", simname, "traceplot3$(bstr).pdf"))
 
+end #stabilized
 
 truth = readdlm(joinpath("output", simname, "truth.txt"), header=true)
 

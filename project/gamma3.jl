@@ -21,22 +21,23 @@ end
 sim = [:gamma, :sumgamma, :fire][simid]
 
 if sim == :fire
-    N = 2
     #b = [0.4, 1.2, 3.6]
     b = [0.75, 2.5, 3.6]
     b = [0.5, 1.5, 3]
     b = [0.5, 1, 1.5, 2, 2.5, 3., 3.5]
     b = [0.75, 2, 4]
-    #b = [0.5, 1.5, 3.5, 5]
-    b = [3.0, 5.0]
+    b = [0.75, 2.5, 3.6]
+    b = [1.0, 2.0, 4.0]
+    #b = [1.0, 1.5, 3.5, 5]
+#    b = [3.0, 5.0]
+    N = length(b)
 end
 
 T = 2000.0
-n = 10000 # number of increments
+n = 100000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
 if sim == :fire
-    m = 800
-    m = 20
+    m = 400
 end
 
 tt = linspace(0.0, T, n + 1)

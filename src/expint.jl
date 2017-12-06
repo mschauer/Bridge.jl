@@ -61,7 +61,7 @@ end
 function expint(z::Union{Float64,Complex{Float64}})
     x² = real(z)^2
     y² = imag(z)^2
-    if x² + 0.233*y² ≥ 7.84 # use cf expansion, ≤ 30 terms
+    if real(z) > 0 && x² + 0.233*y² ≥ 7.84 # use cf expansion, ≤ 30 terms
         if (x² ≥ 546121) & (real(z) > 0) # underflow
             return zero(z)
         elseif x² + 0.401*y² ≥ 58.0 # ≤ 15 terms
