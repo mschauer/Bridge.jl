@@ -47,6 +47,7 @@ EulerMaruyama
 Euler
 StochasticRungeKutta
 StochasticHeun
+Bridge.NoDrift
 ```
 
 ## Levy processes
