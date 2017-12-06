@@ -2,9 +2,9 @@
 #module Visualize
 #using Bridge, PyPlot, StaticVector
 #end
-using JLD
+using JLD2
 
-simid = 1
+simid = 2
 sim = [:lorenz1, :lorenz2, :lorenz3][simid]
 simname = String(sim)
 
@@ -249,6 +249,6 @@ Xmeanm, Xstdm = Bridge.mcmarginalstats(mcstates)
 
 Xmean, Xrot, Xscal = mcsvd3(mcstates)
 
-JLD.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld"), "Path", Paths)
-JLD.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld"), "mcstates", mcstates)
+FileIO.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld"), "Path", Paths)
+FileIO.save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld"), "mcstates", mcstates)
 #include("makie.jl")
