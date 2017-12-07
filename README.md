@@ -13,14 +13,17 @@ See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am per
 - [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
 - [x] Monte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T
 - [x] Brownian motion in one and more dimensions
-- [x] Ornstein-Uhlenbeck processes
-- [ ] Geometric Brownian motion 
+- [x] Ornstein-Uhlenbeck processes and Ornstein-Uhlenbeck bridges
 - [x] Bessel processes
 - [x] Gamma processes
+- [x] Inhomogenous poisson process
 - [x] Basic stochastic calculus functionality (Ito integral, quadratic variation)
-- [x] Euler-Scheme and implicit methods (Rungekutta)
+- [x] Euler-Scheme and implicit methods (Runge-Kutta)
+- [x] Levy-driven SDEs
+- [x] Continuous-discrete filtering for partially observed diffusion processes
 
 The layout/api was originally written to be compatible with Simon Danisch's package [FixedSizeArrays.jl](https://github.com/SimonDanisch/FixedSizeArrays.jl). It was refactored to be compatible with [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) by Dan Getz.
+Some SDE and ODE solvers in Bridge are accessible with the `JuliaDiffEq` common interface via [BridgeDiffEq.jl](https://github.com/JuliaDiffEq/BridgeDiffEq.jl).
 
 The example programs in the example/ directory have additional dependencies: ConjugatePriors and a plotting library.
 
