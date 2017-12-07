@@ -55,6 +55,7 @@ alpha0b = alpha0a/10
 
 
 transdim = true
+fixalpha = transdim
 
 if sim == :gamma
     simname = "gammap"
@@ -272,8 +273,8 @@ if simid == 3
     alphasigma = 0.075
     betasigma = 0.5
 end    
-if isdefined(:norun)
-    error("don't run")
+if isdefined(:nomcmc) && nomcmc
+    error("don't run: nomcmc == true")
 end
 
 open(joinpath("output", simname,"truth.txt"), "w") do f
@@ -438,7 +439,7 @@ for iter in 1:iterations
         end
     end
     
-    if  iter % 5 == 2 # remember to update formula for acceptane rates
+    if  !fixalpha && iter % 5 == 2 # remember to update formula for acceptane rates
         alphaº = alpha + alphasigma*randn()
         
         if alphaº < 0 || (N > 0 && theta[end] + alphaº < eps()) # according to Wilkinson

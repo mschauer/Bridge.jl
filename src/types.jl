@@ -101,6 +101,9 @@ SamplePath(X::Vector{Pair{Float64,T}}) where {T} = SamplePath{T}(map(first, X), 
 
 zero(X::SamplePath) = SamplePath(X.tt, X.yy)
 
+import Base.broadcast
+broadcast(f, X::SamplePath, Y::SamplePath) = (X.tt != Y.tt) ? throw(ArgumentError("differing sample times")) : SamplePath(X.tt, f.(X.yy, Y.yy))
+
 
 struct VSamplePath{T} <: Bridge.AbstractPath{T}
     tt::Vector{Float64}

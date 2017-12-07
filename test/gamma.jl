@@ -34,3 +34,13 @@ Bridge.uniform_thinning!(Y, P, γᵒ)
 
 @test abs(γ*t/n/α - mean(diff(X.yy))) < 0.2/sqrt(n)
 @test abs(γᵒ*t/n/α - mean(diff(Y.yy))) < 0.2/sqrt(n)
+
+γ = 10.
+α = 5.
+P = GammaProcess(γ, α)
+T = 5.0
+tt = 0.0:T/n:T
+m = 1000
+sigma = (t, x = 0.0) -> exp(-cos(t))
+L = sample(tt, P) .- sample(tt, P)
+X = solve(EulerMaruyama(), 0.0, L, ((t,x)-> -0.*x, sigma))
