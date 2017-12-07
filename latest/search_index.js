@@ -617,11 +617,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.LinProBridge",
+    "page": "Library",
+    "title": "Bridge.LinProBridge",
+    "category": "Type",
+    "text": "LinProBridge\n\nBridge process of P::LinPro with μ == 0 conditional on ending in v at time t.\n\n\n\n"
+},
+
+{
     "location": "library.html#Linear-Processes-1",
     "page": "Library",
     "title": "Linear Processes",
     "category": "section",
-    "text": "LinPro\nBridge.Ptilde\nBridge.LinearNoiseAppr\nBridge.LinearAppr"
+    "text": "LinPro\nBridge.Ptilde\nBridge.LinearNoiseAppr\nBridge.LinearAppr\nBridge.LinProBridge"
 },
 
 {
