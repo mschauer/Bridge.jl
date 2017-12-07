@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "StatsBase.sample",
     "category": "Function",
-    "text": "sample(tt, P, x1=zero(T))\n\nSample the process P on the grid tt exactly from its transitionprob(-ability) starting in x1.\n\n\n\n"
+    "text": "sample(tt, P, x1=zero(T))\n\nSample the process P on the grid tt exactly from its transitionprob(-ability) starting in x1.\n\n\n\nsample(::Thinning, T, P::InhomogPoisson) -> tt\n\n\n\n"
 },
 
 {
