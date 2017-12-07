@@ -34,7 +34,7 @@ if sim == :fire
 end
 
 T = 2000.0
-n = 100000 # number of increments
+n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
 if sim == :fire
     m = 400

@@ -86,7 +86,7 @@ annotate(latexstring("\\bar\\alpha"),
     ha="right",
     va="bottom")=#
 
-plot(1:n, fill(alpha0, n), ":", color=:darkorange , lw = 1.0, label="⌀α")
+plot(1:n, fill(alpha0, n), ":", color=:darkorange , lw = 1.0, label=L"\varnothing\alpha")
 legend()
 grid(linestyle=":", axis="y")
 
@@ -119,7 +119,7 @@ annotate(latexstring("\\bar\\beta"),
     va="bottom")
 =#
 if simid == 2
-    plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label="β1+β2")
+    plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\beta_1+\beta_2")
 elseif simid ==3
     plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\hat\beta")
 end
