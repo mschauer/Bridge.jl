@@ -105,6 +105,7 @@ LinPro
 Bridge.Ptilde
 Bridge.LinearNoiseAppr
 Bridge.LinearAppr
+Bridge.LinProBridge
 ```
 
 
