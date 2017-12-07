@@ -108,6 +108,19 @@ function quaternion(m)
     SVector{4}(qx,qy,qz,qw)
 end
 
+"""
+    piecewise(X::SamplePath) -> tt, xx
+
+If X is a jump process with piecewise constant paths and jumps in `X.tt`,
+piecewise returns coordinates path for plotting purposes.
+"""
+function piecewise(Y::SamplePath)
+    tt = [0.0]
+    append!(tt, repeat(Y.tt[2:end], inner=2))
+    push!(tt, Y.tt[end])
+    tt, repeat(Y.yy, inner=2)
+end
+
 
 """
     _viridis

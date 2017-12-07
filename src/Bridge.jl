@@ -17,6 +17,9 @@ export LinearProcess
 # Levy
 export LevyProcess, GammaProcess, GammaBridge, VarianceGammaProcess, LocalGammaProcess
 
+# Poisson
+export ThinningAlg, InhomogPoisson
+
 # mclog
 export mcstart, mcnext, mcbandmean, mcband
 
@@ -67,6 +70,7 @@ include("linpro.jl")
 include("guip.jl")
 include("euler.jl")
 include("levy.jl")
+include("poisson.jl")
 
 include("timechange.jl")
 include("mclog.jl")
