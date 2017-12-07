@@ -160,7 +160,7 @@ Phi(t, P::LinProBridge) = P.P.lambda*expm((P.t - t)*P.P.B)' - expm(-(P.t - t)*P.
 
 Phi(t, T, Ps::LinProBridge) = Phi(T, Ps)*inv(Phi(t, Ps))
 
-mu(s, x, t, P::LinProBridge{Float64}) = 0.5*inv(P.v*sinh(P.P.B*(P.t - s)))*( P.v*sinh(P.P.B*(t - s)) + x*sinh(P.P.B*(P.t - t)) )
+mu(s, x, t, P::LinProBridge{Float64}) = inv(sinh(P.P.B*(P.t - s)))*( P.v*sinh(P.P.B*(t - s)) + x*sinh(P.P.B*(P.t - t)) )
 K(s, t, P::LinProBridge{Float64}) = 2 * P.P.lambda * csch(-P.P.B*(P.t - s)) * sinh(-P.P.B*(t-s))*sinh(-P.P.B*(P.t - t))
 # Wolfram alpha: integral_(1/e)^ gamma (sinh^2(-(π - gamma )))/(sinh^2(-(π - s))) ds = sinh(1/e - gamma ) sinh( gamma - π) (-csch(1/e - π))≈0.170692
 
