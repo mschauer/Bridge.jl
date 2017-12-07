@@ -49,19 +49,9 @@ help?> GammaProcess
 search: GammaProcess LocalGammaProcess VarianceGammaProcess
 ```
 
-    GammaProcess
-    
-A *GammaProcess* with jump rate `γ` and inverse jump size `λ` has increments `Gamma(t*γ, 1/λ)` and Levy measure
-```math
-ν(x)=γ x^{-1}\\exp(-λ x), 
-```
-Here `Gamma(α,θ)` is the Gamma distribution in julia's parametrization with shape parameter `α` and scale `θ`.
-
-#### Examples
-
-```
-julia> sample(linspace(0.0, 1.0),  GammaProcess(1.0, 0.5))
-```
+| <code>GammaProcess</code>    |
+| --- |    
+| <p>A <em>GammaProcess</em> with jump rate <code>γ</code> and inverse jump size <code>λ</code> has increments <code>Gamma(t*γ, 1/λ)</code> and Levy measure</p><p>ν(x) = γ x⁻¹ exp(-λ x),</p><p>Here <code>Gamma(α,θ)</code> is the Gamma distribution in julia&#39;s parametrization with shape parameter <code>α</code> and scale <code>θ</code>.</p> <p>&emsp;<b> Examples </b></p><p><code> julia> sample(linspace(0.0, 1.0),  GammaProcess(1.0, 0.5)) </code>
 
 Pre-defined processes defined are
 `Wiener`, `WienerBridge`, `Gamma`, `LinPro` (linear diffusion/generalized Ornstein-Uhlenbeck) and others.
