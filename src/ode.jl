@@ -161,6 +161,14 @@ function solve(::R3, F, tt, x0::T, P) where {T}
     y
 end
 
+function solvebackward(::R3, F, tt, xT::T, P) where {T}
+    y::T = xT
+    for i in length(tt)-1:-1:1
+        y = kernelr3(F, tt[i+1], y, tt[i] - tt[i+1], P)   
+    end
+    y
+end
+
 function solvei(::R3, Fi, tt, x0::T, P) where {T}
     y::T = x0
     for i in 2:length(tt)

@@ -101,6 +101,10 @@ end
 
 transitionprob(s,x,t,P::LinPro) = Gaussian(mu(s,x,t,P), K(s, t, P::LinPro))
 
+function Phi(t, T, P::LinPro)
+    expm((T-t)*P.B)
+end
+
 function mu(t, x, T, P::LinPro)
     phi = expm((T-t)*P.B)
     phi*(x - P.μ) + P.μ
@@ -128,6 +132,45 @@ end
 function dotV(t, T, v, P::LinPro)
     expm(-(T-t)*P.B)*P.B*(v - P.μ)
 end
+
+"""
+    LinProBridge
+
+Bridge process of `P::LinPro` with `μ == 0` conditional on ending in `v` at time `t`.
+"""
+struct LinProBridge{T,S<:LinPro} <: ContinuousTimeProcess{T}
+    t::Float64  # end time
+    v::T        # end point
+    P::S 
+    LinProBridge(t, v::T, P::S) where {T,S<:LinPro} = !iszero(P.μ) ? throw(ArgumentError("μ ≠ 0")):new{T,S}(t,v,P)
+end
+
+b(s, x, P::LinProBridge) = P.P.B * (x - P.P.μ) + P.P.a * H(s, P.t, P.P, V(s, P.t, P.v, P.P) - x)
+B(s, P::LinProBridge) = P.P.B - P.P.a * H(s, P.t, P.P)
+
+σ(t, x, P::LinProBridge) = P.P.σ
+bderiv(t, x, P::LinProBridge) = B(t, P)
+σderiv(t, x, P::LinProBridge) = 0*(P.P.σ)
+
+a(t, x, P::LinProBridge) = P.P.a
+a(t, P::LinProBridge) = P.P.a
+constdiff(::LinProBridge) = true
+
+Phi(t, P::LinProBridge) = P.P.lambda*expm((P.t - t)*P.P.B)' - expm(-(P.t - t)*P.P.B)*P.P.lambda
+
+Phi(t, T, Ps::LinProBridge) = Phi(T, Ps)*inv(Phi(t, Ps))
+
+mu(s, x, t, P::LinProBridge{Float64}) = 0.5*inv(P.v*sinh(P.P.B*(P.t - s)))*( P.v*sinh(P.P.B*(t - s)) + x*sinh(P.P.B*(P.t - t)) )
+K(s, t, P::LinProBridge{Float64}) = 2 * P.P.lambda * csch(-P.P.B*(P.t - s)) * sinh(-P.P.B*(t-s))*sinh(-P.P.B*(P.t - t))
+# Wolfram alpha: integral_(1/e)^ gamma (sinh^2(-(π - gamma )))/(sinh^2(-(π - s))) ds = sinh(1/e - gamma ) sinh( gamma - π) (-csch(1/e - π))≈0.170692
+
+#function mu(s, x, t, Ps::LinProBridge) 
+#    T = Ps.t
+#    P = Ps.P
+#    inv(P.a - expm(P.B*(T-s))*P.a*expm(P.B*(T-s))')*(P.a - expm(P.B*(T-t))*P.a*expm(P.B*(T-t))')*x
+#end
+
+transitionprob(s, x, t, P::LinProBridge{Float64}) = Gaussian(mu(s, x, t, P), K(s, t, P))
 
 
 #################################################
