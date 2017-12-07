@@ -45,13 +45,22 @@ serves as container for sample path returned by direct and approximate samplers 
 
 Help is available at the REPL:
 ```
-help?> euler
-search: euler euler! eulergamma default_worker_pool schedule @schedule
+help?> GammaProcess
+search: GammaProcess LocalGammaProcess VarianceGammaProcess
+```
 
-  euler(u, W, P) -> X
+    GammaProcess
+    
+A *GammaProcess* with jump rate `γ` and inverse jump size `λ` has increments `Gamma(t*γ, 1/λ)` and Levy measure
+```math
+ν(x)=γ x^{-1}\\exp(-λ x), 
+```
+Here `Gamma(α,θ)` is the Gamma distribution in julia's parametrization with shape parameter `α` and scale `θ`.
 
-  Solve stochastic differential equation ``dX_t = b(t, X_t)dt + σ(t, X_t)dW_t, X_0 = u``
-  using the Euler scheme.
+#### Examples
+
+```
+julia> sample(linspace(0.0, 1.0),  GammaProcess(1.0, 0.5))
 ```
 
 Pre-defined processes defined are
@@ -61,6 +70,8 @@ Pre-defined processes defined are
 It is also quite transparent how to add a new process:
 
 ```julia
+using Bridge
+
 # Define a diffusion process
 struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
@@ -80,7 +91,7 @@ Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 # simulate OrnsteinUhlenbeck using Euler scheme
 W = sample(0:0.01:10, Wiener()) 
-X = euler(0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
+X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
 ```
 
 ## Feedback and Contributing
