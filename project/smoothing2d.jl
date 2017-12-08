@@ -239,4 +239,7 @@ for i in 1:2
     writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)stdx$i.csv"),  getindex.(Xstdm, i))
     writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)x0$i.csv"),  getindex.(X0, i))
     writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)xt$i.csv"),  getindex.(Xt, i))
+    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)Xtrue$i.csv"),  [Xtrue.tt getindex.(Xtrue.yy, i)])
+    
 end
+writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)V1.csv"),  [V.tt V.yy])
