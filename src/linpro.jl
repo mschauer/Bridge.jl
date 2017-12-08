@@ -204,3 +204,4 @@ function linearappr!(Pt::LinearAppr, Y, P)
     Pt.Σ[:] = map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy)
     Pt
 end
+

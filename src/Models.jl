@@ -1,6 +1,6 @@
 module Models
 using Bridge, StaticArrays, Distributions
-export Lorenz, ℝ, foci
+export Lorenz, ℝ, foci, Tilde, Pendulum
 
 const ℝ{N} = SVector{N, Float64}
 
@@ -70,12 +70,31 @@ struct Pendulum <: ContinuousTimeProcess{ℝ{2}}
     θ²::Float64
     γ::Float64
 end
+x0(P::Pendulum) = ℝ{2}(1., 0.5)
 
 Bridge.Btilde(t, x, P::Pendulum) = SMatrix{2,2}(0.0,0.0,1.0,0.0)
 Bridge.βtilde(t, x, P::Pendulum) = ℝ{2}(0.0, 0.0)
+Bridge.btilde(t, x, P::Pendulum) = ℝ{2}(x[2], 0.0)
 
 Bridge.b(t, x, P::Pendulum) = ℝ{2}(x[2], -P.θ²*sin(x[1]))
+
+Bridge.bderiv(t, x, P::Pendulum) = @SMatrix Float64[
+    0.0                 1.0
+    -P.θ²*cos(x[1])     0.0
+]
+    
+
 Bridge.σ(t, x, P::Pendulum) = ℝ{2}(0.0, P.γ)
 Bridge.constdiff(::Pendulum) = true
 
+
+struct Tilde{T,S} <: ContinuousTimeProcess{T}
+    P::S
+    Tilde(P::S) where {S} = new{valtype(P),S}(P)
+end
+
+Bridge.b(t, x, P::Tilde) = Bridge.btilde(t, x, P.P)
+Bridge.σ(t, x, P::Tilde) = Bridge.constdiff(P) ? Bridge.σ(t, x, P.P) : throw(ArgumentError("not constdiff"))
+Bridge.constdiff(P::Tilde) = Bridge.constdiff(P.P)
+Bridge.bderiv(t, x, P::Tilde) = Bridge.Btilde(t, x, P.P)
 end # Module

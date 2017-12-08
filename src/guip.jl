@@ -221,6 +221,18 @@ function gpupdate(H♢, V, L, Σ, v)
         Z*H♢, Z*H♢*L'*inv(Σ)*v + Z*V
     end
 end
+
+function gpupdate(H♢, V::SVector, L, Σ::Float64, v)
+    if all(diag(H♢) .== Inf)
+        H♢_ = SMatrix(inv(L' * inv(Σ) * L))
+        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        H♢_, V_
+    else
+        Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
+        Z*H♢, SVector(Z*H♢*L'*inv(Σ)*v) + Z*V
+    end
+end
+
 gpupdate(P::GuidedBridge, L, Σ, v) = gpupdate(P.H♢[1], P.V[1], L, Σ, v)
 
 # Alternatives to try
