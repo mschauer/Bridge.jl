@@ -2,6 +2,8 @@ __precompile__()
 
 module Bridge
 export ContinuousTimeProcess, SamplePath, VSamplePath
+export stack
+
 export LinPro, Wiener, WienerBridge, CSpline
 export sample, sample!, .., quvar, ito, bracket, lp, llikelihood, transitionprob, girsanov
 
@@ -73,9 +75,12 @@ include("levy.jl")
 include("poisson.jl")
 
 include("timechange.jl")
+include("uncertainty.jl")
 include("mclog.jl")
 
 include("Models.jl")
+
+include("recipes.jl")
 
 include("deprecated.jl")
 

@@ -116,6 +116,12 @@ end
 
 length(X::VSamplePath) = length(X.tt)
 
+allsametime(xx) = all(x -> x.tt == xx[1].tt, xx)
+function stack(args::SamplePath...) 
+    assert(allsametime(args))
+    VSamplePath(args[1].tt, vcat((X.yy' for X in args)...))
+end
+
 # separate a Zip2
 sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} = 
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
