@@ -142,6 +142,7 @@ end
     X
 end
 
+
 function solvei!(::R3, Fi, X::SamplePath{T}, x0, P) where {T}
     tt = X.tt
     yy = X.yy
@@ -180,6 +181,7 @@ end
 
 solve!(method::ODESolver, X, x0, F::Function) = solve!(method, _F, X, x0, F) 
 solve!(method::ODESolver, X, x0, P) = solve!(method, b, X, x0, P) 
+solve(method::ODESolver, tt, x0, F::Function) = solve!(method::ODESolver, samplepath(tt, zero(x0)), x0, F)  
 
 @inline function _solve!(::BS3, F, X::SamplePath{T}, x0, P) where {T}
     tt = X.tt

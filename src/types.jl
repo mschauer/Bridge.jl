@@ -20,7 +20,7 @@ const ProcessOrCoefficients = Union{ContinuousTimeProcess,Tuple{Function,Functio
 Fallback for `a(t, x, P)` calling `σ(t, x, P)*σ(t, x, P)'`.
 """
 a(t, x, P::ProcessOrCoefficients) = outer(σ(t, x, P))
-
+Γ(t, x, P::ProcessOrCoefficients) = inv(a(t, x, P))
 
 abstract type AbstractPath{T} end
 
