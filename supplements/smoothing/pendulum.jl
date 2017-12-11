@@ -48,8 +48,8 @@ if isdefined(:partial)
         map!(y -> L*y + lΣ*randn(RV), V.yy, V.yy)
     else 
         L = @SMatrix [1.0 0.0]
-        Σ = (isdefined(:simid) && simid == 2) ? 0.001 : 1.00
-        #Σ = 0.001
+        Σ = isdefined(:Σ_) ? Σ_ : 1.00
+        @show Σ
         lΣ = chol(Σ)'
         RV = Float64
         RM = Float64 #typeof(one(Bridge.outer(zero(RV))))

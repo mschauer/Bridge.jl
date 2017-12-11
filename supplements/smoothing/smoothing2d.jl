@@ -5,7 +5,7 @@
 using JLD2, FileIO
 const d = 2
 
-sim = [:pendulum, :pendulum, :pendulumfull][simid]
+sim = [:pendulum, :pendulum][simid]
 simname = String(sim)
 
 mkpath(joinpath("output", simname))
@@ -24,23 +24,19 @@ adaptmax = iterations
 if simid == 1
     partial = true
     adaptive = true
-    initnu = :brown
-    alpha = 5.0
-elseif simid == 3
-    simid == 1
-    partial = false
-    adaptive = true
-    initnu = :brown
-    alpha = 5.0
+    initnu = :tilde
+    alpha = 0.5    
+    burnin = 2000  
 elseif simid == 2
     partial = true
     adaptive = true
     initnu = :tilde
-    alpha = 5.0    
-    burnin = 2000    
+    alpha = 0.5
+    burnin = 2000  
 else 
     error("provide `simid in 1:2`")
 end
+Σ_ =  [1.0, 0.001][simid]
 
 include("pendulum.jl")
 
@@ -50,16 +46,6 @@ XXmean = Vector{typeof(X)}(m)
 XXᵒ = Vector{typeof(X)}(m)
 WW = Vector{typeof(W)}(m)
 WWᵒ = Vector{typeof(W)}(m)
-
-#bi(i, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.b[i]
-#= function hypo_linearappr!(Pt::Bridge.LinearAppr, Y, P::Pendulum) 
-    Pt.tt[:] = Y.tt
-    Pt.xx[:] *= 0.0
-    Pt.B[:] = map((t,x) -> Bridge.Btilde(t, x, P), Y.tt, Y.yy)
-    Pt.b[:] = map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy)
-    Pt.Σ[:] = map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy)
-    Pt
-end =#
 
 # Create linear noise approximations
 
@@ -227,11 +213,8 @@ writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(
 Xmeanm, Xstdm = Bridge.mcmarginalstats(mcstates)
 
 
-
 save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld2"), "Path", Paths)
 save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld2"), "mcstates", mcstates)
-
-
 
 for i in 1:2
     writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)pathsx$i.csv"),  hcat(map(x->getindex.(x, i), Paths)...))
