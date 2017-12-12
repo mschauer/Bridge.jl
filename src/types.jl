@@ -150,5 +150,6 @@ b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 
 # Interoperatibility ODEs
 
-@inline _F(t, x, F::Function) = F(t, x)
-@inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)
+F(t, x, f::Tuple{Function}) = f[1](t, x)
+#@inline _F(t, x, F::Function) = F(t, x)
+#@inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)
