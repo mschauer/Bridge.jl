@@ -60,6 +60,12 @@ Bridge.nu
 Bridge.uniform_thinning!
 ```
 
+## Poisson processes
+```
+Bridge.ThinningAlg
+Bridge.InhomogPoisson
+```
+
 ## Miscellaneous
 
 ```@docs
@@ -139,6 +145,7 @@ Bridge.dotVs
 Bridge.SDESolver
 Bridge.Increments
 Bridge.sizedtype
+Bridge.piecewise
 ```
 
     
