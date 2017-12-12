@@ -65,7 +65,7 @@ end
 
 Return a Gamma process `Y` with new intensity `γᵒ`, such that
 `X-Y` has intensity `γ-γᵒ` and `Y` and `X-Y` are independent.
-In the limit ``dt \to \infty`` the new Gamma process has each of is jump removed with
+In the limit ``dt \\to \\infty`` the new Gamma process has each of is jump removed with
 probability `γᵒ/γ`. Overwrites `X` with `Y`.
 """
 function uniform_thinning!(X, P::GammaProcess, γᵒ)
