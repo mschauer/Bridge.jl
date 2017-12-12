@@ -229,6 +229,23 @@ function solve!(::BS3, F, X::SamplePath{T}, x0, P) where {T}
     X, err
 end
 
+function solve!(::BS3, X::SamplePath{T}, x0, P) where {T}
+    tt = X.tt
+    yy = X.yy
+    0 < length(tt) || throw(ArgumentError("length(X) == 0"))
+    yy[1] = y::T = x0   
+    length(tt) == 1 && return X, 0.0
+    y, k, e = kernelbs3(tt[1], y, tt[2] - tt[1], P)
+    yy[2] = y
+    err = norm(e, 1)
+    for i in 3:length(tt)
+        y, k, e = kernelbs3(tt[i-1], y, tt[i] - tt[i-1], P, k)  
+        err = err + norm(e, 1)
+        yy[i] = y  
+    end
+    X, err
+end
+
 function solve(::BS3, F, tt::AbstractVector{Float64}, x0::T, P) where {T}
     0 < length(tt) || throw(ArgumentError("length(X) == 0"))
     y::T = x0
