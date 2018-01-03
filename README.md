@@ -86,7 +86,7 @@ X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
 
 ## Feedback and Contributing
 
-See the [documentation](https://mschauer.github.io/Bridge.jl/latest/) for more functionality and [issue #12 (Feedback and Contribution)](https://github.com/mschauer/CausalInference.jl/issues/12) for coordination of the development.
+See the [documentation](https://mschauer.github.io/Bridge.jl/latest/) for more functionality and [issue #12 (Feedback and Contribution)](https://github.com/mschauer/Bridge.jl/issues/12) for coordination of the development.
 Bridge is free software under the MIT licence. If you use Bridge.jl in a closed environment I’d be happy to hear about your use case in a mail to moritzschauer@web.de and able to give some support.
 
 ## Literature
