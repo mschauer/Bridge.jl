@@ -24,12 +24,10 @@ if sim == :fire
     #b = [0.4, 1.2, 3.6]
     b = [0.75, 2.5, 3.6]
     b = [0.5, 1.5, 3]
-    b = [0.5, 1, 1.5, 2, 2.5, 3., 3.5]
-    b = [0.75, 2, 4]
-    b = [0.75, 2.5, 3.6]
-    b = [1.0, 2.0, 4.0]
-    #b = [1.0, 1.5, 3.5, 5]
-#    b = [3.0, 5.0]
+    b = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+    b = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0 ]
+    
+ #   b = [1.0, 2.0, 4.0]
     N = length(b)
 end
 
@@ -43,7 +41,7 @@ end
 tt = linspace(0.0, T, n + 1)
 
 
-iterations = 200_000
+iterations = [100_000, 200_000][1]
 
 
 # two gamma processes
@@ -83,7 +81,7 @@ elseif sim == :fire
     T = tt_[end]
     tt = tt_
 
-    beta0 = 1/dt*1.812 # ml 
+    beta0 = 1/dt*1.812 # Maximum likelihood estimate from the R script
     alpha0 = 0.588942 
 
 end
@@ -178,11 +176,12 @@ else
     X = SamplePath(tt, Bridge.cumsum0(dxx))
 end
 
+alphahat = mean(dxx)/var(dxx) # use estimate for alpha
 
 # grid points
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
 if simid != 3 && N >= 1
-    b = cumsum(0.3:0.4:2.0)[1:N]
+    b = cumsum(0.5:0.4:2.0)[1:N]
     #b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
 elseif N == 0
     b = Float64[]
@@ -246,12 +245,14 @@ beps = 0.0
 #var(yy[yy.< b[1]/4])
 
 
-alpha = alpha0
+#alpha = alpha0
+alpha = alphahat
+
 beta = beta0
 
 alpha = alpha
 if transdim
-    beta = beta
+    beta = 1.2*beta
 end
 
 #c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
@@ -262,8 +263,10 @@ rho = zeros(N)
 
 # prior chain step std
 alphasigma = 0.15
-thsigma = 0.05
-rhosigma = 0.05*ones(N) # variance of rho1 = 0
+thsigma = 0.02*ones(N)
+#thsigma[1] = 0.02 #Fixme
+
+rhosigma = 0.02*ones(N) # variance of rho1 = 0
 if N > 0 && sim != :fire
     rhosigma[1] = 0.0
 end
@@ -356,9 +359,9 @@ for iter in 1:iterations
 
     # sample parameters
     # update theta and rho
-    if iter % 5 != 2 # remember to update formula for acceptane rates
+    if iter % 5 != 2 # remember to update formula for acceptance rates
         P0 = GammaProcess(beta, alpha)
-        thetaº = theta + thsigma*randn(length(theta))
+        thetaº = theta + thsigma.*randn(length(theta))
         rhoº = rho + rhosigma.*randn(length(rho))
         
         if N == 0 || thetaº[end] + alpha < eps() 
@@ -382,7 +385,7 @@ for iter in 1:iterations
         end
     end
 
-    if transdim && iter % 5 == 4
+    if transdim && iter % 5 == 2
         betaº = beta + betasigma*randn()
         if betaº <= 0
             #reject
