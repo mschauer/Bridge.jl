@@ -127,6 +127,22 @@ sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} =
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
 
 
+copy(X::VSamplePath) = VSamplePath(copy(X.tt), copy(X.yy))
+
+"""
+Like `VSamplePath`, but with assumptions on `tt` and dimensionality.
+Planned replacement for `VSamplePath`
+"""
+struct GSamplePath{S,T,P} <: Bridge.AbstractPath{T}
+    tt::S
+    yy::P
+    GSamplePath(tt::S, yy::P) where {S, P<:AbstractArray{T}} where {T} = new{S,T,P}(tt,yy)
+end
+
+import Base: length
+length(X::GSamplePath) = length(X.tt)
+
+
 """
     Increments{S<:AbstractPath{T}}
     
@@ -150,5 +166,6 @@ b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 
 # Interoperatibility ODEs
 
-@inline _F(t, x, F::Function) = F(t, x)
-@inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)
+F(t, x, f::Tuple{Function}) = f[1](t, x)
+#@inline _F(t, x, F::Function) = F(t, x)
+#@inline _F(t, x, F::Tuple{Function,Function}) = F[1](t)*x + F[2](t)

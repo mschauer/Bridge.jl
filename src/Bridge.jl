@@ -1,7 +1,7 @@
 __precompile__()
 
 module Bridge
-export ContinuousTimeProcess, SamplePath, VSamplePath
+export ContinuousTimeProcess, SamplePath, VSamplePath, GSamplePath
 export stack
 
 export LinPro, Wiener, WienerBridge, CSpline
@@ -50,6 +50,35 @@ function mcsvd3
 end
 function visualize_uncertainty
 end
+function B!
+end
+function a!
+end
+
+"""
+    b!(t, y, tmp1, P)
+
+Compute drift ``b`` in `y` (without factor ``Δt``, modifying `tmp1`.
+"""
+function b!
+end
+function bi!
+end
+function ri!
+end
+"""
+    σ!(t, y, Δw, tmp2, P)
+
+Compute stochastic increment at `y`, ``σ Δw``, modifying `tmp2`.
+"""
+function σ!
+end
+
+function P
+end
+function Pt
+end
+
 
 hasbi(::Any) = false
 hasai(::Any) = false
@@ -67,10 +96,13 @@ include("cspline.jl")
 include("wiener.jl")
 include("ellipse.jl")
 include("ode.jl")
+include("ode!.jl")
 include("diffusion.jl")
 include("linpro.jl")
 include("guip.jl")
 include("euler.jl")
+
+include("sde!.jl")
 include("levy.jl")
 include("poisson.jl")
 

@@ -5,6 +5,7 @@
 ```@docs
 ContinuousTimeProcess{T}
 SamplePath{T}
+Bridge.GSamplePath
 valtype
 Bridge.outertype
 ```
@@ -50,6 +51,13 @@ StochasticHeun
 Bridge.NoDrift
 ```
 
+## In place solvers
+```@docs
+Bridge.R3!
+Bridge.σ!
+Bridge.b!
+```
+
 ## Levy processes
 ```@docs
 GammaProcess
@@ -58,6 +66,12 @@ Bridge.ExpCounting
 Bridge.CompoundPoisson
 Bridge.nu
 Bridge.uniform_thinning!
+```
+
+## Poisson processes
+```@docs
+Bridge.ThinningAlg
+Bridge.InhomogPoisson
 ```
 
 ## Miscellaneous
@@ -139,7 +153,7 @@ Bridge.dotVs
 Bridge.SDESolver
 Bridge.Increments
 Bridge.sizedtype
+Bridge.piecewise
+Bridge.BridgePre!
 ```
-
-    
-
+ 

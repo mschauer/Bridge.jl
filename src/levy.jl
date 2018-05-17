@@ -65,7 +65,7 @@ end
 
 Return a Gamma process `Y` with new intensity `γᵒ`, such that
 `X-Y` has intensity `γ-γᵒ` and `Y` and `X-Y` are independent.
-In the limit ``dt \to \infty`` the new Gamma process has each of is jump removed with
+In the limit ``dt \\to \\infty`` the new Gamma process has each of is jump removed with
 probability `γᵒ/γ`. Overwrites `X` with `Y`.
 """
 function uniform_thinning!(X, P::GammaProcess, γᵒ)
@@ -127,6 +127,9 @@ end
 increment(t, P::GammaProcess) = Gamma(t*P.γ, 1/P.λ)
 
 lp(s, x, t, y, P::GammaProcess) = logpdf(increment(t-s, P), y-x)
+
+levy(P::GammaProcess, x) = P.γ/x*exp(-P.λ*x)
+llevyx(P, x) = log(levy(P, x)*x)
 
 increment(t, P::VarianceGammaProcess) = VarianceGamma(P.θ, P.σ, t, P.ν)
 
@@ -208,7 +211,7 @@ function nu(k, P)
     if k == 0 && length(P.b) == 0
         P.P.γ*(-log(P.P.λ))
     elseif k == 0
-        P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to constant
+        P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to certain constant
     elseif k == length(P.θ) 
         assert((P.P.λ + P.θ[k]) > 0.0)
         P.P.γ*exp(-P.ρ[k])*(expint1((P.P.λ + P.θ[k])*P.b[k])) # - 0 (upper limit infty)
@@ -266,7 +269,19 @@ function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess
         ll = -(Pº.P.λ - P.P.λ) * (X.yy[end] - X.yy[1])
         return ll - (X.tt[end] - X.tt[1])*(compensator(0, Pº)-compensator(0, P))
     else
-        throw(ArgumentError(""))
+        ll = 0.0
+        u = X.yy[end] - X.yy[1]
+        assert(c == 0)
+        for i in 2:length(X.tt)
+            dx = X.yy[i] - X.yy[i-1]
+            if dx > P.b[1]
+                ll = ll - ((Pº.P.λ - P.P.λ)*dx + θ(dx, Pº) - θ(dx, P)) 
+                u -= dx
+            end
+        end
+        ll += -(Pº.P.λ - P.P.λ) * u
+        ll += -(X.tt[end] - X.tt[1])*(compensator(0, Pº)-compensator(0, P))
+        return ll
     end
 end
 

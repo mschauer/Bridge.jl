@@ -45,8 +45,8 @@ Bridge.gpV!(V, P, v)
 Mu = SamplePath(tt, zeros(S, length(tt)))
 Mu2 = SamplePath(tt, zeros(S, length(tt)))
 
-solve!(Bridge.R3(), Bridge._F, Mu, u, P)
-solve!(BS3(), Bridge._F, Mu2, u, P)
+solve!(Bridge.R3(), Bridge.b, Mu, u, P)
+solve!(BS3(), Bridge.b, Mu2, u, P)
 @test (@allocated Bridge.gpHinv!(K, P)) == 0
 @test (@allocated Bridge.gpV!(V, P, v)) == 0
 @test norm(K.yy[1]*Bridge.H(t, T, P) - I) < 10/n2^3
