@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Features",
     "category": "section",
-    "text": "Define and simulate diffusion processes in one or more dimension\nContinuous and discrete likelihood using Girsanovs theorem and transition densities\nMonte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T\nBrownian motion in one and more dimensions\nOrnstein-Uhlenbeck processes\nBessel processes\nGamma processes\nBasic stochastic calculus functionality (Ito integral, quadratic variation)\nEuler-Scheme and implicit methods (Runge-Kutta)The layout/api was originally written to be compatible with Simon Danisch's package FixedSizeArrays.jl. It was refactored to be compatible with StaticArrays.jl by Dan Getz.The example programs in the example/directory have additional dependencies: ConjugatePriors and a plotting library."
+    "text": "Define and simulate diffusion processes in one or more dimension\nContinuous and discrete likelihood using Girsanovs theorem and transition densities\nMonte Carlo sample diffusion bridges, diffusion processes conditioned to hit a point v at a prescribed time T\nBrownian motion in one and more dimensions\nOrnstein-Uhlenbeck processes\nBessel processes\nGamma processes\nBasic stochastic calculus functionality (Ito integral, quadratic variation)\nEuler-Scheme and implicit methods (Runge-Kutta)The layout/api was originally written to be compatible with Simon Danisch\'s package FixedSizeArrays.jl. It was refactored to be compatible with StaticArrays.jl by Dan Getz.The example programs in the example/directory have additional dependencies: ConjugatePriors and a plotting library."
 },
 
 {
@@ -108,7 +108,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.ContinuousTimeProcess",
     "page": "Library",
     "title": "Bridge.ContinuousTimeProcess",
-    "category": "Type",
+    "category": "type",
     "text": "ContinuousTimeProcess{T}\n\nTypes inheriting from the abstract type ContinuousTimeProcess{T} characterize  the properties of a T-valued stochastic process, play a similar role as distribution types like Exponential in the package Distributions.\n\n\n\n"
 },
 
@@ -116,15 +116,23 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.SamplePath",
     "page": "Library",
     "title": "Bridge.SamplePath",
-    "category": "Type",
+    "category": "type",
     "text": "SamplePath{T} <: AbstractPath{T}\n\nThe struct\n\nstruct SamplePath{T}\n    tt::Vector{Float64}\n    yy::Vector{T}\n    SamplePath{T}(tt, yy) where {T} = new(tt, yy)\nend\n\nserves as container for discretely observed ContinuousTimeProcesses and for the sample path returned by direct and approximate samplers. tt is the vector of the grid points of the observation/simulation  and yy is the corresponding vector of states.\n\nIt supports getindex, setindex!, length, copy, vcat, start, next, done, endof.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.GSamplePath",
+    "page": "Library",
+    "title": "Bridge.GSamplePath",
+    "category": "type",
+    "text": "Like VSamplePath, but with assumptions on tt and dimensionality. Planned replacement for VSamplePath\n\n\n\n"
 },
 
 {
     "location": "library.html#Base.valtype",
     "page": "Library",
     "title": "Base.valtype",
-    "category": "Function",
+    "category": "function",
     "text": "valtype(::ContinuousTimeProcess) -> T\n\nReturns statespace (type) of a ContinuousTimeProcess{T].\n\n\n\n"
 },
 
@@ -132,7 +140,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.outertype",
     "page": "Library",
     "title": "Bridge.outertype",
-    "category": "Function",
+    "category": "function",
     "text": "outertype(P::ContinuousTimeProcess) -> T\n\nReturns the type of outer(x), where x is a state of P\n\n\n\n"
 },
 
@@ -141,14 +149,14 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Important concepts",
     "category": "section",
-    "text": "ContinuousTimeProcess{T}\nSamplePath{T}\nvaltype\nBridge.outertype"
+    "text": "ContinuousTimeProcess{T}\nSamplePath{T}\nBridge.GSamplePath\nvaltype\nBridge.outertype"
 },
 
 {
     "location": "library.html#Bridge.ODESolver",
     "page": "Library",
     "title": "Bridge.ODESolver",
-    "category": "Type",
+    "category": "type",
     "text": "ODESolver\n\nAbstract (super-)type for solving methods for ordinary differential equations.\n\n\n\n"
 },
 
@@ -156,7 +164,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.solve!",
     "page": "Library",
     "title": "Bridge.solve!",
-    "category": "Function",
+    "category": "function",
     "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\nsolve!(::EulerMaruyama, Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using the Euler-Maruyama scheme in place.\n\n\n\n"
 },
 
@@ -164,7 +172,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.R3",
     "page": "Library",
     "title": "Bridge.R3",
-    "category": "Type",
+    "category": "type",
     "text": "R3\n\nRalston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve y(t + dt) - y(t) = int_t^t+dt F(s y(s)) ds.\n\n\n\n"
 },
 
@@ -172,7 +180,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.BS3",
     "page": "Library",
     "title": "Bridge.BS3",
-    "category": "Type",
+    "category": "type",
     "text": "BS3\n\nRalston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve y(t + dt) - y(t) = int_t^t+dt F(s y(s)) ds. Uses Bogacki–Shampine method  to give error estimate. \n\n\n\n"
 },
 
@@ -180,7 +188,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LeftRule",
     "page": "Library",
     "title": "Bridge.LeftRule",
-    "category": "Type",
+    "category": "type",
     "text": "LeftRule <: QuadratureRule\n\nIntegrate using left Riemann sum approximation.\n\n\n\n"
 },
 
@@ -188,7 +196,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.fundamental_matrix",
     "page": "Library",
     "title": "Bridge.fundamental_matrix",
-    "category": "Function",
+    "category": "function",
     "text": "fundamental_matrix(tt, P)\n\nCompute fundamental solution.\n\n\n\n"
 },
 
@@ -212,15 +220,15 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.a",
     "page": "Library",
     "title": "Bridge.a",
-    "category": "Function",
-    "text": "a(t, x, P::ProcessOrCoefficients)\n\nFallback for a(t, x, P) calling σ(t, x, P)*σ(t, x, P)'.\n\n\n\n"
+    "category": "function",
+    "text": "a(t, x, P::ProcessOrCoefficients)\n\nFallback for a(t, x, P) calling σ(t, x, P)*σ(t, x, P)\'.\n\n\n\n"
 },
 
 {
     "location": "library.html#StatsBase.sample",
     "page": "Library",
     "title": "StatsBase.sample",
-    "category": "Function",
+    "category": "function",
     "text": "sample(tt, P, x1=zero(T))\n\nSample the process P on the grid tt exactly from its transitionprob(-ability) starting in x1.\n\n\n\nsample(::Thinning, T, P::InhomogPoisson) -> tt\n\n\n\n"
 },
 
@@ -228,7 +236,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#StatsBase.sample!",
     "page": "Library",
     "title": "StatsBase.sample!",
-    "category": "Function",
+    "category": "function",
     "text": "sample!(X, P, x1=zero(T))\n\nSample the process P on the grid X.tt exactly from its transitionprob(-ability) starting in x1 writing into X.yy.\n\n\n\n"
 },
 
@@ -236,7 +244,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.quvar",
     "page": "Library",
     "title": "Bridge.quvar",
-    "category": "Function",
+    "category": "function",
     "text": "quvar(X)\n\nComputes the (realized) quadratic variation of the path X.\n\n\n\n"
 },
 
@@ -244,7 +252,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.bracket",
     "page": "Library",
     "title": "Bridge.bracket",
-    "category": "Function",
+    "category": "function",
     "text": "bracket(X)\nbracket(X,Y)\n\nComputes quadratic variation process of X (of X and Y).\n\n\n\n"
 },
 
@@ -252,7 +260,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.ito",
     "page": "Library",
     "title": "Bridge.ito",
-    "category": "Function",
+    "category": "function",
     "text": "ito(Y, X)\n\nIntegrate a stochastic process Y with respect to a stochastic differential dX.\n\n\n\n"
 },
 
@@ -260,7 +268,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.girsanov",
     "page": "Library",
     "title": "Bridge.girsanov",
-    "category": "Function",
+    "category": "function",
     "text": "girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)\n\nGirsanov log likelihood mathrmdPmathrmdPt(X)    \n\n\n\n"
 },
 
@@ -268,7 +276,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.lp",
     "page": "Library",
     "title": "Bridge.lp",
-    "category": "Function",
+    "category": "function",
     "text": "lp(s, x, t, y, P)\n\nLog-transition density, shorthand for logpdf(transitionprob(s,x,t,P),y).\n\n\n\n"
 },
 
@@ -276,7 +284,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.llikelihood",
     "page": "Library",
     "title": "Bridge.llikelihood",
-    "category": "Function",
+    "category": "function",
     "text": "llikelihood(X::SamplePath, P::ContinuousTimeProcess)\n\nLog-likelihood of observations X using transition density lp.\n\n\n\nllikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess)\n\nLog-likelihood dPº/dP. (Up to proportionality.)\n\n\n\nllikelihood(X::SamplePath, P::LocalGammaProcess)\n\nBridge log-likelihood with respect to reference measure P.P. (Up to proportionality.)\n\n\n\n"
 },
 
@@ -284,15 +292,15 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.solve",
     "page": "Library",
     "title": "Bridge.solve",
-    "category": "Function",
-    "text": "solve!(method::SDESolver, Y, u, W::SamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method in place.\n\n\n\nsolve!(method::SDESolver, Y, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method in place.\n\n\n\n"
+    "category": "function",
+    "text": "solve(method::SDESolver, u, W::SamplePath, P) -> X\nsolve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method in place.\n\nExample\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))\n\nimport Bridge: b, σ\nstruct OU <: ContinuousTimeProcess{Float64}\n    μ::Float64\nend\nBridge.b(s, x, P::OU) = -P.μ*x\nBridge.σ(s, x, P::OU) = I\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))\n\n\n\nsolve(method::SDESolver, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using method.\n\n\n\n"
 },
 
 {
     "location": "library.html#Bridge.euler",
     "page": "Library",
     "title": "Bridge.euler",
-    "category": "Function",
+    "category": "function",
     "text": "euler(u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t using the Euler scheme.\n\n\n\n"
 },
 
@@ -300,7 +308,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.euler!",
     "page": "Library",
     "title": "Bridge.euler!",
-    "category": "Function",
+    "category": "function",
     "text": "euler!(Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + (tX_t)dW_t  using the Euler scheme in place.\n\n\n\n"
 },
 
@@ -308,7 +316,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.EulerMaruyama",
     "page": "Library",
     "title": "Bridge.EulerMaruyama",
-    "category": "Type",
+    "category": "type",
     "text": "EulerMaruyama() <: SDESolver\n\nEuler-Maruyama scheme. Euler is defined as alias.\n\n\n\n"
 },
 
@@ -316,7 +324,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Euler",
     "page": "Library",
     "title": "Bridge.Euler",
-    "category": "Type",
+    "category": "type",
     "text": "EulerMaruyama() <: SDESolver\n\nEuler-Maruyama scheme. Euler is defined as alias.\n\n\n\n"
 },
 
@@ -324,7 +332,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.StochasticRungeKutta",
     "page": "Library",
     "title": "Bridge.StochasticRungeKutta",
-    "category": "Type",
+    "category": "type",
     "text": "StochasticRungeKutta() <: SDESolver\n\nStochastic Runge-Kutta scheme for T<:Number-valued processes.\n\n\n\n"
 },
 
@@ -332,7 +340,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.StochasticHeun",
     "page": "Library",
     "title": "Bridge.StochasticHeun",
-    "category": "Type",
+    "category": "type",
     "text": "StochasticHeun() <: SDESolver\n\nStochastic heun scheme.\n\n\n\n"
 },
 
@@ -340,7 +348,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.NoDrift",
     "page": "Library",
     "title": "Bridge.NoDrift",
-    "category": "Type",
+    "category": "type",
     "text": "NoDrift(tt, B, β, a)\n\n\n\n"
 },
 
@@ -353,18 +361,50 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.R3!",
+    "page": "Library",
+    "title": "Bridge.R3!",
+    "category": "type",
+    "text": "R3!\n\nInplace Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve y(t + dt) - y(t) = int_t^t+dt F(s y(s)) ds.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.σ!",
+    "page": "Library",
+    "title": "Bridge.σ!",
+    "category": "function",
+    "text": "σ!(t, y, Δw, tmp2, P)\n\nCompute stochastic increment at y,  w, modifying tmp2.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.b!",
+    "page": "Library",
+    "title": "Bridge.b!",
+    "category": "function",
+    "text": "b!(t, y, tmp1, P)\n\nCompute drift b in y (without factor t, modifying tmp1.\n\n\n\n"
+},
+
+{
+    "location": "library.html#In-place-solvers-1",
+    "page": "Library",
+    "title": "In place solvers",
+    "category": "section",
+    "text": "Bridge.R3!\nBridge.σ!\nBridge.b!"
+},
+
+{
     "location": "library.html#Bridge.GammaProcess",
     "page": "Library",
     "title": "Bridge.GammaProcess",
-    "category": "Type",
-    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\n(x)= x^-1exp(- x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia's parametrization with shape parameter α and scale θ.\n\n\n\n"
+    "category": "type",
+    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\n(x)= x^-1exp(- x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia\'s parametrization with shape parameter α and scale θ.\n\n\n\n"
 },
 
 {
     "location": "library.html#Bridge.GammaBridge",
     "page": "Library",
     "title": "Bridge.GammaBridge",
-    "category": "Type",
+    "category": "type",
     "text": "GammaBridge(t, v, P)\n\nA GammaProcess P conditional on htting v at time t.\n\n\n\n"
 },
 
@@ -372,7 +412,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.ExpCounting",
     "page": "Library",
     "title": "Bridge.ExpCounting",
-    "category": "Type",
+    "category": "type",
     "text": "ExpCounting(λ)\n\nCounting process with arrival times arrival(P) = Exponential(1/λ) and unit jumps.\n\n\n\n"
 },
 
@@ -380,7 +420,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.CompoundPoisson",
     "page": "Library",
     "title": "Bridge.CompoundPoisson",
-    "category": "Type",
+    "category": "type",
     "text": "CompoundPoisson{T} <: LevyProcess{T}\n\nAbstract type. For a compound Poisson process define rjumpsize(P) -> T and  arrival(P) -> Distribution.\n\n\n\n"
 },
 
@@ -388,7 +428,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.nu",
     "page": "Library",
     "title": "Bridge.nu",
-    "category": "Function",
+    "category": "function",
     "text": " nu(k, P)\n\n(Bin-wise) integral of the Levy measure nu(B_k) (sic).\n\n\n\n"
 },
 
@@ -396,8 +436,8 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.uniform_thinning!",
     "page": "Library",
     "title": "Bridge.uniform_thinning!",
-    "category": "Function",
-    "text": "uniformthinning!(X, P::GammaProcess, γᵒ)\n\nReturn a Gamma process Y with new intensity γᵒ, such that X-Y has intensity γ-γᵒ and Y and X-Y are independent. In the limit dt 	o infty the new Gamma process has each of is jump removed with probability γᵒ/γ. Overwrites X with Y.\n\n\n\n"
+    "category": "function",
+    "text": "uniformthinning!(X, P::GammaProcess, γᵒ)\n\nReturn a Gamma process Y with new intensity γᵒ, such that X-Y has intensity γ-γᵒ and Y and X-Y are independent. In the limit dt to infty the new Gamma process has each of is jump removed with probability γᵒ/γ. Overwrites X with Y.\n\n\n\n"
 },
 
 {
@@ -409,10 +449,34 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.ThinningAlg",
+    "page": "Library",
+    "title": "Bridge.ThinningAlg",
+    "category": "type",
+    "text": "ThinningAlg(λmax)\n\nSampling method for InhomogPoisson by the \'thinning\' algorithm. \n\nExamples:\n\nsample(Thinning(λmax), T, InhomogPoisson(λ))\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.InhomogPoisson",
+    "page": "Library",
+    "title": "Bridge.InhomogPoisson",
+    "category": "type",
+    "text": "InhomogPoisson(λ)\n\nInhomogenous Poisson process with intensity function λ(t). See also ThinningAlg\n\n\n\n"
+},
+
+{
+    "location": "library.html#Poisson-processes-1",
+    "page": "Library",
+    "title": "Poisson processes",
+    "category": "section",
+    "text": "Bridge.ThinningAlg\nBridge.InhomogPoisson"
+},
+
+{
     "location": "library.html#Bridge.endpoint!",
     "page": "Library",
     "title": "Bridge.endpoint!",
-    "category": "Function",
+    "category": "function",
     "text": "endpoint!(X::SamplePath, v)\n\nConvenience functions setting the endpoint of X tov`.\n\n\n\n"
 },
 
@@ -420,15 +484,15 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.inner",
     "page": "Library",
     "title": "Bridge.inner",
-    "category": "Function",
-    "text": "inner(x[, y])\n\nShort-hand for quadratic form x'x (or x'y).\n\n\n\n"
+    "category": "function",
+    "text": "inner(x[, y])\n\nShort-hand for quadratic form x\'x (or x\'y).\n\n\n\n"
 },
 
 {
     "location": "library.html#Bridge.cumsum0",
     "page": "Library",
     "title": "Bridge.cumsum0",
-    "category": "Function",
+    "category": "function",
     "text": "cumsum0(x)\n\nCumulative sum starting at 0 such that cumsum0(diff(x)) ≈ x.\n\n\n\n"
 },
 
@@ -436,7 +500,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mat",
     "page": "Library",
     "title": "Bridge.mat",
-    "category": "Function",
+    "category": "function",
     "text": "mat(yy::Vector{SVector})\n\nReinterpret X or yy to an array without change in memory.\n\n\n\n"
 },
 
@@ -444,15 +508,15 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.outer",
     "page": "Library",
     "title": "Bridge.outer",
-    "category": "Function",
-    "text": "outer(x[, y])\n\nShort-hand for quadratic form xx' (or xy').\n\n\n\n"
+    "category": "function",
+    "text": "outer(x[, y])\n\nShort-hand for quadratic form xx\' (or xy\').\n\n\n\n"
 },
 
 {
     "location": "library.html#Bridge.CSpline",
     "page": "Library",
     "title": "Bridge.CSpline",
-    "category": "Type",
+    "category": "type",
     "text": "CSpline(s, t, x, y = x, m0 = (y-x)/(t-s), m1 = (y-x)/(t-s))\n\nCubic spline parametrized by f(s) = x and f(t) = y, f(s) = m_0, f(t) = m_1.\n\n\n\n"
 },
 
@@ -460,7 +524,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.integrate",
     "page": "Library",
     "title": "Bridge.integrate",
-    "category": "Function",
+    "category": "function",
     "text": "integrate(cs::CSpline, s, t)\n\nIntegrate the cubic spline from s to t.    \n\n\n\n"
 },
 
@@ -468,7 +532,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.logpdfnormal",
     "page": "Library",
     "title": "Bridge.logpdfnormal",
-    "category": "Function",
+    "category": "function",
     "text": "logpdfnormal(x, Σ)\n\nlogpdf of centered Gaussian with covariance Σ\n\n\n\n"
 },
 
@@ -476,7 +540,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.runmean",
     "page": "Library",
     "title": "Bridge.runmean",
-    "category": "Function",
+    "category": "function",
     "text": "runmean(x)\n\nRunning mean of the vector x.\n\n\n\n"
 },
 
@@ -484,7 +548,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.PSD",
     "page": "Library",
     "title": "Bridge.PSD",
-    "category": "Type",
+    "category": "type",
     "text": "PSD{T}\n\nSimple wrapper for the lower triangular Cholesky root of a positive (semi-)definite element σ.\n\n\n\n"
 },
 
@@ -492,7 +556,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Gaussian",
     "page": "Library",
     "title": "Bridge.Gaussian",
-    "category": "Type",
+    "category": "type",
     "text": "Gaussian(μ, Σ) -> P\n\nGaussian distribution with mean μand covarianceΣ. Definesrand(P)and(log-)pdf(P, x). Designed to work withNumbers,UniformScalings,StaticArraysandPSD`-matrices.\n\nImplementation details: On Σ the functions logdet, whiten and unwhiten (or chol as fallback for the latter two) are called.\n\n\n\n"
 },
 
@@ -500,7 +564,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.refine",
     "page": "Library",
     "title": "Bridge.refine",
-    "category": "Function",
+    "category": "function",
     "text": "refine(tt, n)\n\nRefine range by decreasing stepsize by a factor n.\n\n\n\n"
 },
 
@@ -508,7 +572,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.quaternion",
     "page": "Library",
     "title": "Bridge.quaternion",
-    "category": "Function",
+    "category": "function",
     "text": "quaternion(m::SMatrix{3,3})\n\nCompute the (rotation-) quarternion of a 3x3 rotation matrix. Useful to create isodensity ellipses from spheres in GL visualizations.\n\n\n\n"
 },
 
@@ -516,7 +580,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge._viridis",
     "page": "Library",
     "title": "Bridge._viridis",
-    "category": "Constant",
+    "category": "constant",
     "text": "_viridis\n\nColor data of the Viridis map by Nathaniel J. Smith, Stefan van Der Walt, Eric Firing from https://github.com/BIDS/colormap/blob/master/colormaps.py .\n\n\n\n"
 },
 
@@ -532,7 +596,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcstart",
     "page": "Library",
     "title": "Bridge.mcstart",
-    "category": "Function",
+    "category": "function",
     "text": "mcstart(x) -> state\n\nCreate state for random chain online statitics. The entries/value of x are ignored\n\n\n\n"
 },
 
@@ -540,7 +604,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcnext",
     "page": "Library",
     "title": "Bridge.mcnext",
-    "category": "Function",
+    "category": "function",
     "text": "mcnext(state, x) -> state\n\nUpdate random chain online statistics when new chain value x was observed. Return new state.\n\n\n\n"
 },
 
@@ -548,7 +612,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcband",
     "page": "Library",
     "title": "Bridge.mcband",
-    "category": "Function",
+    "category": "function",
     "text": "mcband(mc)\n\nCompute marginal 95% coverage interval for the chain from normal approximation.\n\n\n\n"
 },
 
@@ -556,7 +620,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcbandmean",
     "page": "Library",
     "title": "Bridge.mcbandmean",
-    "category": "Function",
+    "category": "function",
     "text": "mcmeanband(mc)\n\nCompute marginal confidence interval for the chain mean using normal approximation\n\n\n\n"
 },
 
@@ -564,7 +628,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcstats",
     "page": "Library",
     "title": "Bridge.mcstats",
-    "category": "Function",
+    "category": "function",
     "text": "mcstats(mc)\n\nCompute mean and covariance estimates.\n\n\n\n"
 },
 
@@ -572,7 +636,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.mcmarginalstats",
     "page": "Library",
     "title": "Bridge.mcmarginalstats",
-    "category": "Function",
+    "category": "function",
     "text": "mcmarginalstats(mcstates) -> mean, std\n\nCompute meanand marginal standard deviationsstd` for 2d plots. \n\n\n\n"
 },
 
@@ -588,7 +652,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LinPro",
     "page": "Library",
     "title": "Bridge.LinPro",
-    "category": "Type",
+    "category": "type",
     "text": "LinPro(B, μ::T, σ)\n\nLinear diffusion dX = B(X - )dt + dW.\n\n\n\n"
 },
 
@@ -596,7 +660,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Ptilde",
     "page": "Library",
     "title": "Bridge.Ptilde",
-    "category": "Type",
+    "category": "type",
     "text": "Ptilde(cs::CSpline, σ)\n\nAffine diffusion dX = cs(t) dt + dW  with cs a cubic spline ::CSpline.\n\n\n\n"
 },
 
@@ -604,7 +668,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LinearNoiseAppr",
     "page": "Library",
     "title": "Bridge.LinearNoiseAppr",
-    "category": "Type",
+    "category": "type",
     "text": "LinearNoiseAppr(tt, P, x, a, direction = forward)\n\nPrecursor of the linear noise approximation of P. For now no attempt is taken  to add in a linearization around the deterministic path. direction can be one of :forward, :backward or :nothing. The latter corresponds to choosing β == 0.\n\n\n\n"
 },
 
@@ -612,7 +676,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LinearAppr",
     "page": "Library",
     "title": "Bridge.LinearAppr",
-    "category": "Type",
+    "category": "type",
     "text": "LinearAppr(tt, B, β, a)\n\n\n\n"
 },
 
@@ -620,7 +684,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LinProBridge",
     "page": "Library",
     "title": "Bridge.LinProBridge",
-    "category": "Type",
+    "category": "type",
     "text": "LinProBridge\n\nBridge process of P::LinPro with μ == 0 conditional on ending in v at time t.\n\n\n\n"
 },
 
@@ -636,7 +700,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.GuidedProp",
     "page": "Library",
     "title": "Bridge.GuidedProp",
-    "category": "Type",
+    "category": "type",
     "text": "GuidedProp\n\nGeneral bridge proposal process, only assuming that Pt defines H and r in the right way.\n\n\n\n"
 },
 
@@ -644,7 +708,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.GuidedBridge",
     "page": "Library",
     "title": "Bridge.GuidedBridge",
-    "category": "Type",
+    "category": "type",
     "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nGuidedBridge(tt, P, Pt, v)\n\nConstructor of guided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt.\n\nGuidedPBridge(tt, P, Pt, V, H♢)\n\nGuided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt. Initialize using Bridge.gpupdate(H♢, V, L, Σ, v)\n\n\n\n"
 },
 
@@ -652,7 +716,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.BridgePre",
     "page": "Library",
     "title": "Bridge.BridgePre",
-    "category": "Type",
+    "category": "type",
     "text": "BridgePre() <: SDESolver\n\nPrecomputed Euler-Maruyama scheme for bridges using bi.\n\n\n\n"
 },
 
@@ -660,7 +724,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.BridgeProp",
     "page": "Library",
     "title": "Bridge.BridgeProp",
-    "category": "Type",
+    "category": "type",
     "text": "BridgeProp(Target::ContinuousTimeProcess, tt, v, a, cs)\n\nSimple bridge proposal derived from a linear process with time dependent drift given by a CSpline and constant diffusion coefficient a.\n\n\n\n"
 },
 
@@ -668,7 +732,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Mdb",
     "page": "Library",
     "title": "Bridge.Mdb",
-    "category": "Type",
+    "category": "type",
     "text": "Mdb() <: SDESolver\n\nEuler scheme with the diffusion coefficient correction of the modified diffusion bridge.\n\n\n\n"
 },
 
@@ -676,7 +740,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.bridge",
     "page": "Library",
     "title": "Bridge.bridge",
-    "category": "Function",
+    "category": "function",
     "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal. \n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nbridge(BridgePre(), W, P°)\n\n\n\n"
 },
 
@@ -684,7 +748,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.bridge!",
     "page": "Library",
     "title": "Bridge.bridge!",
-    "category": "Function",
+    "category": "function",
     "text": "bridge!(method, Y, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal overwritingY`.\n\n\n\n"
 },
 
@@ -692,7 +756,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Vs",
     "page": "Library",
     "title": "Bridge.Vs",
-    "category": "Function",
+    "category": "function",
     "text": "Vs(s, T1, T2, v, P)\n\nTime changed V for generation of U.\n\n\n\n"
 },
 
@@ -700,7 +764,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.gpV!",
     "page": "Library",
     "title": "Bridge.gpV!",
-    "category": "Function",
+    "category": "function",
     "text": "gpV!(K::SamplePath, P, KT=zero(T))\n\nPrecompute V from (ddt)V = BV + , V_T = v for a guided proposal.\n\n\n\n"
 },
 
@@ -708,7 +772,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.r",
     "page": "Library",
     "title": "Bridge.r",
-    "category": "Function",
+    "category": "function",
     "text": "r(t, x, T, v, P)\n\nReturns r(tx) = operatornamegrad_x log p(tx T v) where p is the transition density of the process P.\n\n\n\n"
 },
 
@@ -716,7 +780,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.gpHinv!",
     "page": "Library",
     "title": "Bridge.gpHinv!",
-    "category": "Function",
+    "category": "function",
     "text": "gpHinv!(K::SamplePath, P, KT=zero(T))\n\nPrecompute K = H^-1 from (ddt)K = BK + KB + a for a guided proposal.\n\n\n\n"
 },
 
@@ -724,7 +788,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.gpupdate",
     "page": "Library",
     "title": "Bridge.gpupdate",
-    "category": "Function",
+    "category": "function",
     "text": "gpupdate(H♢, V, L, Σ, v)\ngpupdate(P, L, Σ, v)\n\nReturn updated H♢, V when observation v at time zero with error Σ is observed.\n\n\n\n"
 },
 
@@ -740,7 +804,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.LocalGammaProcess",
     "page": "Library",
     "title": "Bridge.LocalGammaProcess",
-    "category": "Type",
+    "category": "type",
     "text": "LocalGammaProcess\n\n\n\n"
 },
 
@@ -748,7 +812,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.compensator0",
     "page": "Library",
     "title": "Bridge.compensator0",
-    "category": "Function",
+    "category": "function",
     "text": "compensator0(kstart, P::LocalGammaProcess)\n\nCompensator of GammaProcess approximating the LocalGammaProcess. For kstart == 1 (only choice) this is nu_0(b_1infty).\n\n\n\n"
 },
 
@@ -756,7 +820,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.compensator",
     "page": "Library",
     "title": "Bridge.compensator",
-    "category": "Function",
+    "category": "function",
     "text": "compensator(kstart, P::LocalGammaProcess)\n\nCompensator of LocalGammaProcess  For kstart = 1, this is sum_k=1^N nu(B_k), for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant).\n\n\n\n"
 },
 
@@ -764,7 +828,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.θ",
     "page": "Library",
     "title": "Bridge.θ",
-    "category": "Function",
+    "category": "function",
     "text": "θ(x, P::LocalGammaProcess)\n\nInverse jump size compared to gamma process with same alpha and beta.\n\n\n\n"
 },
 
@@ -772,7 +836,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.soft",
     "page": "Library",
     "title": "Bridge.soft",
-    "category": "Function",
+    "category": "function",
     "text": "soft(t, T1, T2)\n\nTime change mapping s in [T1, T2](U-time) tot`in[T1, T2](X`-time).\n\n\n\n"
 },
 
@@ -780,7 +844,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.tofs",
     "page": "Library",
     "title": "Bridge.tofs",
-    "category": "Function",
+    "category": "function",
     "text": "tofs(s, T1, T2)\n\nTime change mapping t in [T1, T2] (X-time) to s in [T1, T2] (U-time).\n\n\n\n"
 },
 
@@ -788,7 +852,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.dotVs",
     "page": "Library",
     "title": "Bridge.dotVs",
-    "category": "Function",
+    "category": "function",
     "text": "dotVs (s, T1, T2, v, P)\n\nTime changed time derivative of V for generation of U.\n\n\n\n"
 },
 
@@ -796,7 +860,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.SDESolver",
     "page": "Library",
     "title": "Bridge.SDESolver",
-    "category": "Type",
+    "category": "type",
     "text": "SDESolver\n\nAbstract (super-)type for solving methods for stochastic differential equations.\n\n\n\n"
 },
 
@@ -804,7 +868,7 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.Increments",
     "page": "Library",
     "title": "Bridge.Increments",
-    "category": "Type",
+    "category": "type",
     "text": "Increments{S<:AbstractPath{T}}\n\nIterator over the increments of an AbstractPath.  Iterates over (i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i]).\n\n\n\n"
 },
 
@@ -812,8 +876,24 @@ var documenterSearchIndex = {"docs": [
     "location": "library.html#Bridge.sizedtype",
     "page": "Library",
     "title": "Bridge.sizedtype",
-    "category": "Function",
+    "category": "function",
     "text": "sizedtype(x) -> T\n\nReturn an extended type which preserves size information. Makes one(T) and zero(T) for vectors possible.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.piecewise",
+    "page": "Library",
+    "title": "Bridge.piecewise",
+    "category": "function",
+    "text": "piecewise(X::SamplePath, [endtime]) -> tt, xx\n\nIf X is a jump process with piecewise constant paths and jumps in X.tt, piecewise returns coordinates path for plotting purposes. The second argument allows to choose the right endtime of the last interval.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.BridgePre!",
+    "page": "Library",
+    "title": "Bridge.BridgePre!",
+    "category": "type",
+    "text": "BridgePre!() <: SDESolver\n\nPrecomputed, replacing Euler-Maruyama scheme for bridges using bi.\n\n\n\n"
 },
 
 {
@@ -821,7 +901,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!"
+},
+
+{
+    "location": "library.html#-1",
+    "page": "Library",
+    "title": "",
+    "category": "section",
+    "text": ""
 },
 
 ]}
