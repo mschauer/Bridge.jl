@@ -96,10 +96,13 @@ include("cspline.jl")
 include("wiener.jl")
 include("ellipse.jl")
 include("ode.jl")
+include("ode!.jl")
 include("diffusion.jl")
 include("linpro.jl")
 include("guip.jl")
 include("euler.jl")
+
+include("sde!.jl")
 include("levy.jl")
 include("poisson.jl")
 

@@ -27,14 +27,7 @@ to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``.
 struct R3 <: ODESolver
 end
 
-"""
-    R3!
 
-Inplace ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
-to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``.
-"""
-struct R3! <: ODESolver
-end
 
 """
     BS3
