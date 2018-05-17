@@ -108,7 +108,6 @@ include("uncertainty.jl")
 include("mclog.jl")
 
 include("Models.jl")
-include("Kalman.jl")
 
 include("recipes.jl")
 
