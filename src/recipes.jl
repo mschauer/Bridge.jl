@@ -14,3 +14,7 @@ end
     X.tt, X.yy
 end
 
+#@recipe function plot(X::Bridge.SamplePathBand)
+#    ribbon --> (X.uu .- X.ll)
+#    X.tt, (X.uu .+ X.ll)./2
+#end

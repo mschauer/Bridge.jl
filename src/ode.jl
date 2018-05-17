@@ -28,6 +28,15 @@ struct R3 <: ODESolver
 end
 
 """
+    R3!
+
+Inplace ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
+to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``.
+"""
+struct R3! <: ODESolver
+end
+
+"""
     BS3
 
 Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
@@ -168,6 +177,17 @@ function solve!(::R3, X::SamplePath{T}, x0, P) where {T}
     end
     X
 end
+function solve!(::R3, X::SamplePath{T}, x0, P::ContinuousTimeProcess) where {T}
+    tt = X.tt
+    yy = X.yy
+    yy[1] = y::T = x0
+    for i in 2:length(tt)
+        y = kernelr3(tt[i-1], y, tt[i] - tt[i-1], P)  
+        yy[i] = y  
+    end
+    X
+end
+
 
 
 function solvei!(::R3, Fi, X::SamplePath{T}, x0, P) where {T}

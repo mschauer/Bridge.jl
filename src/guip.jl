@@ -11,6 +11,11 @@ end
 tau(s, t, T) = t + (s.-t).*(2-(s-t)/(T-t))
 tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
+
+# fallback
+btilde(t, x, Po) = b(t, x, P(Po))
+btilde!(t, x, out, Po) = b!(t, x, out, P(Po))
+
 #####################
 
 
@@ -217,7 +222,7 @@ function gpupdate(H♢, V, L, Σ, v)
         V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
         H♢_, V_
     else
-        Z = I - H♢*L'*inv(Σ + L*H♢*L')*L
+        Z = I - H♢*L'*inv(Σ*I + L*H♢*L')*L
         Z*H♢, Z*H♢*L'*inv(Σ)*v + Z*V
     end
 end
@@ -248,6 +253,8 @@ function logdetU(GP1, GP2, L, Σ)
     logdet(inv(K) + L'*inv(Σ)*L + inv(H)) + logdet(Σ) + logdet(H) + logdet(K) + 2logdet(PhiTS)
 end
 
+#################################################
+abstract type GuidedBridge!{T} <: ContinuousTimeProcess{T} end
 
 #################################################
 

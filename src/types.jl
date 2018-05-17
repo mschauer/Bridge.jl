@@ -127,6 +127,22 @@ sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} =
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
 
 
+copy(X::VSamplePath) = VSamplePath(copy(X.tt), copy(X.yy))
+
+"""
+Like `VSamplePath`, but with assumptions on `tt` and dimensionality.
+Planned replacement for `VSamplePath`
+"""
+struct GSamplePath{S,T,P} <: Bridge.AbstractPath{T}
+    tt::S
+    yy::P
+    GSamplePath(tt::S, yy::P) where {S, P<:AbstractArray{T}} where {T} = new{S,T,P}(tt,yy)
+end
+
+import Base: length
+length(X::GSamplePath) = length(X.tt)
+
+
 """
     Increments{S<:AbstractPath{T}}
     

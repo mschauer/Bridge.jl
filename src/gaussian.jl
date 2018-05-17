@@ -52,7 +52,7 @@ whiten(Σ::UniformScaling, z) = z/sqrt(Σ.λ)
 sqmahal(P::Gaussian, x) = norm_sqr(whiten(P.Σ,x - P.μ))
 
 rand(P::Gaussian) = P.μ + chol(P.Σ)'*randn(typeof(P.μ))
-rand(P::Gaussian{Vector}) = P.μ + chol(P.Σ)'*randn(T, length(P.μ))
+rand(P::Gaussian{Vector}) = P.μ + chol(P.Σ)'*randn(eltype(P.μ), length(P.μ))
 
 logpdf(P::Gaussian, x) = -(sqmahal(P,x) + _logdet(P.Σ, dim(P)) + dim(P)*log(2pi))/2    
 pdf(P::Gaussian, x) = exp(logpdf(P::Gaussian, x))

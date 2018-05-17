@@ -30,6 +30,15 @@ struct BridgePre <: SDESolver
 end
 
 """
+    BridgePre!() <: SDESolver
+
+Precomputed, replacing Euler-Maruyama scheme for bridges using `bi`.
+"""
+struct BridgePre! <: SDESolver
+end
+
+
+"""
     StochasticHeun() <: SDESolver
 
 Stochastic heun scheme.
@@ -86,19 +95,37 @@ end
 
 
 """
-    solve!(method::SDESolver, Y, u, W::SamplePath, P) -> X
+    solve(method::SDESolver, u, W::SamplePath, P) -> X
+    solve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X
   
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
 using `method` in place.
+
+# Example
+
+```
+solve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))
+```
+
+```
+import Bridge: b, σ
+struct OU <: ContinuousTimeProcess{Float64}
+    μ::Float64
+end
+Bridge.b(s, x, P::OU) = -P.μ*x
+Bridge.σ(s, x, P::OU) = I
+
+solve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))
+```
 """
 solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T} =
     solve!(method, SamplePath{T}(W.tt, T[zero(u) for t in W.tt]), u, W, P)
 
 """
-    solve!(method::SDESolver, Y, u, W::VSamplePath, P) -> X
+    solve(method::SDESolver, u, W::VSamplePath, P) -> X
   
 Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
-using `method` in place.
+using `method`.
 """
 solve(method::SDESolver, u, W::VSamplePath{T}, P::ProcessOrCoefficients) where {T} =
     solve!(method, VSamplePath(W.tt, zeros(T, size(u)..., length(W.tt))), u, W, P)
@@ -147,6 +174,8 @@ function solve!(::EulerMaruyama, Y, u::T, W::AbstractPath, P::ProcessOrCoefficie
     yy[.., N] = y
     Y
 end
+
+
 function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -157,7 +186,7 @@ function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ProcessOrCoeffici
     y::T = copy(u)
 
     assert(size(Y.yy) == (length(y), N))
-    assert(size(W.yy) == (length(y), N))
+    #assert(size(W.yy) == (length(y), N))
     tmp1 = copy(y)
     tmp2 = copy(y)
     dw = W.yy[.., 1]
@@ -218,6 +247,9 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
     Y
 end
 
+
+#### Guided Bridges
+
 bridge(u::T, W::SamplePath, P::GuidedBridge{T}) where {T} = bridge!(samplepath(W.tt, u), W, P)
 """
     bridge!(Y, u, W, P::GuidedBridge) -> v
@@ -248,6 +280,46 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     end
     yy[.., N]
 end
+
+
+function bridge!(Y, u, W::VSamplePath, P::GuidedBridge!)
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+    
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y = u
+
+
+    tmp1 = copy(y)
+    tmp2 = copy(y)
+    dw = W.yy[.., 1]
+    for i in 1:N-1
+        t¯ = tt[i]
+        dt = tt[i+1] - t¯ 
+        for k in eachindex(tmp1)
+            @inbounds yy[k, i] = y[k]
+        end
+        for k in eachindex(dw)
+            @inbounds dw[k] = W.yy[k, i+1] - W.yy[k, i]
+        end
+        bi!(i, y, tmp1, P)
+        σ!(t¯, y, dw, tmp2, P)
+        for k in eachindex(y)
+            @inbounds y[k] = y[k] + tmp1[k]*dt + tmp2[k]
+        end
+    end
+    yy[.., N] = y
+    Y
+end
+
+####
+
 
 """
     bridge!(method, Y, W, P) -> Y

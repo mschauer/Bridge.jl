@@ -109,15 +109,17 @@ function quaternion(m)
 end
 
 """
-    piecewise(X::SamplePath) -> tt, xx
+    piecewise(X::SamplePath, [endtime]) -> tt, xx
 
 If X is a jump process with piecewise constant paths and jumps in `X.tt`,
-piecewise returns coordinates path for plotting purposes.
+piecewise returns coordinates path for plotting purposes. The second argument
+allows to choose the right endtime of the last interval.
 """
-function piecewise(Y::SamplePath)
-    tt = [0.0]
-    append!(tt, repeat(Y.tt[2:end], inner=2))
-    push!(tt, Y.tt[end])
+function piecewise(Y::SamplePath, tend = Y.tt[end])
+    tt = [Y.tt[1]]
+    n = length(Y.yy)
+    append!(tt, repeat(Y.tt[2:n], inner=2))
+    push!(tt, tend)
     tt, repeat(Y.yy, inner=2)
 end
 
