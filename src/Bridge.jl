@@ -54,6 +54,8 @@ function B!
 end
 function a!
 end
+function bitilde!
+end
 
 """
     b!(t, y, tmp1, P)
@@ -100,6 +102,8 @@ include("ode!.jl")
 include("diffusion.jl")
 include("linpro.jl")
 include("guip.jl")
+include("guip!.jl")
+
 include("euler.jl")
 
 include("sde!.jl")
