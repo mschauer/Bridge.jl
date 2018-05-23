@@ -53,7 +53,7 @@ function bridge!(Y, u, W::VSamplePath, P::GuidedBridge!)
     yy = Y.yy
     tt[:] = P.tt
 
-    y = u
+    y = copy(u)
 
 
     tmp1 = copy(y)
