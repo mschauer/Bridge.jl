@@ -253,8 +253,6 @@ function logdetU(GP1, GP2, L, Σ)
     logdet(inv(K) + L'*inv(Σ)*L + inv(H)) + logdet(Σ) + logdet(H) + logdet(K) + 2logdet(PhiTS)
 end
 
-#################################################
-abstract type GuidedBridge!{T} <: ContinuousTimeProcess{T} end
 
 #################################################
 
