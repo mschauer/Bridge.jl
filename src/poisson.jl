@@ -3,7 +3,7 @@
     InhomogPoisson(λ)
 
 Inhomogenous Poisson process with intensity function `λ(t)`.
-See also [ThinningAlg](@ref)
+See also `ThinningAlg`.
 """
 struct InhomogPoisson{T<:Function}
     λ::T
@@ -15,7 +15,7 @@ end
 """
     ThinningAlg(λmax)
 
-Sampling method for [InhomogPoisson](@ref) by the 'thinning' algorithm. 
+Sampling method for `InhomogPoisson` by the 'thinning' algorithm. 
 
 #### Examples:
 

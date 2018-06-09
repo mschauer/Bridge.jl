@@ -70,8 +70,14 @@ Bridge.uniform_thinning!
 
 ## Poisson processes
 ```@docs
-Bridge.ThinningAlg
-Bridge.InhomogPoisson
+ThinningAlg
+InhomogPoisson
+```
+
+## Bessel processes
+```@docs
+Bridge.Bessel3Bridge
+Bridge.BesselProp
 ```
 
 ## Miscellaneous
@@ -155,5 +161,6 @@ Bridge.Increments
 Bridge.sizedtype
 Bridge.piecewise
 Bridge.BridgePre!
+Bridge.aeuler
 ```
  

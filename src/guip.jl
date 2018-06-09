@@ -402,8 +402,8 @@ end
 
 ################################################################
 
-# using left approximation
-function llikelihoodleft(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T}}) where T
+# using left approximation #::Union{GuidedProp{T},BridgeProp{T},PBridgeProp{T},FilterProp{T},BesselBridge{T}}
+function llikelihoodleft(Xcirc::SamplePath{T}, Po) where T
     tt = Xcirc.tt
     xx = Xcirc.yy
 
