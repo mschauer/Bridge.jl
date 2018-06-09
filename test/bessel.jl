@@ -96,8 +96,8 @@ VERBOSE && println(".")
 pt = exp(lptilde(0., x0, Po))
 
 
-phat = pt*mean(exp(ll))
-phat3 = pt*mean(exp(ll3))
+phat = pt*mean(exp.(ll))
+phat3 = pt*mean(exp.(ll3))
 
 
 
@@ -106,7 +106,7 @@ VERBOSE && println("X")
 
 X = solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
 while any(X.yy .< 0) || X.yy[end] > 0.1
-    X =  solve!(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
+    X =  solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
 end    
 VERBOSE && println("Xo")
 
