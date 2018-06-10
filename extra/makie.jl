@@ -3,6 +3,7 @@ import Makie.to_positions
 import Bridge: mcsvd3, visualize_uncertainty
 
 to_positions(S::Makie.Scene, X::Bridge.SamplePath) = to_positions(S, X.yy)
+to_positions(S::Makie.Scene, X::Bridge.VSamplePath) = to_positions(S, X.yy)
 
 """
     mcsvd3(mcstates) -> mean, q, sv

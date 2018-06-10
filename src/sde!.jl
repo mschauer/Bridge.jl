@@ -16,7 +16,7 @@ function solve!(::EulerMaruyama!, Y, u::T, W::AbstractPath, P::ProcessOrCoeffici
     yy = Y.yy
     y::T = copy(u)
 
-    assert(size(Y.yy) == (length(y), N))
+    size(Y.yy) != (length(y), N) && error("Starting point has wrong length.")
     #assert(size(W.yy) == (length(y), N))
     tmp1 = copy(y)
     tmp2 = copy(y)

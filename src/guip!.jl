@@ -8,7 +8,7 @@ function Bridge.llikelihood(::Bridge.LeftRule, Xcirc::VSamplePath, Po::Bridge.Gu
     P = Bridge.P(Po)
 
     som::Float64 = 0.
-    x = xx[.., 1]
+    x = copy(xx[.., 1]) # vector of vectors?
     tmp = copy(x)
     tmp2 = copy(x)
     r = copy(x)
