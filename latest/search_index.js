@@ -461,7 +461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.InhomogPoisson",
     "category": "type",
-    "text": "InhomogPoisson(λ)\n\nInhomogenous Poisson process with intensity function λ(t). See also ThinningAlg\n\n\n\n"
+    "text": "InhomogPoisson(λ)\n\nInhomogenous Poisson process with intensity function λ(t). See also ThinningAlg.\n\n\n\n"
 },
 
 {
@@ -469,7 +469,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Poisson processes",
     "category": "section",
-    "text": "Bridge.ThinningAlg\nBridge.InhomogPoisson"
+    "text": "ThinningAlg\nInhomogPoisson"
+},
+
+{
+    "location": "library.html#Bridge.Bessel3Bridge",
+    "page": "Library",
+    "title": "Bridge.Bessel3Bridge",
+    "category": "type",
+    "text": "Bessel3Bridge(t, v, σ)\n\nBessel(3) bridge from below or above to the point v at time t,  not crossing v, with dispersion σ.\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.BesselProp",
+    "page": "Library",
+    "title": "Bridge.BesselProp",
+    "category": "type",
+    "text": "BesselProp\n\nBessel type proposal\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bessel-processes-1",
+    "page": "Library",
+    "title": "Bessel processes",
+    "category": "section",
+    "text": "Bridge.Bessel3Bridge\nBridge.BesselProp"
 },
 
 {
@@ -897,11 +921,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.aeuler",
+    "page": "Library",
+    "title": "Bridge.aeuler",
+    "category": "function",
+    "text": "aeuler(u, s:dtmax:t, P, tau=0.5)\n\nAdaptive Euler-Maruyama scheme from https://arxiv.org/pdf/math/0601029.pdf sampling a path from u at s to t with adaptive stepsize of 2.0^(-k)*dtmax\n\n\n\n"
+},
+
+{
     "location": "library.html#Unsorted-1",
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler"
 },
 
 {
