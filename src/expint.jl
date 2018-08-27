@@ -6,7 +6,7 @@
 
 
 # n coefficients of the Taylor series of E₁(z) + log(z), in type T:
-function E₁_taylor_coefficients{T<:Number}(::Type{T}, n::Integer)
+function E₁_taylor_coefficients(::Type{T}, n::Integer) where T<:Number
     n < 0 && throw(ArgumentError("$n ≥ 0 is required"))
     n == 0 && return T[]
     n == 1 && return T[-eulergamma]

@@ -11,7 +11,7 @@ import Base: chol, size
 
 Simple wrapper for the lower triangular Cholesky root of a positive (semi-)definite element `σ`.
 """
-type PSD{T}
+mutable struct PSD{T}
     σ::T
     PSD(σ::T) where {T} = istril(σ) ? new{T}(σ) : throw(ArgumentError("Argument not lower triangular"))
 end

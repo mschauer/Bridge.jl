@@ -280,6 +280,7 @@ plot(z, cdf.(Gamma(phat[2]*dt, 1/phat[1]), z), label="Gamma(beta,alpha)")
 #plot(z, cdf.(Gamma(params[end,2]*dt, 1/params[end,1]), z), label="Gamma(beta,alpha)")
 N > 1 && try
     plot(z, cdf.(Gamma((phat[2] * exp(-phat[end-1]))*dt, 1/(phat[1] + phat[end-N-1])), z), label="Gamma mid")
+catch
 end
 plot(z, cdf.(Gamma((phat[2] * exp(-phat[end]))*dt, 1/(phat[1] + phat[end-N])), z), label="Gamma end")
 simid==2 && axis([0.0, 6.0, 0.4, 1.0])

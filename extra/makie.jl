@@ -45,7 +45,7 @@ function visualize_uncertainty(scene, X, skip = 10, qu = 0.95; args...)
 end
 
 viridis(X, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, linspace(1, maxviri, length(X)))])
-viridis(n::Integer, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, linspace(1, n>1?maxviri:1, n))])
+viridis(n::Integer, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, linspace(1, n>1 ? maxviri : 1, n))])
 
 set_perspective!(scene, perspective) = (push!(Makie.getscreen(scene).cameras[:perspective].view, perspective); scene)
 get_perspective(scene) = Makie.getscreen(scene).cameras[:perspective].view.value

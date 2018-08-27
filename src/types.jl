@@ -149,7 +149,7 @@ length(X::GSamplePath) = length(X.tt)
 Iterator over the increments of an AbstractPath. 
 Iterates over `(i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i])`.
 """
-type Increments{S<:AbstractPath}
+mutable struct Increments{S<:AbstractPath}
     X::S
 end
 start(dX::Increments) = 1

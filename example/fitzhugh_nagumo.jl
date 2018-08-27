@@ -85,6 +85,7 @@ simname =["exci", "nonexci"][simid]
 mkpath(joinpath("output",simname))
 try 
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+catch
 end
 
 θ =  [[0.6, 1.4][simid], 1.5, 10., 0.5*10] # [β, γ, ϵ, s]
