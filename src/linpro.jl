@@ -102,35 +102,35 @@ end
 transitionprob(s,x,t,P::LinPro) = Gaussian(mu(s,x,t,P), K(s, t, P::LinPro))
 
 function Phi(t, T, P::LinPro)
-    expm((T-t)*P.B)
+    exp((T-t)*P.B)
 end
 
 function mu(t, x, T, P::LinPro)
-    phi = expm((T-t)*P.B)
+    phi = exp((T-t)*P.B)
     phi*(x - P.μ) + P.μ
 end
 
 function K(t, T, P::LinPro)
-    phi = expm((T-t)*P.B)
+    phi = exp((T-t)*P.B)
     P.lambda - phi*P.lambda*phi'
 end
 
 function H(t, T, P::LinPro, x)
-     phim = expm(-(T-t)*P.B)
+     phim = exp(-(T-t)*P.B)
      (phim*P.lambda*phim'-P.lambda)\x
 end
 function H(t, T, P::LinPro)
-     phim = expm(-(T-t)*P.B)
+     phim = exp(-(T-t)*P.B)
      inv(phim*P.lambda*phim'-P.lambda)
 end
 
 function V(t, T, v, P::LinPro)
-    phim = expm(-(T-t)*P.B)
+    phim = exp(-(T-t)*P.B)
     phim*(v - P.μ) + P.μ
 end
 
 function dotV(t, T, v, P::LinPro)
-    expm(-(T-t)*P.B)*P.B*(v - P.μ)
+    exp(-(T-t)*P.B)*P.B*(v - P.μ)
 end
 
 """
@@ -156,7 +156,7 @@ a(t, x, P::LinProBridge) = P.P.a
 a(t, P::LinProBridge) = P.P.a
 constdiff(::LinProBridge) = true
 
-Phi(t, P::LinProBridge) = P.P.lambda*expm((P.t - t)*P.P.B)' - expm(-(P.t - t)*P.P.B)*P.P.lambda
+Phi(t, P::LinProBridge) = P.P.lambda*exp((P.t - t)*P.P.B)' - exp(-(P.t - t)*P.P.B)*P.P.lambda
 
 Phi(t, T, Ps::LinProBridge) = Phi(T, Ps)*inv(Phi(t, Ps))
 

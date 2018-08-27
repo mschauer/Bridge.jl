@@ -1,12 +1,12 @@
 using Bridge, Distributions
-using Base.Test
+using Test
 
 h = 1e-7    
 n, m = 50, 10000
 T1 = 1.
 T2 = 2.
 T = T2-T1
-ss = linspace(T1, T2, n)
+ss = range(T1, stop=T2, length=n)
 tt = Bridge.tofs(ss, T1, T2)
 
 u = 0.5

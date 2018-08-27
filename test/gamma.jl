@@ -1,4 +1,4 @@
-using Base.Test, Bridge
+using Test, Bridge
 
 # test the tricky bridge sampling when endpoint is or is not in grid
 #srand(10)
@@ -25,7 +25,7 @@ X3 = sample([0.0, 0.5], GB, 0.2)
 t = 10000.
 α = 16.0
 n = 10000
-tt = linspace(0, t, n)
+tt = range(0, stop=t, length=n)
 P = GammaProcess(γ, α)
 X = sample(tt, P)
 

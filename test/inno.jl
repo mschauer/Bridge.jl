@@ -1,13 +1,13 @@
 using Bridge, Distributions
 using PyPlot
-using Base.Test
+using Test
 
 h = 1e-7    
 n, m = 10, 10000
 T1 = 1.
 T2 = 2.
 T = T2-T1
-ss = linspace(T1, T2, n)
+ss = range(T1, stop=T2, length=n)
 tt = Bridge.tofs(ss, T1, T2)
 
 u = 0.5
@@ -144,6 +144,6 @@ for k in 1:K
     end
     σsum += σ
     θsum += θ
-    println(k, " ", round([θsum/k; θ; σsum/k; σ; ll; bacc/k; pacc/k], 3), "\t [1.5, 1.2]")
+    println(k, " ", round([θsum/k; θ; σsum/k; σ; ll; bacc/k; pacc/k], digits=3), "\t [1.5, 1.2]")
     #println(k, " ", round([θ; σ; ll; bacc/k; pacc/k], 3))
 end

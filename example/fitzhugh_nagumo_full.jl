@@ -108,7 +108,7 @@ end
 function main(propid, m, budget)
 
 ############## Configuration ###################################
-srand(10)
+Random.seed!(10)
 K = 100000 #100000
 tim = time()
 budget *= 60
@@ -142,8 +142,8 @@ mextra = div(500, m) #factor of extra steps for truth
 TT = 1.
 dt = TT/n/m
 println("dt $dt")
-tt = linspace(0., TT, n*m+1)
-tttrue = linspace(0., TT, n*mextra*m+1)
+tt = range(0., stop=TT, length=n*m+1)
+tttrue = range(0., stop=TT, length=n*mextra*m+1)
 ttf = tt[1:m:end]
 
 uu = @SVector [0., 1.]
@@ -246,7 +246,7 @@ xi = 1./[50., 50., 50., 50.]
 # Bookkeeping
 mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 

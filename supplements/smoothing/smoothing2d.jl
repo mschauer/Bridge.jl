@@ -11,7 +11,7 @@ println(ENV["BRIDGE_OUTDIR"])
 
 mkpath(joinpath("output", simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 
@@ -56,7 +56,7 @@ Pᵒ = Vector(m)
 H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])
 
 for i in m:-1:1
-    tt_ = linspace(V.tt[i], V.tt[i+1], M+1) 
+    tt_ = range(V.tt[i], stop=V.tt[i+1], length=M+1) 
     XX[i] = Bridge.samplepath(tt_, zero(SV))
     WW[i] = Bridge.samplepath(tt_, zero(RV))
     
@@ -184,7 +184,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive
         else 
             verbose && print("\t .")
         end
-        verbose && println([" ", "N"][1 + newblock], "\t", round(acc/it,2), "\t", round.(y0 - x0, 2))
+        verbose && println([" ", "N"][1 + newblock], "\t", round(acc/it, digits=2), "\t", round.(y0 - x0, 2))
         for i in 1:m
             mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
         end
@@ -201,12 +201,12 @@ verbose = true, independent = independent)
 
 open(joinpath("output", simname,"info.txt"), "w") do f
     println(f, "acc") 
-    println(f, round(acc/iterations, 3)) 
+    println(f, round(acc/iterations, digits=3)) 
 end
 
 
-writecsv(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
-writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
+writedlm(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
+writedlm(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
 
 
 
@@ -219,12 +219,12 @@ save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)paths.jld2"), "Path", Path
 save(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)states.jld2"), "mcstates", mcstates)
 
 for i in 1:2
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)pathsx$i.csv"),  hcat(map(x->getindex.(x, i), Paths)...))
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)meanx$i.csv"),  getindex.(Xmeanm, i))
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)stdx$i.csv"),  getindex.(Xstdm, i))
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)x0$i.csv"),  getindex.(X0, i))
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)xt$i.csv"),  getindex.(Xt, i))
-    writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)Xtrue$i.csv"),  [Xtrue.tt getindex.(Xtrue.yy, i)])
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)pathsx$i.csv"),  hcat(map(x->getindex.(x, i), Paths)...))
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)meanx$i.csv"),  getindex.(Xmeanm, i))
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)stdx$i.csv"),  getindex.(Xstdm, i))
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)x0$i.csv"),  getindex.(X0, i))
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)xt$i.csv"),  getindex.(Xt, i))
+    writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)Xtrue$i.csv"),  [Xtrue.tt getindex.(Xtrue.yy, i)])
     
 end
-writecsv(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)V1.csv"),  [V.tt V.yy])
+writedlm(joinpath(ENV["BRIDGE_OUTDIR"],  "$simname$(simid)V1.csv"),  [V.tt V.yy])

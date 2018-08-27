@@ -16,17 +16,17 @@ maxviri = 200
 
 
 for i in indices(Paths)[1]
-    viri = _viridis[round.(Int,linspace(1,maxviri, length(Paths[i])))]
+    viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Paths[i])))]
     lines(Paths[i], linewidth = 0.1, color = map(x->RGBA(Float32.(x)..., 0.5f0), viri) )
 end
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xtrue)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xtrue)))]
 lines(( Xtrue.yy), linewidth = 0.4, color = map(x->RGBA(Float32.(x)..., 1.0f0), viri) )
 lines(Xtrue.yy, linewidth = 0.2, color = :black )
 
 
 #scatter([X2.yy[1].+ SVector(-0.2,-0.2,1)], marker = '↘',  markersize = 0.8, color=:black)
 
-viri = _viridis[round.(Int,linspace(1,maxviri, length(V)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(V)))]
 scatter(V.yy, marker=circle, markersize = 0.6,  strokewidth = 0.02, strokecolor = :white, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri)) 
 
 ma = Float32[10,10,10] 

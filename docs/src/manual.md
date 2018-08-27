@@ -54,7 +54,7 @@ Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 Generate the driving Brownian motion `W` of the stochastic differential equation (1) with `sample`. Thefirst argument is the time grid, the second arguments specifies a `Float64`-valued Brownian motion/Wiener process.
 
 ```jldoctest OrnsteinUhlenbeck
-srand(1)
+Random.seed!(1)
 W = sample(0:0.1:1, Wiener())
 
 # output

@@ -1,5 +1,5 @@
 using Bridge, StaticArrays, Distributions, PyPlot
-using Base.Test
+using Test
 import Base.Math.gamma
 #import Bridge: b, σ, a, transitionprob
 const percentile = 3.0
@@ -81,9 +81,9 @@ Pt = Linear(T, v, -c-0.1, -0.1, κ-0.1, -c/2)
 B = Bridge.B(0, Pt)
 β = Bridge.β(0, Pt)
 a = Bridge.a(0, Pt)
-σ = sqrtm(Bridge.a(0, Pt))
+σ = sqrt(Bridge.a(0, Pt))
 
-Phi = expm(B*(T-t))
+Phi = exp(B*(T-t))
 Λ = lyap(B, a)
 
 if CLASSIC 
@@ -102,7 +102,7 @@ if TEST
     @test norm(Bridge.K(t, T, Pt2) - Bridge.gpK(tt, zero(SM), Pt)) < 1e-6
     # norm(Bridge.gpmu(tt, u, Pt) - Bridge.mu(t, u, T,  Pt2))
 
-    @test norm(Phi*u + sum(expm(B*(T-t))*β*dt for t in tt) - Bridge.gpmu(tt, u, Pt)) < 5e-2
+    @test norm(Phi*u + sum(exp(B*(T-t))*β*dt for t in tt) - Bridge.gpmu(tt, u, Pt)) < 5e-2
 
     @test norm(Bridge.gpmu(tt, u, Pt) - ( Phi*u + (Phi-I)*(B\β))) < 1e-6
 

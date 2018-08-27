@@ -14,7 +14,7 @@ circle = Sphere(Point2f0(0,0), 1.0f0)
 maxviri = 200
 
 maxviri = 200
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xtrue)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xtrue)))]
 lines(( Xtrue.yy), linewidth = 0.2, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri) )
 #scatter([X2.yy[1].+ SVector(-0.2,-0.2,1)], marker = '↘',  markersize = 0.8, color=:black)
 
@@ -25,7 +25,7 @@ lines((@view Nu[1:skippoints:end]), linewidth = 0.4, color = :darkred)
 
 #scatter([X2.yy[1].+ SVector(-0.2,-0.2,1)], marker = '↘',  markersize = 0.8, color=:black)
 
-viri = _viridis[round.(Int,linspace(1,maxviri, length(V)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(V)))]
 scatter(V.yy, marker=circle, markersize = 0.6,  strokewidth = 0.02, strokecolor = :white, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri)) 
 
 ma = Float32[10,10,10] 

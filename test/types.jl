@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using Bridge
 X = SamplePath(0.0:1.0:10.0,Bridge.cumsum0(rand(10)))
 

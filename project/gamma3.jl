@@ -1,11 +1,11 @@
 #40*sum(Z.*phi.(40*(Z-0.04)))/x.tt[end]
 using Bridge
-using Base.Test
+using Test
 using Distributions
 using Bridge: runmean, lp
 
 #srand(1234)
-srand(123)
+Random.seed!(123)
 
 PYPLOT = false
 PYPLOT && using PyPlot
@@ -37,7 +37,7 @@ if sim == :fire
     m = 1000
 end
 
-tt = linspace(0.0, T, n + 1)
+tt = range(0.0, stop=T, length=n + 1)
 
 
 iterations = [100_000, 200_000][2]
@@ -70,7 +70,7 @@ elseif sim == :sumgamma
 elseif sim == :fire
     simname = "danishfire"
     
-    data = readcsv("output/danish.csv", header=true)[1]
+    data = readdlm("output/danish.csv", header=true)[1]
 
     tt_ = Float64.(Dates.value.(Date.(data[:,1])))/365
     dt = tt_[2]-tt_[1]
@@ -197,7 +197,7 @@ end
 #println("P(Y < b1) = ", mean(diff(X.yy) .< b1))
 h = hist1(diff(X.yy), b) # note that P(Y < b[1]) may be inaccurate if dt is chosen small
 if any(h .< 20)
-    warn("Less than 20 observations in bin")
+    @warn("Less than 20 observations in bin")
 end
 
 if PYPLOT
@@ -255,7 +255,7 @@ yy = X.yy
 # Bookkeeping
 mkpath(joinpath("output", simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 
@@ -319,7 +319,7 @@ end
 for i in 1:n
     P0 = GammaProcess(beta, alpha)
     Pº = GammaBridge(tt[i+1], yy[i+1], P0)
-    tti = linspace(tt[i], tt[i+1], m+1)
+    tti = range(tt[i], stop=tt[i+1], length=m+1)
     Z[i] = sample(tti, P0, 0.0)
     Zº[i] = copy(Z[i])
 
@@ -412,7 +412,7 @@ for iter in 1:iterations
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P, c)
             end
-            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([alphaº; thetaº; rhoº], 3))
+            print("$iter \t\t\t\t paramsº: ", round(ll, digits=5), " ", round.([alphaº; thetaº; rhoº], 3))
             if rand() < exp(ll + lpi(alphaº, thetaº, rhoº, beta) - lpi(alpha, theta, rho, beta))
                 print("✓")
                 theta = thetaº
@@ -429,7 +429,7 @@ for iter in 1:iterations
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P, c)
             end
-            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([alphaº; thetaº; rhoº], 3))
+            print("$iter \t\t\t\t paramsº: ", round(ll, digits=5), " ", round.([alphaº; thetaº; rhoº], 3))
             if rand() < exp(ll + lpi(alphaº, thetaº, rhoº, beta) - lpi(alpha, theta, rho, beta))
                 print("✓")
                 theta = thetaº
@@ -468,7 +468,7 @@ for iter in 1:iterations
                 for i in 1:n
                     
                     Zº[i].yy[1] = 0.0
-                    dtti = step(linspace(tt[i], tt[i+1], m+1))
+                    dtti = step(range(tt[i], stop=tt[i+1], length=m+1))
                     
 
                     Be = Beta(dtti*betaº, dtti*(beta-betaº))
@@ -484,7 +484,7 @@ for iter in 1:iterations
                 
             end     
             print("$iter \t ")
-            print_with_color(:green, "betaº: ", round(ll, 5), " [", round(betaº, 3), "]")     
+            printstyled("betaº: ", round(ll, digits=5), " [", round(betaº, digits=3), "]", color=:green)     
             #println(llº, " ", ll, " ", lpi(alpha, theta, rho, betaº), " ", lpi(alpha, theta, rho, beta))
             if rand() < exp(ll + lpi(alpha, theta, rho, betaº) - lpi(alpha, theta, rho, beta))
                 for i in 1:n
@@ -493,7 +493,7 @@ for iter in 1:iterations
                 end
                 beta = betaº
                 betaacc += 1
-                print_with_color(:green, "✓")
+                printstyled("✓", color=:green)
             end
             println()
         end
@@ -561,9 +561,9 @@ Xh = SamplePath(tt, Bridge.cumsum0(dxxh))
 figure();
 z = sort(vcat((diff(cumsum(shuffle(diff(X2.yy)))[1:m:end]) for i in 1:100)...))
 
-plot(z[1:100:end], linspace(0,1,length(z[1:100:end])), label="augmented")
+plot(z[1:100:end], range(0, stop=1, length=length(z[1:100:end])), label="augmented")
 z = sort(diff(X.yy))
-plot(z, linspace(0, 1, length(z)), label="obs")
+plot(z, range(0, stop=1, length=length(z)), label="obs")
 #plot(z, cdf.(Gamma( var(z)/mean(z), mean(z)^2/var(z)), z))
 #plot(z, cdf.(Gamma(beta0*dt, 1/alpha0), z), label="Gamma ML")
 legend()

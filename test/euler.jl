@@ -1,11 +1,11 @@
 using Bridge, StaticArrays
-using Base.Test
+using Test
 
 
 n = 5000
 T = (0.0, 10.0)
 dt = (T[end]-T[1])/n
-tt = collect(linspace(T[1], T[2], n+1))
+tt = collect(range(T[1], stop=T[2], length=n+1))
 vx = [1.0,0.0,0.0]
 
 

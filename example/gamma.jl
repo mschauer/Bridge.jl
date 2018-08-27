@@ -3,7 +3,7 @@ using Bridge, Distributions, StaticArrays
 PLOT = :winston
 include("plot.jl")
 
-tt = linspace(0,1, 1000)
+tt = range(0, stop=1, length=1000)
 G =  GammaProcess(10., 1.)
 X = sample(tt, G)
 plot(X, "-")
@@ -21,5 +21,5 @@ plot(X, "-")
 #plot(tt)
 
 
-X = sample(linspace(0,1,500),Bridge.GammaBridge(1,1, GammaProcess(10,10)))
-X = sample(linspace(0,1,500), GammaProcess(10,10))
+X = sample(range(0, stop=1, length=500),Bridge.GammaBridge(1,1, GammaProcess(10,10)))
+X = sample(range(0, stop=1, length=500), GammaProcess(10,10))

@@ -14,12 +14,12 @@ lines((@view Xtrue.yy[1:skippoints:end]), linewidth = 0.2, color = :darkblue)
 
 
 if d2 == 3
-    viri = _viridis[round.(Int,linspace(1,256, length(V)))]
+    viri = _viridis[round.(Int,range(1, stop=256, length=length(V)))]
     scatter(V.yy, marker=sphere2, markersize = 0.2,  strokewidth = 0.02, strokecolor = :white, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri)) 
 elseif d2 == 2
  #   viri = _viridis[round.(Int,linspace(1,256, 2*length(V)))]
   #  linesegment(map(v->(Point3f0(-10, v...), Point3f0(10, v...)), V.yy), color = map(x->RGBA(Float32.(x)..., 0.9f0), viri))
-    viri = _viridis[round.(Int,linspace(1,256, length(V)))]
+    viri = _viridis[round.(Int,range(1, stop=256, length=length(V)))]
     scatter(map(v->Point3f0(0, v...), V.yy), marker=sphere2, markersize = 0.2,  strokewidth = 0.02, strokecolor = :white, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri)) 
 end
 #for pt in Pt

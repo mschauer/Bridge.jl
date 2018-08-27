@@ -27,7 +27,7 @@ v = 1.0
 t = 0.5
 T = 2.0
 n2 = 150
-tt = linspace(t, T, n2)
+tt = range(t, stop=T, length=n2)
 K = SamplePath(tt, zeros(length(tt)))
 V = SamplePath(tt, zeros(length(tt)))
 Mu = SamplePath(tt, zeros(length(tt)))
@@ -71,7 +71,7 @@ v = SV([.5, 0.0])
 t = 0.5
 T = 2.0
 n2 = 150
-tt = linspace(t, T, n2)
+tt = range(t, stop=T, length=n2)
 K = SamplePath(tt, zeros(SM, length(tt)))
 V = SamplePath(tt, zeros(SV, length(tt)))
 Mu = SamplePath(tt, zeros(SV, length(tt)))

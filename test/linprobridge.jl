@@ -1,5 +1,5 @@
 using Bridge, Distributions, StaticArrays
-using Base.Test
+using Test
 #import Bridge: b, σ, a, transitionprob
 n = 10000
 T = 2.0

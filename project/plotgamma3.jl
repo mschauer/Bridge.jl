@@ -273,7 +273,7 @@ savefig(joinpath("output", simname, "bands$(bstr)1.pdf"))
 #savefig(joinpath("output", simname, "bands$(bstr)1.svg"))
 
 z = sort(diff(X.yy))
-figure();plot(z, linspace(0, 1, length(z)))
+figure();plot(z, range(0, stop=1, length=length(z)))
 #plot(z, cdf.(Gamma( var(z)/mean(z), mean(z)^2/var(z)), z))
 plot(z, cdf.(Gamma(beta0*dt, 1/alpha), z), label="Gamma ML")
 plot(z, cdf.(Gamma(phat[2]*dt, 1/phat[1]), z), label="Gamma(beta,alpha)")
@@ -306,7 +306,7 @@ plot(xx, -llevyx.(GammaProcess((phat[2] * exp(-phat[end])), (phat[1] + phat[end-
 
 
 z = sort(diff(X.yy))
-figure();plot(z, linspace(0, 1, length(z)))
+figure();plot(z, range(0, stop=1, length=length(z)))
 plot(z, cdf.(Gamma(beta0*dt, 1/alpha), z), label="Gamma ML")
 plot(z, cdf.(Gamma(phat[2]*dt, 1/phat[1]), z), label="Gamma(beta,alpha)")
 if N > 0

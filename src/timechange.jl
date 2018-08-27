@@ -23,7 +23,7 @@ txofsu(s, u, T1, T2, v, P) = (tofs(s, T1, T2), xofu(s, u, T1, T2, v, P))
 
 Time changed `V` for generation of `U`.
 """
-function Vs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
+function Vs(s, T1, T2, v, P::LinPro, phim = exp(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( v .- P.μ) .-  P.μ
 end
 Vs(s, T1, T2, v, P::Ptilde) = V(tofs(s, T1, T2), T2, v, P)
@@ -34,12 +34,12 @@ Vs(s, T1, T2, v, P::Ptilde) = V(tofs(s, T1, T2), T2, v, P)
 
 Time changed time derivative of `V` for generation of `U`.
 """
-function dotVs(s, T1, T2, v, P::LinPro, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
+function dotVs(s, T1, T2, v, P::LinPro, phim = exp(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
     phim*( P.B*v .+ P.beta) 
 end
 dotVs(s, T1, T2, v, P::Ptilde) = dotV(tofs(s, T1, T2), T2, v, P)
 
-function Ju(s, T1, T2, P::LinPro, x, phim = expm(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
+function Ju(s, T1, T2, P::LinPro, x, phim = exp(-P.B*(T2-T1)*(1.0 - (s-T1)/(T2-T1))^2))
      sl = P.lambda*(T2-T1)/(T2-s)^2
     ( phim*sl*phim'-sl)\x
 end

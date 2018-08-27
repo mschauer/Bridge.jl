@@ -1,5 +1,5 @@
 using Bridge, StaticArrays, Distributions, PyPlot
-using Base.Test
+using Test
 import Base.Math.gamma # just to use the name
 #import Bridge: b, σ, a, transitionprob
 using Bridge: runmean, sqmahal, Gaussian
@@ -107,7 +107,7 @@ P̃ = Pt = Linear(T, xT, -c-0.1, -0.1, κ-0.1, -c/2)
 B = Bridge.B(0, Pt)
 β = Bridge.β(0, Pt)
 a = Bridge.a(0, Pt)
-σ = sqrtm(Bridge.a(0, Pt))
+σ = sqrt(Bridge.a(0, Pt))
 
 
 

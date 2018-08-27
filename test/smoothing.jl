@@ -1,4 +1,4 @@
-using Bridge, StaticArrays, Base.Test, Bridge.Models
+using Bridge, StaticArrays, Test, Bridge.Models
 
 iterations = 5000
 rho = 0.05 # 

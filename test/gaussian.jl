@@ -1,6 +1,6 @@
 using Bridge
 using Distributions
-using Base.Test
+using Test
 using Bridge: Gaussian, PSD
 using StaticArrays
 
