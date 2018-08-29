@@ -8,7 +8,7 @@ withbeta = transdim
 bstr = ["", "b"][1 + withbeta]
 params = readdlm(joinpath("output", simname, "params.txt"), Float64; skipstart=1)[:,2:end];
 
-withrho1 = rhosigma[1] > 0
+withrho1 = N > 0 && rhosigma[1] > 0
 
 
 function PyObject(t::Color)
@@ -54,9 +54,13 @@ if oneplot
 
     figure(figsize=(8,5))
     subplot(231)
-else
-    figure(figsize=(8,5))
-    subplot(121)
+else 
+    if withbeta
+        figure(figsize=(8,5))
+        subplot(121)
+    else
+        figure(figsize=(4,5))
+    end
 end        
 
 @show n = size(params, 1)
@@ -96,36 +100,38 @@ if withbeta
     else 
         subplot(122)
     end    
-end    
 
-plot(params[:,2], color=lcol , lw = 0.5, label=latexstring("\\beta"))
-bbar = runmean(params[:,2])
-plot(bbar, color=dcol , lw = 0.5, label=latexstring("\\bar\\beta"))
 
-#=
-annotate(latexstring("\\beta"),
-    xy=[div(2n, 3); params[1+div(2n, 3), 2]],
-    xytext=[0, -10],
-    textcoords="offset points",
-    fontsize=10.0,
-    ha="right",
-    va="bottom")
-annotate(latexstring("\\bar\\beta"),
-    xy=[n; bbar[end]],
-    xytext=[10,0],
-    textcoords="offset points",
-    fontsize=10.0,
-    ha="right",
-    va="bottom")
-=#
-if simid == 2
-    plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\beta_1+\beta_2")
-elseif simid ==3
-    plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\hat\beta")
-end
-legend()
-grid(linestyle=":", axis="y")
+    plot(params[:,2], color=lcol , lw = 0.5, label=latexstring("\\beta"))
+    bbar = runmean(params[:,2])
+    plot(bbar, color=dcol , lw = 0.5, label=latexstring("\\bar\\beta"))
+
+    #=
+    annotate(latexstring("\\beta"),
+        xy=[div(2n, 3); params[1+div(2n, 3), 2]],
+        xytext=[0, -10],
+        textcoords="offset points",
+        fontsize=10.0,
+        ha="right",
+        va="bottom")
+    annotate(latexstring("\\bar\\beta"),
+        xy=[n; bbar[end]],
+        xytext=[10,0],
+        textcoords="offset points",
+        fontsize=10.0,
+        ha="right",
+        va="bottom")
+    =#
+    if simid == 2
+        plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\beta_1+\beta_2")
+    elseif simid ==3
+        plot(1:n, fill(beta0, n), ":", color=:darkorange , lw = 1.0, label=L"\hat\beta")
+    end
+    legend()
+    grid(linestyle=":", axis="y")
     
+end
+
 if oneplot 
     subplot(132)
 else
@@ -197,70 +203,11 @@ grid(linestyle=":", axis="y")
 savefig(joinpath("output", simname, "traceplot2$(bstr).pdf"))
 
 
-######## theta and rho stabilized
-
-if false # stabilized
-    
-if oneplot 
-    subplot(132)
-else
-    savefig(joinpath("output", simname, "traceplot1$(bstr).pdf"))
-    figure()
-    subplot(121)
-end
-
-for i in 1:N
-    dcol = PyObject(RGB(trqs.(Bridge._viridis[cd*i])...))
-    col = PyObject(RGB((Bridge._viridis[cd*i])...))
-    lcol = PyObject(RGB(sqrt.(Bridge._viridis[cd*i])...))
-    
-    plot(params[:, 2 + i] + params[:, 1], color=lcol, lw = 0.2)
-    annotate(latexstring("\\theta_$i + \\alpha"),
-        xy=[div(2n, 3); params[div(2n, 3), 2 + i] + params[div(2n, 3), 1]],
-        xytext=[0, -10],
-        textcoords="offset points",
-        fontsize=10.0,
-        ha="right",
-        va="bottom")
- 
-end    
-
-#legend()
-grid(linestyle=":", axis="y")
-
-
-
-if oneplot
-    subplot(133)
-else
-    subplot(122)
-end
-
-for i in (2-withrho1):N
-    dcol = PyObject(RGB(trqs.(Bridge._viridis[cd*i])...))
-    col = PyObject(RGB((Bridge._viridis[cd*i])...))
-    lcol = PyObject(RGB(sqrt.(Bridge._viridis[cd*i])...))
-    
-    plot(params[:, 2+N + i] - log.(params[:,2]), color = lcol, lw = 0.2)
-
-    annotate(latexstring("\\rho_$i - \\log \\beta"),
-        xy=[div(2n, 3); params[div(2n, 3), 2+N+i]-log( params[div(2n, 3), 2])],
-        xytext=[0, -10],
-        textcoords="offset points",
-        fontsize=10.0,
-        ha="right",
-        va="bottom")
-end
-grid(linestyle=":", axis="y")
-
-savefig(joinpath("output", simname, "traceplot3$(bstr).pdf"))
-
-end #stabilized
 
 truth = readdlm(joinpath("output", simname, "truth.txt"), header=true)
 
 b = truth[1][6:6+N-1] # bin boundaries
-phat = mean(params, 1)
+
 
 
 function θ(x, params, b)
@@ -276,62 +223,25 @@ end
 theta0(x, alpha1, beta1, alpha2, beta2) = -log((beta1*exp(-alpha1*x) + beta2*exp(-alpha2*x))/(beta1+beta2)) - (beta1*alpha1 + beta2*alpha2)/(beta1 + beta2)*x
 phi0(x, alpha1, beta1, alpha2, beta2) = -log((beta1*exp(-alpha1*x) + beta2*exp(-alpha2*x))/(beta1+beta2)) 
 
-xx = (0.01:0.01:2)*b[end]
-
+if N > 0
+xx = (0.002:0.01:2)*b[end]
+else 
+    xx = (0.002:0.01:8)
+end
 
 thetahat(xx, p) = [θ(x, p, b) for x in xx]
 logxvhat(xx, p) = [θ(x, p, b) + p[1]*x - log(p[2]) for x in xx]
 logxv0(x, alpha1, beta1, alpha2, beta2) = -log((beta1*exp(-alpha1*x) + beta2*exp(-alpha2*x)))
-logxv0(x, alpha1, beta1) = -log(beta1*exp(-alpha1*x))
+logxv0(x, alpha1, beta1) = -log(beta1) + alpha1*x
 
 
 #theta2(x) = θ(x, phat + theta[1] - alpha, b) + alpha*x
 
-if !withbeta
-
-figure(figsize=(8,5))
-subplot(121)
-for i in 1:40
-    j = rand(1:n)
-    plot(xx, thetahat(xx, params[j, :])./xx + params[j,1], ":", color=:black, lw=0.2)
-end
-plot(xx, theta0.(xx, alpha1, beta1, alpha2, beta2)./xx + alpha, label="true")
-plot(xx, thetahat(xx, phat)./xx + phat[1], label="θ(x)/x + α")
-plot(b, theta0.(b,  alpha1, beta1, alpha2, beta2)./b + alpha, "o")
-
-#plot(xx, thetahat(xx, phat)./xx + phat[1] - alpha, label="θ(x)/x - C", ":", color=:orange)
-legend()
-
-subplot(122)
-for i in 1:40
-    j = rand(1:n)
-    plot(xx, thetahat(xx, params[j, :]) + params[j, 1]*xx, ":", color=:black, lw=0.2)
-end
-    
-plot(xx, phi0.(xx, alpha1, beta1, alpha2, beta2), label="true")
-plot(xx, thetahat(xx, phat) + phat[1]*xx - log(phat[2]), label = "αx + θ(x) - log β" )
-plot(b, phi0.(b,  alpha1, beta1, alpha2, beta2), "o")
-
-legend()
-
-end # if 
-
-if false
-
-    figure()
-
-        
-    plot(xx, phi0.(xx, alpha1, beta1, alpha2, beta2), label="true")
-    plot(xx, thetahat(xx, phat) + phat[1]*xx + log(phat[2]), label = "αx + θ(x) + log β" )
-    plot(b, phi0.(b,  alpha1, beta1, alpha2, beta2), "o")
-
-    legend()
-end
-
-println([quantile(params[:,1] + params[:,4], q) for q in [0.05, 0.5, 0.95]])
-n1 = div(n,4)
+#println([quantile(params[:,1] + params[:,4], q) for q in [0.05, 0.5, 0.95]])
+n1 = div(n, 4)
 #n1 = 20000
 n2 = n
+phat = median(params[n1:n2,:], 1)
 
 A = zeros(length(xx), length(n1:skip:n2))
 i_ = 1
@@ -356,31 +266,57 @@ elseif simid == 3
 
     plot(xx, logxv0.(xx,  0.5889420, 1.8127392 *365/7 ), label=L"-\log(x \hat v(x))", color=:darkorange)
   #  fill_between(xx,  logxv0.(xx, 0.5889420+sa,(1.8127392 -sb)*365/7), logxv0.(xx, 0.5889420-sa ,(1.8127392 + sb)*365/7), edgecolor=:orange, facecolor=:None, label="freq. band")
-    
+    #plot(xx, logxv0.(xx, (phat[1] + phat[end-N]), (phat[2] * exp(-phat[end]))))
 end  
 legend()
 savefig(joinpath("output", simname, "bands$(bstr)1.pdf"))
 #savefig(joinpath("output", simname, "bands$(bstr)1.svg"))
 
-A2 = zeros(length(xx), n2 - n1 + 1)
-for i in n1:skip:n2
-    A2[:, i - n1 + 1] = logxvhat(xx, params[i, :])./xx 
+z = sort(diff(X.yy))
+figure();plot(z, linspace(0, 1, length(z)))
+#plot(z, cdf.(Gamma( var(z)/mean(z), mean(z)^2/var(z)), z))
+plot(z, cdf.(Gamma(beta0*dt, 1/alpha), z), label="Gamma ML")
+plot(z, cdf.(Gamma(phat[2]*dt, 1/phat[1]), z), label="Gamma(beta,alpha)")
+#plot(z, cdf.(Gamma(params[end,2]*dt, 1/params[end,1]), z), label="Gamma(beta,alpha)")
+N > 1 && try
+    plot(z, cdf.(Gamma((phat[2] * exp(-phat[end-1]))*dt, 1/(phat[1] + phat[end-N-1])), z), label="Gamma mid")
 end
+plot(z, cdf.(Gamma((phat[2] * exp(-phat[end]))*dt, 1/(phat[1] + phat[end-N])), z), label="Gamma end")
+simid==2 && axis([0.0, 6.0, 0.4, 1.0])
+legend()
+#=
+figure();plot(z, linspace(0,1,length(z))-cdf.(Gamma(  var(z)/mean(z), mean(z)^2/var(z)), z))
+=#
+
+#=
+betahat = var(z)/mean(z)/dt
+alphahat = 1/(mean(z)^2/var(z))
+
+smooth(z, hw, D = Normal()) = conv(z, normalize(pdf.(D, linspace(-std(D)*3,std(D)*3, 2*hw)), 1))[hw:end-hw]
+sz = smooth(z, 20)[1:end-20]
+figure();plot(z[2:end-20], 1/length(z)./diff(sz), linewidth=0.2)
+G = Gamma(  var(z)/mean(z), mean(z)^2/var(z))
+plot(z, pdf.(G, z))
+=#
+#=
+Plot Levy density of end piece
+plot(xx, -llevyx.(GammaProcess((phat[2] * exp(-phat[end])), (phat[1] + phat[end-N])), xx))
+=#
 
 
-upper = mapslices(v-> quantile(v,0.975), A2, 2)
-med = median(A2, 2)
-lower = mapslices(v-> quantile(v,0.025), A2, 2)
-
-if false
-figure(figsize=(8,5))
-#subplot(122)
-fill_between(xx, upper[:], lower[:], color=lcol2, hatch="X", label="95% cred. band")
-#plot(xx, med, label = "marg. post. median", color=:blue)
-plot(xx, logxv0.(xx, alpha1, beta1, alpha2, beta2)./xx, label=L"(-\log (x v_0(x))/x", color=:darkorange)
+z = sort(diff(X.yy))
+figure();plot(z, linspace(0, 1, length(z)))
+plot(z, cdf.(Gamma(beta0*dt, 1/alpha), z), label="Gamma ML")
+plot(z, cdf.(Gamma(phat[2]*dt, 1/phat[1]), z), label="Gamma(beta,alpha)")
+if N > 0
+    i = searchsortedfirst(z, b[1]/2)
+else 
+    i = length(z)÷2
+end
+axis([0.0, z[i], 0, i/length(z)])
 legend()
 
-savefig(joinpath("output", simname, "bands$(bstr)2.pdf"))
-
-end
-#clf();[display(plot(params[:, i], label="$i", linewidth=0.4)) for i in 1:2N+1];legend();
+ps = mean(diff(params,1).!=0,1) 
+ps *= 5
+ps[2] /= 4
+ps

@@ -12,36 +12,35 @@ PYPLOT && using PyPlot
 import Bridge: increment, expint, lp
 import Distributions.pdf
 
-N = 5 # number of thetas (so N+1 bins)
+N = 3 # number of thetas (so N+1 bins)
 #b = cumsum(0.3:0.4:2.0)
 if !isdefined(:simid)
     error("provide simid = {1,2,3}")
 end
 
-sim = [:gamma, :sumgamma, :fire][simid]
+#sim = [:gamma, :sumgamma, :fire][simid]
+sim = [:sumgamma, :sumgamma, :fire][simid]
+
 
 if sim == :fire
-    #b = [0.4, 1.2, 3.6]
-    b = [0.75, 2.5, 3.6]
-    b = [0.5, 1.5, 3]
-    b = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
-    b = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0 ]
-    
- #   b = [1.0, 2.0, 4.0]
+
+    b = Float64[2.0]
     N = length(b)
 end
 
 T = 2000.0
 n = 10000 # number of increments
 m = 20 # number of augmentation points per bridge exluding the left endpoint
+#m = 1
 if sim == :fire
-    m = 400
+    #m = 2000
+    m = 1000
 end
 
 tt = linspace(0.0, T, n + 1)
 
 
-iterations = [100_000, 200_000][1]
+iterations = [100_000, 200_000][2]
 
 
 # two gamma processes
@@ -52,8 +51,9 @@ alpha0b = alpha0a/10
 
 
 
-transdim = true
-fixalpha = transdim
+transdim = [false, true, true][simid]
+#fixalpha = transdim
+fixalpha = false
 
 if sim == :gamma
     simname = "gammap"
@@ -61,6 +61,9 @@ if sim == :gamma
     beta0 = beta0a
 elseif sim == :sumgamma
     simname = "sumgamma"
+    if transdim
+        simname = "sumgammatrans"
+    end
     beta0 = beta0a + beta0b
     alpha0 = (beta0a*alpha0a + beta0b*alpha0b)/(beta0a + beta0b)
     
@@ -139,8 +142,8 @@ pdf(x, beta, alpha) = beta/x*exp(-alpha*x)
 #lp(s, x, t, y, P::GammaProcess) = logpdf(increment(t-s, P), y-x)
 
 function dlp(dt, dx, Po::GammaProcess, P::GammaProcess) 
-    assert(P.λ ==  Po.λ)
-    alpha, = dt*P.γ
+    assert(P.λ == Po.λ)
+    alpha = dt*P.γ
     alphao = dt*Po.γ
     #log(y-x)*(alphao-1) - (y-x)*P.λ - lgamma(alphao) + log(P.λ)*alphao - (log(y-x)*(alpha-1) - (y-x)*P.λ - lgamma(alpha) + log(P.λ)*alpha)
     log(dx)*(alphao-alpha)  + lgamma(alpha) - lgamma(alphao) + log(P.λ)*(alphao - alpha)    
@@ -180,8 +183,12 @@ alphahat = mean(dxx)/var(dxx) # use estimate for alpha
 
 # grid points
 # b = quantile(increment(dt, GammaProcess(beta0,alpha0)),(1:(N))/(N+1)) # theoretical
-if simid != 3 && N >= 1
-    b = cumsum(0.5:0.4:2.0)[1:N]
+if sim != :fire && N >= 1
+    #b = cumsum(0.5:0.25:2.5)[1:N]
+    b = cumsum(0:0.5:5)[2:N+1]
+    b = [1.,2.,4.,8.][1:N]
+    #assert(N == 5)
+    #b = [0.3, 1.0, 2.1, 3.6, 5.5] #fixme
     #b = quantile(diff(X.yy), (N:2N-1)/(2N)) # first bin resembles 50% of emperical increment distributions.
 elseif N == 0
     b = Float64[]
@@ -203,12 +210,24 @@ vpi = 2.0
 epi = 2.0
 
 Pi = Gamma(epi^2/vpi, vpi/epi) # alpha
-Pi2 = Normal(0., 1.0) # theta
-Pi3 = Normal(0., 5.0) # rho
+Pi2 = Normal(0., 10.0) # theta
+Pi3 = Normal(0., 50.0) # rho
 Pi4 = Uniform(0.1, 1000.0) # beta
-
 assert(mean(Pi) ≈ epi)
 assert(var(Pi) ≈ vpi)
+
+if sim == :fire
+    epi = 0.75
+    vpi = 0.6^2
+    Pi = Gamma(epi^2/vpi, vpi/epi) # alpha
+    Pi2 = Normal(0., 5.0) # theta
+    Pi3 = Normal(0., 20.0) # rho
+    epi = 90.0
+    vpi = 50.0^2
+    Pi4 = Gamma(epi^2/vpi, vpi/epi) # beta
+    #Pi4 = Uniform(0.1, 1000.0) # beta
+end
+
 
 
 
@@ -252,7 +271,7 @@ beta = beta0
 
 alpha = alpha
 if transdim
-    beta = 1.2*beta
+    beta = 0.9*beta
 end
 
 #c = beta*(T/(n*m*alpha)) *(1-exp(-alpha*beps)) # compensator for small jumps
@@ -261,20 +280,27 @@ epsij = 1e-50
 theta = zeros(N)
 rho = zeros(N)
 
-# prior chain step std
-alphasigma = 0.15
-thsigma = 0.02*ones(N)
-#thsigma[1] = 0.02 #Fixme
+#alpha, beta = [2.83095, 162.025]
+#theta = [ 1.89115, -1.9195]
+#rho =  [-10.5676, 2.03732]
 
-rhosigma = 0.02*ones(N) # variance of rho1 = 0
-if N > 0 && sim != :fire
-    rhosigma[1] = 0.0
-end
+# prior chain step std
+alphasigma = 0.025
+thsigma = 0.025*ones(N)
+#thsigma[1] = 0.02 #Fixme
+rhosigma = 0.15*ones(N) # variance of rho1 = 0
+
+
+#if N > 0 && sim != :fire
+#    rhosigma[1] = 0.0
+#end
 betasigma = 0.01
 
-if simid == 3
-    alphasigma = 0.075
-    betasigma = 0.5
+if sim == :fire
+    alphasigma = 0.05
+    betasigma = 1.0
+    thsigma = 0.05*ones(N)
+    rhosigma = 0.1*ones(N) 
 end    
 if isdefined(:nomcmc) && nomcmc
     error("don't run: nomcmc == true")
@@ -313,7 +339,7 @@ end
 open(joinpath("output", simname, "params.txt"), "w") do f
     thn = join(["theta$i" for i in 1:length(theta)], " ")
     rhon = join(["rho$i" for i in 1:length(rho)], " ")  
-    println(f, "n alpha $thn $rhon") 
+    println(f, "n alpha beta $thn $rhon") 
 end
 
 
@@ -322,10 +348,10 @@ P0 = GammaProcess(beta, alpha)
 P = LocalGammaProcess(P0, theta, rho, b)
 
 mc = mcstart([alpha; beta; theta; rho])
-thacc = 0
+thacc = thtotal = 0
 Bacc = 0
-alphaacc = 0
-betaacc = 0
+alphaacc = alphatotal = 0
+betaacc = betatotal = 0
 
 for iter in 1:iterations
     # logging
@@ -359,34 +385,64 @@ for iter in 1:iterations
 
     # sample parameters
     # update theta and rho
-    if iter % 5 != 2 # remember to update formula for acceptance rates
+    if !transdim || iter % 5 < 2 # remember to update formula for acceptance rates
+        alphaº = alpha + alphasigma*randn()
+
         P0 = GammaProcess(beta, alpha)
-        thetaº = theta + thsigma.*randn(length(theta))
-        rhoº = rho + rhosigma.*randn(length(rho))
+        P0º = GammaProcess(beta, alphaº)
         
-        if N == 0 || thetaº[end] + alpha < eps() 
+        if N > 0 
+            thetaº = theta + thsigma.*randn(length(theta)) - (alphaº - alpha)
+            rhoº = rho + rhosigma.*randn(length(rho))
+        else 
+            rhoº = rho
+            thetaº = theta
+        end
+        thtotal += 1
+        
+        if N == 0 && alphaº < eps()
+        elseif N > 0 && (thetaº[end] + alphaº < eps() || alphaº < eps())
             # reject
-        else
+        elseif N == 0
             P = LocalGammaProcess(P0, theta, rho, b)
-            Pº = LocalGammaProcess(P0, thetaº, rhoº, b)
+            Pº = LocalGammaProcess(P0º, thetaº, rhoº, b)
 
             ll = 0.0
             for i in 1:n
                 ll += llikelihood(B[i], Pº, P, c)
             end
-            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([thetaº; rhoº], 3))
-            if rand() < exp(ll + lpi(alpha, thetaº, rhoº, beta) - lpi(alpha, theta, rho, beta))
+            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([alphaº; thetaº; rhoº], 3))
+            if rand() < exp(ll + lpi(alphaº, thetaº, rhoº, beta) - lpi(alpha, theta, rho, beta))
                 print("✓")
                 theta = thetaº
                 rho = rhoº
+                alpha = alphaº
+                thacc += 1
+            end
+            println()
+        else
+            P = LocalGammaProcess(P0, theta, rho, b)
+            Pº = LocalGammaProcess(P0º, thetaº, rhoº, b)
+
+            ll = 0.0
+            for i in 1:n
+                ll += llikelihood(B[i], Pº, P, c)
+            end
+            print("$iter \t\t\t\t paramsº: ", round(ll, 5), " ", round.([alphaº; thetaº; rhoº], 3))
+            if rand() < exp(ll + lpi(alphaº, thetaº, rhoº, beta) - lpi(alpha, theta, rho, beta))
+                print("✓")
+                theta = thetaº
+                rho = rhoº
+                alpha = alphaº
                 thacc += 1
             end
             println()
         end
     end
 
-    if transdim && iter % 5 == 2
+    if transdim && iter % 5 >= 2
         betaº = beta + betasigma*randn()
+        betatotal += 1
         if betaº <= 0
             #reject
         else
@@ -441,7 +497,7 @@ for iter in 1:iterations
             println()
         end
     end
-    
+    #=
     if  !fixalpha && iter % 5 == 2 # remember to update formula for acceptane rates
         alphaº = alpha + alphasigma*randn()
         
@@ -464,16 +520,18 @@ for iter in 1:iterations
                 alphaacc += 1
                 print("✓")
             end
+            alphatotal += 1
             println() 
         end  
     end
+    =#
 
 end    
 
 
-println("alpha acc ", alphaacc/(iterations/5))
-println("beta acc ", betaacc/(iterations/5))
-println("theta acc ", thacc/(4iterations/5))
+println("alpha acc ", alphaacc/max(1,alphatotal))
+println("beta acc ", betaacc/betatotal)
+println("theta acc ", thacc/thetatotal)
 println("posterior band")
 display(hcat(mcband(mc)...))
 println("posterior band for mean")
@@ -497,3 +555,14 @@ Ph = GammaProcess( mean(params,1)[2:-1:1]... )
 dxxh = rand.(increment.(diff(tt), Ph))
 Xh = SamplePath(tt, Bridge.cumsum0(dxxh))
 
+#assert(c==0)
+
+figure();
+z = sort(vcat((diff(cumsum(shuffle(diff(X2.yy)))[1:m:end]) for i in 1:100)...))
+
+plot(z[1:100:end], linspace(0,1,length(z[1:100:end])), label="augmented")
+z = sort(diff(X.yy))
+plot(z, linspace(0, 1, length(z)), label="obs")
+#plot(z, cdf.(Gamma( var(z)/mean(z), mean(z)^2/var(z)), z))
+#plot(z, cdf.(Gamma(beta0*dt, 1/alpha0), z), label="Gamma ML")
+legend()
