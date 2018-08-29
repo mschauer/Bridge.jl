@@ -7,6 +7,7 @@ const d = 2
 
 sim = [:pendulum, :pendulum][simid]
 simname = String(sim)
+println(ENV["BRIDGE_OUTDIR"])
 
 mkpath(joinpath("output", simname))
 try # save cp of this file as documentation

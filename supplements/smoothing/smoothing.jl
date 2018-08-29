@@ -233,7 +233,7 @@ writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(
 
 
 # Plot result
-include("../extra/makie.jl")
+include(joinpath(Pkg.dir("Bridge"),"extra/makie.jl"))
 
 Xmeanm, Xstdm = Bridge.mcmarginalstats(mcstates)
 
