@@ -4,7 +4,7 @@
 Bessel(3) bridge from below or above to the point `v` at time `t`, 
 not crossing `v`, with dispersion σ.
 """
-type Bessel3Bridge <: ContinuousTimeProcess{Float64} 
+mutable struct Bessel3Bridge <: ContinuousTimeProcess{Float64} 
     t::Float64
     v::Float64
     σ::Float64
@@ -44,7 +44,7 @@ sample(u, tt, P::Bessel3Bridge) = bessel3(u, tt, P.t, P.v, P.σ)
 
 Bessel type proposal
 """    
-type BesselProp <: ContinuousTimeProcess{Float64}
+mutable struct BesselProp <: ContinuousTimeProcess{Float64}
     Target
     t; v
     BesselProp(Target::ContinuousTimeProcess{Float64}, t, v) = new(Target, t, v)
@@ -108,4 +108,4 @@ function aeuler(u, r, P::ContinuousTimeProcess{Float64}, tau = 0.5, kmax = 10)
     SamplePath(tt,yy)
 end
 
-llikelihood{T}(Xcirc::SamplePath{T}, Po::BesselProp) = llikelihoodleft(Xcirc, Po)
+llikelihood(Xcirc::SamplePath{T}, Po::BesselProp) where {T} = llikelihoodleft(Xcirc, Po)

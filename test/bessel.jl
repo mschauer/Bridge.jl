@@ -22,7 +22,7 @@ ahat(X) = var(diff(X.yy)./sqrt.(diff(X.tt)))
 
 Hitting time samples
 """
-function hit{T}(u, v, dt, tmax, P::ContinuousTimeProcess{T})
+function hit(u, v, dt, tmax, P::ContinuousTimeProcess{T}) where T
 
     t = 0.
     rdt = sqrt(dt)
@@ -37,7 +37,7 @@ function hit{T}(u, v, dt, tmax, P::ContinuousTimeProcess{T})
     t
 end
 
-type Target  <: ContinuousTimeProcess{Float64}
+mutable struct Target  <: ContinuousTimeProcess{Float64}
     mu
 end
 

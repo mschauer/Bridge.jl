@@ -196,6 +196,7 @@ xi = 1./[5., 5.] #prior prec
 mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
     cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+catch
 end
 
 open(joinpath("output",simname,"truth.txt"), "w") do f

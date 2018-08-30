@@ -14,7 +14,7 @@ const SV3 = SVector{3, Float64}
 
 
 
-type VLorenz <: ContinuousTimeProcess{Vector{Float64}}
+mutable struct VLorenz <: ContinuousTimeProcess{Vector{Float64}}
 end
 
 Bridge.b(t, u, ::VLorenz) = [10.0(u[2]-u[1]), u[1]*(28.0-u[3]) - u[2], u[1]*u[2] - (8/3)*u[3]]
@@ -43,7 +43,7 @@ solve(EulerMaruyama!(), zeros(3), VW, Wiener())
 
 ######
 
-type Lorenz <: ContinuousTimeProcess{SV3}
+mutable struct Lorenz <: ContinuousTimeProcess{SV3}
 end
 
 Bridge.b(s, u, ::Lorenz) = @SVector [10.0(u[2]-u[1]), u[1]*(28.0-u[3]) - u[2], u[1]*u[2] - (8/3)*u[3]           ]

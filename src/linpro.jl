@@ -142,7 +142,7 @@ struct LinProBridge{T,S<:LinPro} <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
     P::S 
-    LinProBridge(t, v::T, P::S) where {T,S<:LinPro} = !iszero(P.μ) ? throw(ArgumentError("μ ≠ 0")):new{T,S}(t,v,P)
+    LinProBridge(t, v::T, P::S) where {T,S<:LinPro} = !iszero(P.μ) ? throw(ArgumentError("μ ≠ 0")) : new{T,S}(t,v,P)
 end
 
 b(s, x, P::LinProBridge) = P.P.B * (x - P.P.μ) + P.P.a * H(s, P.t, P.P, V(s, P.t, P.v, P.P) - x)

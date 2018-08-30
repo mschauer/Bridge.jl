@@ -110,8 +110,8 @@ function uthetamethod!(Y, u, W::SamplePath, Po, theta=0.5)
         delta1 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )*(ss[i+1]-s) 
         local delta2
        
-        const eps2 = 5e-6
-        const MM = 8
+        eps2 = 5e-6
+        MM = 8
         for mm in 1:MM
             
             delta2 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x2, Po.Target) +   1/(T2-s)*(u2 - 2.0*a(t, x2, Po)*Ju(s, T1, T2, Pt, u2) )*(ss[i+1]-s) 
