@@ -42,5 +42,5 @@ T = 5.0
 tt = 0.0:T/n:T
 m = 1000
 sigma = (t, x = 0.0) -> exp(-cos(t))
-L = sample(tt, P) .- sample(tt, P)
-X = solve(EulerMaruyama(), 0.0, L, ((t,x)-> -0.*x, sigma))
+L = SamplePath(tt, sample(tt, P).yy .- sample(tt, P).yy)
+X = solve(EulerMaruyama(), 0.0, L, ((t,x)-> -0*x, sigma))

@@ -1,4 +1,5 @@
-using Bridge, StaticArrays, Test, Distributions
+using Bridge, StaticArrays, Distributions
+using Test, Random, LinearAlgebra
 Random.seed!(5)
 n, m = 200, 1000
 T = 2.

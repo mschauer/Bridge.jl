@@ -33,11 +33,21 @@ export solve, solve!, solvebackward!, ODESolver, BS3
 # guip
 export LeftRule
 
-using Distributions
-using StaticArrays
-using Compat
+using Random
+using LinearAlgebra
+using Statistics
 
-import Base.rand
+include("chol.jl")
+
+using StaticArrays
+using Distributions
+
+
+
+
+import Base: rand
+import Random: rand!
+
 import Distributions: sample, sample!
 
 function Btilde

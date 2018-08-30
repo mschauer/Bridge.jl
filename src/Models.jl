@@ -4,7 +4,7 @@ export Lorenz, ℝ, foci, Tilde, Pendulum
 
 const ℝ{N} = SVector{N, Float64}
 
-using Bridge.outer
+using Bridge: outer
 
 struct FitzHughNagumo  <: ContinuousTimeProcess{ℝ{2}}
     ϵ::Float64
@@ -52,7 +52,7 @@ Bridge.bderiv(t, x, P::Lorenz) = @SMatrix Float64[
     x[2]            x[1]    -P.θ[3]
 ]
     
-
+Bridge.F(t, x, P::Lorenz) = Bridge.b(t, x, P)
 
 Bridge.σ(t, x, P::Lorenz) = SDiagonal(P.σ)
 Bridge.constdiff(::Lorenz) = true

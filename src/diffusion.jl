@@ -86,15 +86,15 @@ end
 Integrate a stochastic process `Y` with respect to a stochastic differential `dX`.
 """
 function ito(X::SamplePath, W::SamplePath{T}) where T
-        assert(X.tt[1] == W.tt[1])
+        @assert(X.tt[1] == W.tt[1])
         n = length(X)
         yy = similar(W.yy, n)
         yy[1] = zero(T)
         for i in 2:n
-                assert(X.tt[i] == W.tt[i])
+                @assert(X.tt[i] == W.tt[i])
                 yy[i] = yy[i-1] + X.yy[i-1]*(W.yy[i]-W.yy[i-1])
         end
-        SamplePath{T}(X.tt,yy) 
+        SamplePath{T}(X.tt, yy) 
 end
 
 

@@ -1,5 +1,4 @@
-export supnorm, @_isdefined
-
+export supnorm
 
 """
     refine(tt, n) 
@@ -41,21 +40,10 @@ function cumsum0(dx::Vector)
         x
 end
 
-supnorm(x) = sum(abs.(x))
-
-macro _isdefined(var)
-    quote
-        try local _ = $(esc(var))
-            true
-        catch err
-            isa(err, UndefVarError) ? false : rethrow(err)
-        end
-    end
-end
-
-if isempty(methods(chol, (UniformScaling,)))
-    include("chol.jl")
-end
+"""
+    Supremum norm
+"""
+supnorm(x) = maximum(abs.(x))
 
 """
     outer(x[, y])

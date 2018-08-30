@@ -59,9 +59,9 @@ solve!(BS3(), Bridge.b, Mu2, u, P)
 @test norm(Bridge.K(t, T, P) - solve(Bridge.R3(), Bridge._dK, tt, zero(M), P)) < 10/n2^3
 
 # Normal(mu, lambda) is the stationary distribution. check by starting in stationary distribution and evolve 20 time units
-X = Bridge.mat(S[solve(EulerMaruyama(), mu + chol(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
+X = Bridge.mat(S[solve(EulerMaruyama(), mu + cholupper(P.lambda)*randn(S), sample(tt, Wiener{S}()),P).yy[end] - mu for i in 1:m])
 
-@test supnorm(cov(X,2) - Matrix(P.lambda)) < .1
+@test supnorm(cov(X, dims=2) - Matrix(P.lambda)) < .1
 
 
 n = 1000

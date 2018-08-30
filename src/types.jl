@@ -1,4 +1,4 @@
-import Base: getindex, setindex!, length, copy, vcat, start, next, done, endof, keys, values
+import Base: getindex, setindex!, length, copy, vcat, keys, values, iterate
 import Base: zero
 
 import Base: valtype
@@ -56,7 +56,7 @@ serves as container for discretely observed `ContinuousTimeProcess`es and for th
 by direct and approximate samplers. `tt` is the vector of the grid points of the observation/simulation 
 and `yy` is the corresponding vector of states.
 
-It supports `getindex, setindex!, length, copy, vcat, start, next, done, endof`.
+It supports `getindex, setindex!, length, copy, vcat`.
 """
 struct SamplePath{T} <: AbstractPath{T}
     tt::Vector{Float64}
@@ -76,10 +76,11 @@ getindex(V::SamplePath, i::Integer) = V.tt[i] => V.yy[i]
 vcat(Ys::SamplePath{T}...) where {T} = SamplePath{T}(vcat(map(Y -> Y.tt, Ys)...), vcat(map(Y -> Y.yy, Ys)...))
 
 # iterator
-start(Y::SamplePath) = 1
-next(Y::SamplePath, state) = Y[state], state + 1
-done(V::SamplePath, state) = state > endof(V)
-endof(V::SamplePath) = endof(V.tt)
+# start(Y::SamplePath) = 1
+# next(Y::SamplePath, state) = Y[state], state + 1
+# done(V::SamplePath, state) = state > endof(V)
+
+# lastindex(V::SamplePath) = lastindex(V.tt)
 
 function setindex!(V::SamplePath, y, I)
     V.tt[I], V.yy[I] = y
@@ -152,9 +153,9 @@ Iterates over `(i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i])`.
 mutable struct Increments{S<:AbstractPath}
     X::S
 end
-start(dX::Increments) = 1
-next(dX::Increments, i) = (i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[.., i+1]-dX.X.yy[.., i]), i + 1
-done(dX::Increments, i) = i + 1 > length(dX.X.tt)
+
+iterate(dX::Increments, i = 1) = i + 1 > length(dX.X.tt) ? nothing : ((i, dX.X.tt[i], dX.X.tt[i+1]-dX.X.tt[i], dX.X.yy[.., i+1]-dX.X.yy[.., i]), i + 1)
+
 increments(X::AbstractPath) = Increments(X)
 
 # Interoperatibility SDEs

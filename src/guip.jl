@@ -43,7 +43,7 @@ b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P)
 bi(i, x, P::BridgeProp) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*r(P.tt[i], x, P) 
 
 function bderiv(t, x, P::BridgeProp) 
-    assert(constdiff(P))
+    @assert(constdiff(P))
     bderiv(t, x, P.Target) - a(t, x, P.Target)*P.Γ/(last(P.tt) - t)
 end    
 
@@ -195,7 +195,7 @@ atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
 aitilde(t, x, P::GuidedBridge) = ai(t, x, P.Pt)
 bitilde(i, x, P::GuidedBridge) = bi(i, x, P.Pt)
 
-@inline _traceB(t, x, P) = trace(Bridge.B(t, P))
+@inline _traceB(t, x, P) = tr(Bridge.B(t, P))
 traceB(tt, P) = solve(Bridge.R3(), _traceB, tt, 0.0, P)
 
 lptilde(P::GuidedBridge, u) = logpdfnormal(P.V[1] - u, P.H♢[1]) - traceB(P.tt, P.Pt)
@@ -207,6 +207,8 @@ hasaitilde(P::GuidedBridge) = hasai(P.Pt)
 # fallback for testing
 lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(P.tt, Bridge.outer(zero(u)), P.Pt))
 
+# H♢_ = H♢ -  H♢*L'*inv(Σ + L*H♢*L')*L*H♢
+# V_ = H♢_ * (L'*inv(Σ)*v  + H♢*V)
 
 """
     gpupdate(H♢, V, L, Σ, v)
@@ -214,8 +216,6 @@ lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(
 
 Return updated `H♢, V` when observation `v` at time zero with error `Σ` is observed.
 """
-# H♢_ = H♢ -  H♢*L'*inv(Σ + L*H♢*L')*L*H♢
-# V_ = H♢_ * (L'*inv(Σ)*v  + H♢*V)
 function gpupdate(H♢, V, L, Σ, v)
     if all(diag(H♢) .== Inf)
         H♢_ = SMatrix(inv(L' * inv(Σ) * L))
@@ -300,7 +300,7 @@ function lptilde(P::PBridgeProp)
 	n = N(P.t0, P)*(P.tm-P.t0)
 	U = Any[	(P.t1-P.t0)/(P.t1-P.tm)/(P.tm-P.t0)*n 		-n*P.L/(P.t1-P.tm)
 			-P.L'*n/(P.t1-P.tm) 				(P.Γ + P.L'*n*P.L*(P.tm-P.t0)/(P.t1-P.tm))/(P.t1-P.t0)]
-	ldm = sumlogdiag(chol(U[1,1])') +sumlogdiag(chol(U[2,2] - (U[2,1]*inv(U[1,1])*U[1,2]))')
+	ldm = sumlogdiag(cholupper(U[1,1])') +sumlogdiag(cholupper(U[2,2] - (U[2,1]*inv(U[1,1])*U[1,2]))')
 		 	 				
 	mu = [P.L*h1(P.t0, P.v0, P); h2(P.t0, P.v0, P)]
 	-length(mu)/2*log(2pi) + ldm - 0.5*dot(mu,U*mu)
@@ -346,7 +346,7 @@ a(t, x, P::FilterProp) = a(t, x, P.Target)
 constdiff(P::FilterProp) = constdiff(P.Target)
 
 function bderiv(t, x, P::FilterProp) 
-    assert(constdiff(P))
+    @assert(constdiff(P))
     bderiv(t, x, P.Target) - a(t, x, P.Target)*H(t, P)
 end    
 
@@ -414,7 +414,7 @@ function llikelihoodleft(Xcirc::SamplePath{T}, Po) where T
         r = Bridge.r(s, x, Po)
         som += (dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
-            som -= 0.5*trace((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+            som -= 0.5*tr((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
         end
     end
     som
@@ -442,10 +442,10 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge; skip = 0)
         if !constdiff(Po)
             H = Hi(i, x, Po)
             if hasaitilde(Po)
-                som -= 0.5*trace( (a(s, x, Po.Target) - aitilde(i, x, Po))*(H) ) * (tt[i+1]-tt[i])
+                som -= 0.5*tr( (a(s, x, Po.Target) - aitilde(i, x, Po))*(H) ) * (tt[i+1]-tt[i])
                 som += 0.5*( r'*(a(s, x, Po.Target) - aitilde(i, x, Po))*r ) * (tt[i+1]-tt[i])
             else
-                som -= 0.5*trace( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
+                som -= 0.5*tr( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
                 som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
             end
         end
@@ -467,7 +467,7 @@ function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeP
     r = Bridge.r(s, x, Po)
     som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
     if !constdiff(Po)
-        som -= 0.25*trace( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i])
+        som -= 0.25*tr( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i])
     end
 
     for i in 2:length(tt)-1 #skip last value, summing over n-1 elements
@@ -476,7 +476,7 @@ function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeP
         r = Bridge.r(s, x, Po)
         som += 0.5*( dot(b(s,x, Po.Target) - btilde(s,x, Po), r) ) * (tt[i+1]-tt[i-1])
         if !constdiff(Po)
-            som -= 0.25*trace( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i-1])
+            som -= 0.25*tr( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i-1])
         end
     end
     som

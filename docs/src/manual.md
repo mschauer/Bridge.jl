@@ -54,12 +54,13 @@ Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 Generate the driving Brownian motion `W` of the stochastic differential equation (1) with `sample`. Thefirst argument is the time grid, the second arguments specifies a `Float64`-valued Brownian motion/Wiener process.
 
 ```jldoctest OrnsteinUhlenbeck
+using Random
 Random.seed!(1)
 W = sample(0:0.1:1, Wiener())
 
 # output
 
-Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])
+SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.0, 0.0940107, 0.214935, 0.0259463, 0.0226432, -0.24268, -0.144298, 0.581472, -0.135443, 0.0321464, 0.168574])
 ```
 
 The output is a `SamplePath` object assigned to `W`. It contains time grid `W.tt` and the sampled values `W.yy`.
@@ -73,7 +74,7 @@ X = Bridge.solve(Euler(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0));
 
 # output
 
-Bridge.SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])
+SamplePath{Float64}([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], [0.1, -0.00598928, 0.126914, -0.315902, 0.312599, -0.577923, 0.676305, 0.0494658, -0.766381, 0.933971, -0.797544])
 ```
 
 This returns a `SamplePath` of the solution.

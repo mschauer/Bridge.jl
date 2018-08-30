@@ -31,7 +31,7 @@ function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = zero
             yy[sz*(i-1) + j] = yy[sz*(i-2) + j] + rootdt*randn(T)
         end
     end
-    SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
+    W
 end
 
 function sample!(W::VSamplePath{T}, P::Wiener{T}) where {T}
@@ -54,7 +54,7 @@ function sample!(W::SamplePath{T}, P::Wiener{T}, y1 = W.yy[1]) where T
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
         yy[i] = yy[i-1] + rootdt*randn(T)
     end
-    SamplePath{T}(W.tt, yy)
+    W
 end
 
 function sample(tt, P::WienerBridge{T}) where T
@@ -63,7 +63,7 @@ function sample(tt, P::WienerBridge{T}) where T
     sample!(SamplePath{T}(tt, yy), P)
 end
 
-function sample(tt, P::WienerBridge{T},y1) where T
+function sample(tt, P::WienerBridge{T}, y1) where T
     tt = collect(tt)
     yy = zeros(T,length(tt))
     sample!(SamplePath{T}(tt, yy), P, y1)
@@ -102,8 +102,7 @@ function sample!(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 
         yy[:,end] = v
     end
        
-    
-    SamplePath{SVector{d,T}}(W.tt, unmat(SVector{d,T}, yy))
+    W
 end
 
 function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
@@ -136,7 +135,7 @@ function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
     end
        
     
-    SamplePath{T}(W.tt, yy)
+    W
 end
 
 ## drift and dispersion coefficients

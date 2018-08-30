@@ -1,4 +1,5 @@
-using Bridge, StaticArrays, Test, Bridge.Models
+using Bridge, StaticArrays, Bridge.Models
+using Test, LinearAlgebra
 
 iterations = 5000
 rho = 0.05 # 
@@ -32,18 +33,18 @@ _pairs(collection) = Base.Generator(=>, keys(collection), values(collection))
 
 L = I
 Σ = SDiagonal(1., 1., 1.)
-lΣ = chol(Σ)'
+lΣ = cholupper(Σ)'
 RV = ℝ{3}
 
 V = SamplePath(collect(_pairs(X))[1:M:end])
 #Vo = copy(V)
 map!(y -> L*y + lΣ*randn(RV), V.yy, V.yy)
 
-XX = Vector{typeof(X)}(m)
-XXmean = Vector{typeof(X)}(m)
-XXᵒ = Vector{typeof(X)}(m)
-WW = Vector{typeof(W)}(m)
-WWᵒ = Vector{typeof(W)}(m)
+XX = Vector{typeof(X)}(undef, m)
+XXmean = Vector{typeof(X)}(undef, m)
+XXᵒ = Vector{typeof(X)}(undef, m)
+WW = Vector{typeof(W)}(undef, m)
+WWᵒ = Vector{typeof(W)}(undef, m)
 
 
 
@@ -61,9 +62,9 @@ TPᵒ = Any
 
 𝕃 = typeof(Bridge.outer(zero(x0)))
 
-Phi = Vector{Any}(m)
-Pt = Vector{TPt}(m)
-Pᵒ = Vector{TPᵒ}(m)
+Phi = Vector{Any}(undef, m)
+Pt = Vector{TPt}(undef, m)
+Pᵒ = Vector{TPᵒ}(undef, m)
 H♢ = Bridge.outer(zero(x0))
 #v = Xtrue.yy[end]
 v = ( L' * inv(Σ) * L)\(L' * inv(Σ) *  V.yy[end])

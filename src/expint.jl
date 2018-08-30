@@ -4,6 +4,7 @@
 # For more explanations, see course notes by Steven G. Johnson at
 #     https://github.com/stevengj/18S096-iap17/blob/master/pset3/pset3-solutions.ipynb
 
+using Base.MathConstants: eulergamma
 
 # n coefficients of the Taylor series of E₁(z) + log(z), in type T:
 function E₁_taylor_coefficients(::Type{T}, n::Integer) where T<:Number

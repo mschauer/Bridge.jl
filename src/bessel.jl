@@ -11,24 +11,24 @@ mutable struct Bessel3Bridge <: ContinuousTimeProcess{Float64}
 end
  
 function bessel3(u, tt, t, v, si)
-    assert(u!=v)
+    @assert u != v
     tt2 = tt*si^2
     w2 = sample(tt2, WienerBridge(t*si^2, 0.), 0.).yy
     w3 = sample(tt2, WienerBridge(t*si^2, 0.), 0.).yy
         
-    if u>v
-        w1 = sample(tt2, WienerBridge(t*si^2, 0.), u-v).yy
-        SamplePath(tt, v + sqrt.(w1.^2 + w2.^2 + w3.^2))
+    if u > v
+        w1 = sample(tt2, WienerBridge(t*si^2, 0.), u - v).yy
+        SamplePath(tt, v .+ sqrt.(w1.^2 + w2.^2 + w3.^2))
     else
-        w1 = sample(tt2, WienerBridge(t*si^2, 0.), v-u).yy
-        SamplePath(tt, v - sqrt.(w1.^2 + w2.^2 + w3.^2))
+        w1 = sample(tt2, WienerBridge(t*si^2, 0.), v - u).yy
+        SamplePath(tt, v .- sqrt.(w1.^2 + w2.^2 + w3.^2))
     end
    
 end
 
 
 
-b(t, x, P::Bessel3Bridge) = outer(P.σ)*inv(x-P.v) + inv(P.t - t)*(P.v-x)
+b(t, x, P::Bessel3Bridge) = outer(P.σ)*inv(x - P.v) + inv(P.t - t)*(P.v - x)
 σ(t, x, P::Bessel3Bridge) = P.σ
 a(t, x, P::Bessel3Bridge) = outer(P.σ)
 Γ(t, x, P::Bessel3Bridge) = inv(outer(P.σ))
@@ -50,8 +50,8 @@ mutable struct BesselProp <: ContinuousTimeProcess{Float64}
     BesselProp(Target::ContinuousTimeProcess{Float64}, t, v) = new(Target, t, v)
 end
  
-r(t, x, P::BesselProp) = inv(x-P.v) + inv((P.t-t)*a(P.t, P.v, P.Target))*(P.v-x)
-H(t, x, P::BesselProp) =  1/(x-P.v)^2 + inv((P.t-t)*a(P.t, P.v, P.Target))
+r(t, x, P::BesselProp) = inv(x - P.v) + inv((P.t - t)*a(P.t, P.v, P.Target))*(P.v-x)
+H(t, x, P::BesselProp) =  1/(x - P.v)^2 + inv((P.t - t)*a(P.t, P.v, P.Target))
 
 
 b(t, x, P::BesselProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P) 

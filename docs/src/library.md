@@ -42,8 +42,6 @@ girsanov
 lp
 llikelihood
 solve
-euler
-euler!
 EulerMaruyama
 Euler
 StochasticRungeKutta
@@ -97,6 +95,7 @@ Bridge.Gaussian
 Bridge.refine
 Bridge.quaternion
 Bridge._viridis
+Bridge.supnorm
 ```
 
 ## Online statistics

@@ -3,7 +3,7 @@
   
 Time change mapping `t` in `[T1, T2]` (``X``-time) to `s` in `[T1, T2]` (`U`-time).
 """      
-tofs(s, T1, T2) = T1 + (s - T1).*(2.0 - (s-T1)/(T2-T1))
+tofs(s, T1, T2) = T1 .+ (s .- T1).*(2.0 .- (s .- T1)/(T2-T1))
 
 
 """
@@ -11,7 +11,7 @@ tofs(s, T1, T2) = T1 + (s - T1).*(2.0 - (s-T1)/(T2-T1))
   
 Time change mapping `s` in `[T1, T2]`` (``U``-time) to `t`` in `[T1, T2]` (`X`-time).
 """  
-soft(t, T1, T2, T=T2-T1) = T2 - sqrt.(T*(T2 - t))
+soft(t, T1, T2, T=T2-T1) = T2 .- sqrt.(T*(T2 .- t))
 
 
 xofu(s, u, T1, T2, v, P) = Vs(s, T1, T2, v, P) .- (T2-s)*u
@@ -91,7 +91,7 @@ function uthetamethod!(Y, u, W::SamplePath, Po, theta=0.5)
     N = length(W)
     N != length(X) && error("X and W differ in length.")
   
-    assert(constdiff(P))
+    @assert(constdiff(P))
 
 
     ss = W.tt   
@@ -158,7 +158,7 @@ function ullikelihood(Y::SamplePath{T}, Po) where T
         
         if !constdiff(Po)
             ad = a(t,x, P) - a(t,x, Pt)
-            som += -1.0/(T2-s)*(trace(j*ad) - T*dot(ju,ad*ju))*(s2-s)
+            som += -1.0/(T2-s)*(tr(j*ad) - T*dot(ju,ad*ju))*(s2-s)
         end
     end
     som

@@ -1,6 +1,6 @@
 include(joinpath("..", "docs", "make.jl")) # this may change rng state
-
-Random.seed!(joinpath(@__DIR__,"SEED"),1)
+using Random
+Random.seed!(12)
 
 include("wiener.jl")
 include("diffusion.jl")

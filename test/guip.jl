@@ -1,10 +1,10 @@
 using Bridge, StaticArrays, Distributions
-using Test
-#import Bridge: b, σ, a, transitionprob
+using Test, LinearAlgebra, Random
+
 const percentile = 3.0
 
 # Define a diffusion process
-if ! @_isdefined(OrnsteinUhlenbeck)
+if ! @isdefined(OrnsteinUhlenbeck)
 struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
@@ -25,7 +25,7 @@ Bridge.Γ(t, x, P::OrnsteinUhlenbeck) = inv(P.σ^2)
 Bridge.transitionprob(s, x, t, P::OrnsteinUhlenbeck) = Normal(x*exp(-P.β*(t-s)), sqrt((0.5P.σ^2/P.β) *(1-exp(-2*P.β*(t-s)))))
 Bridge.constdiff(::OrnsteinUhlenbeck) = true
 
-if ! @_isdefined(VOrnsteinUhlenbeck)
+if ! @isdefined(VOrnsteinUhlenbeck)
 struct VOrnsteinUhlenbeck{d}  <: ContinuousTimeProcess{SVector{d,Float64}}
     β 
     σ 
@@ -79,7 +79,7 @@ Po3 = PBridgeProp(P, tt[1], u, (tt[end]-tt[1])/2, 1.2v,tt[end], v, L, S, Bridge.
 
 
 Y = Float64[
-begin
+let
  X = solve(EulerMaruyama(), (@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  X.yy[end][1]*exp(llikelihood(X, Po))*pt2/p2
  end
@@ -88,14 +88,14 @@ begin
  
  
 Z = Float64[
-begin
+let
  X = solve(EulerMaruyama(), (@SVector [0.0, 0.0]), sample(tt, Wiener{SVector{2,Float64}}()),Po)
  exp(llikelihood(X, Po))*pt2/p2
  end
  for i in 1:m]
  
-@test abs(mean(Y-y)*sqrt(m)/std(Y)) < percentile
-@test abs(mean(Z-1)*sqrt(m)/std(Z)) < percentile
+@test abs(mean(Y .- y)*sqrt(m)/std(Y)) < percentile
+@test abs(mean(Z .- 1)*sqrt(m)/std(Z)) < percentile
 
 
 ##########################################
@@ -131,7 +131,7 @@ cs = Bridge.CSpline(tt[1], tt[end],
 
 Po = BridgeProp(P1, tt, (u, v), a, cs)
 Z = Float64[
-    begin
+    let
     X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po)
     exp(llikelihood(X, Po)) 
     end
@@ -142,12 +142,12 @@ p = pdf(transitionprob(0.0, u, T, P1), v)
 Pt = Bridge.Ptilde(cs, sqrt(a))
 pt = exp(lp(0.0, u, T, v, Pt))
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
+push!(C, abs(mean(Z*pt/p .- 1)*sqrt(m)/std(Z*pt/p)))
 
 # Scaling for BridgeProp
 push!(Cnames, "ScaledBridgeProp")
 Z = Float64[
-    begin
+    let
         X = Bridge.ubridge(sample(tt, Wiener{Float64}()), Po)
         exp(llikelihood(X, Po)) 
     end
@@ -157,7 +157,7 @@ p = pdf(transitionprob(0.0, u, T, P1), v)
 
 Pt = Bridge.ptilde(Po)
 pt = exp(lptilde(Po))
-push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
+push!(C, abs(mean(Z*pt/p .- 1)*sqrt(m)/std(Z*pt/p)))
 #error("end")
 
 # GuidedProp
@@ -167,9 +167,9 @@ Ptarget = LinPro(-β, 0.0, sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
 z = Float64[
-    begin
+    let
     W = sample(tt, Wiener{Float64}())
-    X = bridge(W, Po, euler!)
+    X = Bridge.bridgeold!(copy(W), W, Po)
     llikelihood(X, Po)
     end
     for i in 1:m]
@@ -179,7 +179,7 @@ p = exp(lp(0.0, u, T, v, Ptarget))
 pt = exp(lp(0.0, u, T, v, Pt))
 @test p == p2
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
+push!(C, abs(mean(exp.(z)*pt/p .- 1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 
 # DHBridgeProp
@@ -187,7 +187,7 @@ push!(Cnames, "DHBridgeProp")
 
 Po3 = DHBridgeProp(P1, tt[1], u, tt[end], v)
 Z = Float64[
-    begin
+    let
     X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po3)
     exp(llikelihood(X, Po3)) 
     end
@@ -196,7 +196,7 @@ Z = Float64[
 p = pdf(transitionprob(0.0, u, T, P1), v)    
 pt = exp(lptilde(Po3))
 @test lptilde(Po3) ≈ Bridge.logpdfnormal(v-u, T*a)
-push!(C, abs(mean(Z*pt/p-1)*sqrt(m)/std(Z*pt/p)))
+push!(C, abs(mean(Z*pt/p .- 1)*sqrt(m)/std(Z*pt/p)))
 
 
 # PBridgeProp
@@ -206,7 +206,7 @@ si = 1.
 L = 1.
 Po2 = PBridgeProp(P1, tt[1], u, tm, vm, tt[end], v, L, si^2, a, cs)
 Z2 = Float64[
-    begin
+    let
     X = solve(EulerMaruyama(), u, sample(tt, Wiener{Float64}()),Po2)
     exp(llikelihood(X, Po2)) 
     end
@@ -217,7 +217,7 @@ ft(x) = exp(Bridge.lp(0.0, u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel.(x-v
 p2 = sum(map(f,range(-20, stop=20, length=1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
 @test pt2 ≈ sum(map(ft,range(-20, stop=20, length=1001)))*40/1000
-push!(C, abs(mean(Z2*pt2/p2-1)*sqrt(m)/std(Z2*pt2/p2)))
+push!(C, abs(mean(Z2*pt2/p2 .- 1)*sqrt(m)/std(Z2*pt2/p2)))
 
 
 # GuidedProp 
@@ -227,9 +227,9 @@ Pt = LinPro(-β, 0.2, sqrt(a))
 Po = GuidedProp(Ptarget, tt[1], u, tt[end], v, Pt)
 
 z = Float64[
-    begin
+    let
     W = sample(tt, Wiener{Float64}())
-    X = bridge(W, Po)
+    X = Bridge.bridgeold!(copy(W), W, Po)
     llikelihood(X, Po)
     end
     for i in 1:m]
@@ -239,7 +239,7 @@ p = exp(lp(0.0, u, T, v, Ptarget))
 pt = exp(lp(0.0, u, T, v, Pt))
 @test p ≈ p2
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
+push!(C, abs(mean(exp.(z)*pt/p .- 1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 
 # GuidedProposal
@@ -253,7 +253,7 @@ GP = Bridge.GuidedBridge(tt, Ptarget, Pt, v)
 
 
 z = Float64[
-    begin
+    let
     W = sample(tt, Wiener{Float64}())
     X = copy(W)
     Bridge.bridge!(X, u, W, GP)
@@ -266,7 +266,7 @@ p = exp(lp(0.0, u, T, v, Ptarget))
 pt = exp(lp(0.0, u, T, v, Pt))
 @test p ≈ p2
 @test pt ≈ exp(lptilde(Po))
-push!(C, abs(mean(exp.(z)*pt/p-1)*sqrt(m)/std(exp.(z)*pt/p)))
+push!(C, abs(mean(exp.(z)*pt/p .- 1)*sqrt(m)/std(exp.(z)*pt/p)))
 
 println(Cnames)
 println(C)

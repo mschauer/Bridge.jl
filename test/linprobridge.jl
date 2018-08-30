@@ -1,6 +1,6 @@
 using Bridge, Distributions, StaticArrays
 using Test
-#import Bridge: b, σ, a, transitionprob
+
 n = 10000
 T = 2.0
 TT = 3.0

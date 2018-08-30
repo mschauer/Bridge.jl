@@ -19,14 +19,14 @@ CLASSIC = false
 using Bridge.outer
 
 # Define a diffusion process
-if ! @_isdefined(Target)
+if ! @isdefined(Target)
 struct Target  <: ContinuousTimeProcess{SV}
     c::Float64
     κ::Float64
 end
 end
 
-if ! @_isdefined(Linear)
+if ! @isdefined(Linear)
 struct Linear  <: ContinuousTimeProcess{SV}
     T::Float64
     v::SV

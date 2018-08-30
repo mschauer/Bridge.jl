@@ -213,7 +213,7 @@ function nu(k, P)
     elseif k == 0
         P.P.γ*(-log(P.P.λ) - expint1((P.P.λ)*P.b[1])) # up to certain constant
     elseif k == length(P.θ) 
-        assert((P.P.λ + P.θ[k]) > 0.0)
+        @assert((P.P.λ + P.θ[k]) > 0.0)
         P.P.γ*exp(-P.ρ[k])*(expint1((P.P.λ + P.θ[k])*P.b[k])) # - 0 (upper limit infty)
     else
         P.P.γ*exp(-P.ρ[k])*(expint1((P.P.λ + P.θ[k])*P.b[k]) - expint1((P.P.λ + P.θ[k])*P.b[k+1]))
@@ -256,7 +256,7 @@ end
 Log-likelihood `dPº/dP`. (Up to proportionality.)
 """
 function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess, c = 0.0)::Float64
-    assert(Pº.P.γ == P.P.γ)
+    @assert(Pº.P.γ == P.P.γ)
     if Pº.P.λ == P.P.λ # case 1: same on the first bin
         ll = 0.
         for i in 2:length(X.tt)
@@ -271,7 +271,7 @@ function llikelihood(X::SamplePath, Pº::LocalGammaProcess, P::LocalGammaProcess
     else
         ll = 0.0
         u = X.yy[end] - X.yy[1]
-        assert(c == 0)
+        @assert(c == 0)
         for i in 2:length(X.tt)
             dx = X.yy[i] - X.yy[i-1]
             if dx > P.b[1]

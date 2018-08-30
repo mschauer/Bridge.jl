@@ -3,7 +3,6 @@ using Bridge
 
 VERBOSE = false
 
-import Bridge:b, σ, a, Γ, constdiff, lptilde
 using Bridge: Bessel3Bridge, BesselProp, aeuler
 
 T = 1.0
@@ -37,7 +36,7 @@ function hit(u, v, dt, tmax, P::ContinuousTimeProcess{T}) where T
     t
 end
 
-mutable struct Target  <: ContinuousTimeProcess{Float64}
+struct Target <: ContinuousTimeProcess{Float64}
     mu
 end
 
@@ -48,7 +47,7 @@ Bridge.σ(t, x, P::Target) = sqrt(2.)
 Bridge.a(t, x, P::Target) = 2.
 Bridge.Γ(t, x, P::Target) = 0.5
  
-constdiff(P::Target) = true
+Bridge.constdiff(P::Target) = true
 
 x0 = 0.5
 
@@ -61,12 +60,12 @@ VERBOSE && println("pt")
 
 
 tau0 = [hit(x0, 0, 1/N, 10, Target(0.)) for i in 1:10K]
-pt_ = mean(1 .< tau0 .< 1.+h)/h
+pt_ = mean(1 .< tau0 .< 1 + h)/h
 
 VERBOSE && println("p")
 
 tau1 = [hit(x0, 0, 1/N, Inf, Target(1.)) for i in 1:10K]
-pr = mean(1 .< tau1 .< 1.+h)
+pr = mean(1 .< tau1 .< 1. + h)
 p=pr/h
 pse = sqrt(pr*(1-pr)/length(tau1))/h
 
@@ -78,7 +77,7 @@ VERBOSE && println("ll (B3)")
 ll = zeros(K)
 ll2 = zeros(K)
 for k in 1:K
-    B3 =sample(x0, tt, Pto)
+    global B3 = sample(x0, tt, Pto)
     ll[k] = girsanov(B3, P, Pt)
     ll2[k] = girsanov(B3, Po, Pto) +  llikelihood(B3, Po)
 end
@@ -87,7 +86,7 @@ VERBOSE && println("ll (Xo)")
 ll3 = zeros(K)
 for k in 1:K
     k % 100 == 0 && VERBOSE && print(" $k ")
-    Xo = aeuler(x0, tt, Po, 0.5)
+    global Xo = aeuler(x0, tt, Po, 0.5)
     ll3[k] = llikelihood(Xo, Po)
 end
 VERBOSE && println(".")
@@ -106,7 +105,7 @@ VERBOSE && println("X")
 
 X = solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
 while any(X.yy .< 0) || X.yy[end] > 0.1
-    X =  solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
+    global X = solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
 end    
 VERBOSE && println("Xo")
 

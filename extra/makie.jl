@@ -1,5 +1,5 @@
 using Makie, GeometryTypes, Distributions
-import Makie.to_positions
+import Makie: to_positions
 import Bridge: mcsvd3, visualize_uncertainty
 
 to_positions(S::Makie.Scene, X::Bridge.SamplePath) = to_positions(S, X.yy)

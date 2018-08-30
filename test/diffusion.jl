@@ -1,5 +1,5 @@
 using Bridge
-using Test
+using Test, Statistics, LinearAlgebra, Random
 
 # tests with alpha 0.01
 # test fail 1% of the time
@@ -31,7 +31,7 @@ s2 = var(quv)
 # int0^T w_t dw_t = w_T^2/2 - T/2
 @test abs((b -> (ito(b, b).yy[end] - (0.5b.yy[end]^2 - 1)))(brown1(0, 2, 10000))) < 0.1
 
-mutable struct Diff <: Bridge.ContinuousTimeProcess{Float64}
+struct Diff <: Bridge.ContinuousTimeProcess{Float64}
 end
 import Bridge: b, σ
 Bridge.b(t,x, ::Diff) = -5x
@@ -52,11 +52,11 @@ s2 = var(quv)
 
 @test abs(mean([bb(0,1,1,3).yy[2] for i in 1:1000])-0.5)/sqrt(0.25)*sqrt(1000) < r
 @test abs(mean([bb(0,1,1,5).yy[3] for i in 1:1000])-0.5)/sqrt(0.25)*sqrt(1000) < r
-@test chilower < 1000*abs(var0([bb(0,1,1,3).yy[2] for i in 1:1000]-0.5))/.25 < chiupper
-@test chilower < 1000*abs(var0([bb(0,1,1,5).yy[3] for i in 1:1000]-0.5))/.25 < chiupper
+@test chilower < 1000*abs(var0([bb(0,1,1,3).yy[2] for i in 1:1000] .- 0.5))/.25 < chiupper
+@test chilower < 1000*abs(var0([bb(0,1,1,5).yy[3] for i in 1:1000] .- 0.5))/.25 < chiupper
 
 
 # Covariance of a Brownian bridge from t_1 to t_2 (t_2-t)(s-t_1)/(t_2-t_1)
 # here (2-1)(1)/2 = 1/2
 
-@test chilower < 1000*abs(var0([bb(0,1,2,5).yy[3] for i in 1:1000]-0.5))*2 < chiupper
+@test chilower < 1000*abs(var0([bb(0,1,2,5).yy[3] for i in 1:1000] .- 0.5))*2 < chiupper

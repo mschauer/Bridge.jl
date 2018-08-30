@@ -33,7 +33,7 @@ end
 
 
 W = sample(tt, Wiener{SV3}())
-VW = VSamplePath(tt, Bridge.mat(W.yy))
+VW = VSamplePath(tt, collect(Bridge.mat(W.yy)))
 VX = VSamplePath(tt, copy(VW.yy))
 VX2 = VSamplePath(tt, copy(VW.yy))
 solve!(EulerMaruyama!(), VX, vx, VW, VLorenz())

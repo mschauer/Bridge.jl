@@ -1,5 +1,5 @@
 using Bridge, Distributions
-using Test
+using Test, LinearAlgebra
 
 h = 1e-7    
 n, m = 50, 10000
@@ -68,7 +68,7 @@ Co = []
 Cnames = []
 push!(Cnames, "Euler") 
 z = Float64[
-    begin
+    let
         X = bridge(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
          Bridge.llikelihoodleft(X, Po)
     end
@@ -79,7 +79,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
  
 push!(Cnames, "Euler + Trapez") 
 z = Float64[
-    begin
+    let
         X = bridge(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
          Bridge.llikelihoodtrapez(X, Po)
     end
@@ -89,7 +89,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "MDGP+Left")
 z = Float64[
-    begin
+    let
         X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
         Bridge.llikelihoodleft(X, Po)
     end
@@ -99,7 +99,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "MDGP+Trapez")
 z = Float64[
-    begin
+    let
         X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
         Bridge.llikelihoodtrapez(X, Po)
     end
@@ -110,7 +110,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGP")
 z = Float64[
-    begin
+    let
         X = ubridge(sample(ss, Wiener{Float64}()), Po)
         Bridge.llikelihoodleft(X, Po)
     end
@@ -121,7 +121,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGP + Trapez")
 z = Float64[
-    begin
+    let
         X = ubridge(sample(ss, Wiener{Float64}()), Po)
         Bridge.llikelihoodtrapez(X, Po)
     end
@@ -132,7 +132,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGPLL")
 z = Float64[
-    begin
+    let
         X = ubridge(sample(ss, Wiener{Float64}()), Po)
         ullikelihood(X, Po)
     end
@@ -141,7 +141,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGPLL + Trapez")
 z = Float64[
-    begin
+    let
         X = ubridge(sample(ss, Wiener{Float64}()), Po)
         Bridge.ullikelihoodtrapez(X, Po)
     end
@@ -150,7 +150,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGP + Inno + Update")
 z = Float64[
-                  begin
+                  let
                       X = ubridge(sample(ss, Wiener{Float64}()), Po2)
                       Z = Bridge.uinnovations(X, Po2) 
                       Z2 = sample(Z.tt, Wiener{Float64}())
@@ -165,7 +165,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "TCSGPLL + Inno Mix")
 z = Float64[
-           begin
+           let
                W = sample(ss, Wiener{Float64}())
                X = ubridge(W, Po2)
                Z = Bridge.innovations(EulerMaruyama(), X, Po2) 
@@ -177,7 +177,7 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 
 push!(Cnames, "MDGP + Trapez + Inno")
 z = Float64[
-    begin
+    let
         X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po2)
         W = innovations(EulerMaruyama(), X, Po2) 
         X = bridge(EulerMaruyama(), W, Po)

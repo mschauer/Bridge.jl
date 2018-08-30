@@ -11,12 +11,12 @@ struct OU2696197128  <: ContinuousTimeProcess{Float64}
 end
 
 # define drift and diffusion coefficient of OU2696197128
-import Bridge: b, σ, a, transitionprob
+
 Bridge.b(t,x, P::OU2696197128) = -P.β*x
 Bridge.σ(t, x, P::OU2696197128) = P.σ
 
 # simulate OU2696197128 using Euler scheme
 W = sample(0:0.01:10, Wiener{Float64}()) 
-X = euler(0.1, W, OU2696197128(20., 1.0*I))
+X = solve(Euler(), 0.1, W, OU2696197128(20., 1.0*I))
 
 #Check @code_warntype euler!(copy(W),0.0, W, OU2696197128(20., 1.0*I))

@@ -1,43 +1,42 @@
 using Bridge
-using Distributions
-using Test
+using Test, LinearAlgebra, Random
+using Distributions, StaticArrays
 using Bridge: Gaussian, PSD
-using StaticArrays
 
+let
+    μ = rand()
+    x = rand()
+    Σ = rand()^2
 
-μ = rand()
-x = rand()
-σ = rand()
-Σ = σ*σ'
-
-p = pdf(Normal(μ, √Σ), x)
-@test pdf(Gaussian(μ, Σ), x) ≈ p
-@test pdf(Gaussian(μ, Σ*I), x) ≈ p
-@test pdf(Gaussian([μ], [σ]*[σ]'), x) ≈ p
-
-@test pdf(Gaussian((@SVector [μ]), @SMatrix [Σ]), @SVector [x]) ≈ p
-
-for d in 1: 3
-    μ = rand(d)
-    x = rand(d)
-    σ = tril(rand(d,d))
-    Σ = σ*σ'
-    p = pdf(MvNormal(μ, Σ), x)
-
+    p = pdf(Normal(μ, √Σ), x)
     @test pdf(Gaussian(μ, Σ), x) ≈ p
-    @test pdf(Gaussian(μ, PSD(σ)), x) ≈ p
-    @test pdf(Gaussian(SVector{d}(μ), SMatrix{d,d}(Σ)), x) ≈ p
-    @test pdf(Gaussian(SVector{d}(μ), PSD(SMatrix{d,d}(σ))), x) ≈ p
+    @test pdf(Gaussian(μ, Σ*I), x) ≈ p
+    @test pdf(Gaussian([μ], [√Σ]*[√Σ]'), [x]) ≈ p
+
+    @test pdf(Gaussian((@SVector [μ]), @SMatrix [Σ]), @SVector [x]) ≈ p
 end
 
 for d in 1: 3
     μ = rand(d)
     x = rand(d)
-    σ = rand()
-    Σ = eye(d)*σ^2
+    rΣ = tril(rand(d,d))
+    Σ = rΣ*rΣ'
     p = pdf(MvNormal(μ, Σ), x)
 
-    @test pdf(Gaussian(μ, σ^2*I), x) ≈ p
-    @test pdf(Gaussian(SVector{d}(μ), SDiagonal(σ^2*ones(SVector{d}))), x) ≈ p
+    @test pdf(Gaussian(μ, Σ), x) ≈ p
+    @test pdf(Gaussian(μ, PSD(rΣ)), x) ≈ p
+    @test pdf(Gaussian(SVector{d}(μ), SMatrix{d,d}(Σ)), x) ≈ p
+    @test pdf(Gaussian(SVector{d}(μ), PSD(SMatrix{d,d}(rΣ))), x) ≈ p
+end
+
+for d in 1: 3
+    μ = rand(d)
+    x = rand(d)
+    rΣ = rand()
+    Σ = Matrix(I, d, d)*rΣ^2
+    p = pdf(MvNormal(μ, Σ), x)
+
+    @test pdf(Gaussian(μ, rΣ^2*I), x) ≈ p
+    @test pdf(Gaussian(SVector{d}(μ), SDiagonal(rΣ^2*ones(SVector{d}))), x) ≈ p
     @test pdf(Gaussian(SVector{d}(μ), SMatrix{d,d}(Σ)), x) ≈ p
 end
