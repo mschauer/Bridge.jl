@@ -1,9 +1,9 @@
 using Makie, GeometryTypes, Distributions
-import Makie: to_positions
+#import Makie: to_positions
 import Bridge: mcsvd3, visualize_uncertainty
 
-to_positions(S::Makie.Scene, X::Bridge.SamplePath) = to_positions(S, X.yy)
-to_positions(S::Makie.Scene, X::Bridge.VSamplePath) = to_positions(S, X.yy)
+#to_positions(S::Makie.Scene, X::Bridge.SamplePath) = to_positions(S, X.yy)
+#to_positions(S::Makie.Scene, X::Bridge.VSamplePath) = to_positions(S, X.yy)
 
 """
     mcsvd3(mcstates) -> mean, q, sv
@@ -47,5 +47,5 @@ end
 viridis(X, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, range(1, stop=maxviri, length=length(X)))])
 viridis(n::Integer, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, range(1, stop=n>1 ? maxviri : 1, length=n))])
 
-set_perspective!(scene, perspective) = (push!(Makie.getscreen(scene).cameras[:perspective].view, perspective); scene)
-get_perspective(scene) = Makie.getscreen(scene).cameras[:perspective].view.value
+#set_perspective!(scene, perspective) = (push!(Makie.getscreen(scene).cameras[:perspective].view, perspective); scene)
+#get_perspective(scene) = Makie.getscreen(scene).cameras[:perspective].view.value
