@@ -1,7 +1,7 @@
 # Simulate an Levy driven SDE
 
 using Bridge, PyPlot
-srand(5.)
+Random.seed!(5.)
 
 # Define Gamma process
 γ = 10.

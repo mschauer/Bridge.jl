@@ -85,7 +85,7 @@ end
 
 
 ############## Configuration ###################################
-srand(10)
+Random.seed!(10)
 K = 100
 m = 10 # number of euler steps per segments
 
@@ -111,8 +111,8 @@ n = 100 # number of segments
 mextra = 2*div(1000,m) #factor of extra steps for truth
 TT = 30.
 dt = TT/n/m
-tt = linspace(0., TT, n*m+1)
-tttrue = linspace(0., TT, n*mextra*m+1)
+tt = range(0., stop=TT, length=n*m+1)
+tttrue = range(0., stop=TT, length=n*mextra*m+1)
 ttf = tt[1:m:end]
 
 uu = 0.
@@ -195,7 +195,7 @@ xi = 1./[5., 5.] #prior prec
 # Bookkeeping
 mkpath(joinpath("output",simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 

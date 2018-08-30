@@ -1,8 +1,8 @@
-using Bridge, StaticArrays, Base.Test, Distributions
-srand(5)
+using Bridge, StaticArrays, Test, Distributions
+Random.seed!(5)
 n, m = 200, 1000
 T = 2.
-tt = linspace(0, T, n)
+tt = range(0, stop=T, length=n)
 
 u = 0.5
 v = 0.1
@@ -34,7 +34,7 @@ t, x = 0.0, v
 @test norm(Bridge.b(t, x, Po) - Bridge.b(t, x, Ptarget) - a*(GP.H♢[1]\(GP.V[1] - x))) < 1e-5
 
 
-@test abs(Bridge.mu(t, u, T, Pt) - (expm(-β*(T-t))*(u-mu) + mu)) < 1e-5
+@test abs(Bridge.mu(t, u, T, Pt) - (exp(-β*(T-t))*(u-mu) + mu)) < 1e-5
 @test abs(solve(Bridge.R3(), Bridge._traceB, tt, 0.0, GP.Pt) - log(det(exp(-β*(T-t))))) < 1e-5
 
 P = GP
@@ -80,8 +80,8 @@ cs = Bridge.CSpline(tt[1], tt[end],
 )
 
 
-Ptarget = Bridge.Ptilde(cs, sqrtm(a))
-Pt = LinPro(-β, mu, sqrtm(a))
+Ptarget = Bridge.Ptilde(cs, sqrt(a))
+Pt = LinPro(-β, mu, sqrt(a))
 
 Po = GuidedProp(Ptarget, tt[1], u, T, v, Pt)
 GP = Bridge.GuidedBridge(tt, Ptarget, Pt, v)

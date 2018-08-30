@@ -20,15 +20,15 @@ maxviri = 200
 #    viri = _viridis[round.(Int,linspace(1,maxviri, length(Paths[i])))]
 #    lines(Paths[i], linewidth = 0.1, color = map(x->RGBA(Float32.(x)..., 0.5f0), viri) )
 #end
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xtrue)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xtrue)))]
 lines(( Xtrue.yy), linewidth = 0.4, color = map(x->RGBA(Float32.(x)..., 1.0f0), viri[1:skippoints:end]) )
 #lines(Xtrue.yy, linewidth = 0.2, color = :black )
 
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xmean)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xmean)))]
 #lines((@view Xmean[1:extra*skippoints:end]), linewidth = 0.2, color = map(x->RGBA(Float32.(x)..., 0.5f0), viri[1:extra*skippoints:end]) )
 scatter( Xmean[1:extra*skippoints:end], marker = circle, markersize=0.2, color = map(x->RGBA(Float32.(x)..., 0.5f0), viri[1:extra*skippoints:end]) )
 
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xscal)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xscal)))]
 visualize_uncertainty(scene, (Xmean, Xrot, Xscal .* 1.f0), extra*skippoints; color = map(x->RGBA(Float32.(x)..., 0.05f0), viri[1:extra*skippoints:end]) )
 
 

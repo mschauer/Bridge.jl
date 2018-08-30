@@ -21,7 +21,7 @@ supertype(typeof(P))
  
 
 # sample Brownian motion on an equidistant grid
-W = sample(linspace(0., t, n), P)
+W = sample(range(0., stop=t, length=n), P)
 W = sample(0:dt:t, P) # similar way
 
 print(W.tt) 
@@ -33,10 +33,8 @@ plot(W.tt, W.yy)
 
 # sample complex Brownian motion on a nonequidistant grid
 
-if VERSION >= v"0.7.0-DEV.350"
-    X = sample(sort(rand(1000)), Wiener{Complex{Float64}}())
-    plot(real(X.yy), imag(X.yy))
-end
+X = sample(sort(rand(1000)), Wiener{Complex{Float64}}())
+plot(real(X.yy), imag(X.yy))
 
 # sample a standard Brownian bridge ending in v at time s
 s = 1.

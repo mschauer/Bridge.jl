@@ -1,5 +1,3 @@
-__precompile__()
-
 module Bridge
 export ContinuousTimeProcess, SamplePath, VSamplePath, GSamplePath
 export stack

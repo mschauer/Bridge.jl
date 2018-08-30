@@ -1,5 +1,5 @@
 using Bridge, Distributions, StaticArrays
-using Base.Test
+using Test
 #import Bridge: b, σ, a, transitionprob
 n = 1000
 TT = 5
@@ -36,7 +36,7 @@ dt = 1e-6
 
 
 n2 = 150
-tt = linspace(t, T, n2)
+tt = range(t, stop=T, length=n2)
 K = SamplePath(tt, zeros(M, length(tt)))
 Bridge.gpHinv!(K, P)
 V = SamplePath(tt, zeros(S, length(tt)))

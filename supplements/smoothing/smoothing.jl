@@ -10,7 +10,7 @@ simname = String(sim)
 
 mkpath(joinpath("output", simname))
 try # save cp of this file as documentation
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 
@@ -73,7 +73,7 @@ Pᵒ = Vector(m)
 H♢, v = Bridge.gpupdate(πH*one(SM), zero(SV), L, Σ, V.yy[end])
 
 for i in m:-1:1
-    tt_ = linspace(V.tt[i], V.tt[i+1], M+1) 
+    tt_ = range(V.tt[i], stop=V.tt[i+1], length=M+1) 
     XX[i] = Bridge.samplepath(tt_, zero(SV))
     WW[i] = Bridge.samplepath(tt_, zero(RV))
     
@@ -207,7 +207,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, alpha; verbose = true,adaptive
         else 
             verbose && print("\t .")
         end
-        verbose && println([" ", "N"][1 + newblock], "\t", round(acc/it,2), "\t", round.(y0 - x0, 2))
+        verbose && println([" ", "N"][1 + newblock], "\t", round(acc/it, digits=2), "\t", round.(y0 - x0, 2))
         for i in 1:m
             mcstate[i] = Bridge.mcnext!(mcstate[i],XX[i].yy)
         end
@@ -224,12 +224,12 @@ verbose = true, independent = independent)
 
 open(joinpath("output", simname,"info.txt"), "w") do f
     println(f, "acc") 
-    println(f, round(acc/iterations, 3)) 
+    println(f, round(acc/iterations, digits=3)) 
 end
 
 
-writecsv(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
-writecsv(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
+writedlm(joinpath("output", simname, "x0n$simid.csv"), [1:iterations Bridge.mat(X0)'])
+writedlm(joinpath("output", simname, "xtn$simid.csv"), [1:iterations Bridge.mat(Xt)'])
 
 
 

@@ -1,5 +1,5 @@
 using Bridge, Distributions
-using Base.Test
+using Test
 #import Bridge: b, σ, a, transitionprob
 qu(x) = x*x'
 S = SVector{2,Float64}

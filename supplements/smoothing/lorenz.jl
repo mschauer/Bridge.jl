@@ -1,8 +1,8 @@
 
 using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
-srand(2)
-srand(3)
+Random.seed!(2)
+Random.seed!(3)
 πH = 2000. # prior
 
 t = 1.0

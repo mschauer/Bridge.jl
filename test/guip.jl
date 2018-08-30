@@ -1,5 +1,5 @@
 using Bridge, StaticArrays, Distributions
-using Base.Test
+using Test
 #import Bridge: b, σ, a, transitionprob
 const percentile = 3.0
 
@@ -106,10 +106,10 @@ C = []
 
 # BridgeProp
 push!(Cnames, "BridgeProp")
-srand(5)
+Random.seed!(5)
 n, m = 200, 1000
 T = 2.
-ss = linspace(0, T, n)
+ss = range(0, stop=T, length=n)
 tau(s, T) = s.*(2-s/T)
 #tt = tau(ss, T)
 tt = ss
@@ -214,9 +214,9 @@ Z2 = Float64[
 
 f(x) = pdf(transitionprob(0.0, u, tm, P1), x)*pdf(transitionprob(tm,x,T, P1), v)*kernel.(x-vm,si^2)
 ft(x) = exp(Bridge.lp(0.0, u, tm, x, Pt) + Bridge.lp(tm,x,T, v, Pt))*kernel.(x-vm,si^2)
-p2 = sum(map(f,linspace(-20,20,1001)))*40/1000
+p2 = sum(map(f,range(-20, stop=20, length=1001)))*40/1000
 pt2 = exp(Bridge.lptilde(Po2))
-@test pt2 ≈ sum(map(ft,linspace(-20,20,1001)))*40/1000
+@test pt2 ≈ sum(map(ft,range(-20, stop=20, length=1001)))*40/1000
 push!(C, abs(mean(Z2*pt2/p2-1)*sqrt(m)/std(Z2*pt2/p2)))
 
 

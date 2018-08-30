@@ -5,7 +5,7 @@
 
 using Bridge, StaticArrays, Bridge.Models
 const R = ℝ
-srand(2)
+Random.seed!(2)
 
 iterations = 25000
 rho = 0.005 # 1 - rho is AR(1) coefficient of Brownian motion valued random walk  
@@ -176,7 +176,7 @@ function smooth(π0, XX, WW, P, Pᵒ, iterations, rho; verbose = true, adaptive 
         for i in 1:m
             ll += llikelihood(LeftRule(), XXᵒ[i],  Pᵒ[i]) - llikelihood(LeftRule(), XX[i],  Pᵒ[i])
         end
-        verbose && print("$it ll $(round(ll,2)) ")
+        verbose && print("$it ll $(round(ll, digits=2)) ")
 
         #if true
         if doaccept || rand() < exp(ll) 

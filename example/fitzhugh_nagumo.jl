@@ -4,7 +4,7 @@ using ConjugatePriors
 PLOT = :winston
 include("plot.jl")
 
-srand(10)
+Random.seed!(10)
         
 diag2(x, y) = SDiagonal(@SVector [x,y])
 
@@ -84,7 +84,7 @@ simid = 2
 simname =["exci", "nonexci"][simid]
 mkpath(joinpath("output",simname))
 try 
-    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); remove_destination=true)
+    cp(@__FILE__(), joinpath("output",simname,"$simname.jl"); force=true)
 catch
 end
 
@@ -103,8 +103,8 @@ n = 100 # number of segments
 m = 100 # number of euler steps per segments
 TT = 20.
 dt = TT/n/m
-tt = linspace(0., TT, n*m+1)
-tttrue = linspace(0., TT, n*10*m+1)
+tt = range(0., stop=TT, length=n*m+1)
+tttrue = range(0., stop=TT, length=n*10*m+1)
 ttf = tt[1:m:end]
 
 uu = (@SVector [0., 1.])

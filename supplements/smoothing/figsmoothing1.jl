@@ -11,7 +11,7 @@ sphere = Sphere(Point3f0(0,0,0), 1.0f0)
 circle = Sphere(Point2f0(0,0), 1.0f0)
 #RGB(Bridge._viridis[20]...)
 maxviri = 200
-viri = _viridis[round.(Int,linspace(1,maxviri, length(Xtrue)))]
+viri = _viridis[round.(Int,range(1, stop=maxviri, length=length(Xtrue)))]
 lines(( X2.yy), linewidth = 2.0, color = map(x->RGBA(Float32.(x)..., 0.9f0), viri) )
 #scatter([X2.yy[1].+ SVector(-0.2,-0.2,1)], marker = '↘',  markersize = 0.8, color=:black)
 

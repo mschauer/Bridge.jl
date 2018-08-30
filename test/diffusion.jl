@@ -1,5 +1,5 @@
 using Bridge
-using Base.Test
+using Test
 
 # tests with alpha 0.01
 # test fail 1% of the time
@@ -11,19 +11,19 @@ chilower = 888.56 #lower 0.005 percentile for n = 1000
 # varmu(x, mu) = dot(x-mu, x-mu)/length(x)
 var0(x) = dot(x, x)/length(x)
 
-brown1(s, t, n) = sample(linspace(s, t, n), Wiener())
-bb(u,v,t,n) = sample(linspace(0, t, n), WienerBridge{Float64}(t,v), u)
+brown1(s, t, n) = sample(range(s, stop=t, length=n), Wiener())
+bb(u,v,t,n) = sample(range(0, stop=t, length=n), WienerBridge{Float64}(t,v), u)
 X = SamplePath([0.0, 1.0, 3.0], zeros(3))
 @test abs(mean(Bridge._sample!(X,  Wiener(), 0.0).yy[end] for i in 1:n) -  
     mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))) < 
     3*std(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))/sqrt(n)
 
 
-X = sample(linspace(0.0, 2.0, 1000), Wiener())
+X = sample(range(0.0, stop=2.0, length=1000), Wiener())
 @test bracket(X)[end] == bracket(X,X)[end] == quvar(X)
 
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
-quv = [quvar(sample(linspace(0.0, 2.0, 1000), Wiener())) for j in 1:1000]
+quv = [quvar(sample(range(0.0, stop=2.0, length=1000), Wiener())) for j in 1:1000]
 s2 = var(quv)
 @test abs(mean(quv)-2)/sqrt(s2)*sqrt(1000) < 3 
 
