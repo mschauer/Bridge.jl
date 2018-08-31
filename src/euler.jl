@@ -241,6 +241,27 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     end
     yy[.., N]
 end
+function bridge!(Y, u, W::SamplePath, P::PartialBridge{T}) where {T}
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+    
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y::T = u
+    
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+    end
+    yy[.., N] = y
+    yy[.., N]
+end
+
 
 ####
 
