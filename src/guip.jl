@@ -149,7 +149,7 @@ Guided proposal process for diffusion bridge using backward recursion.
 Constructor of guided proposal process for diffusion bridge of `P` to `v` on 
 the time grid `tt` using guiding term derived from linear process `Pt`.
 
-    GuidedPBridge(tt, P, Pt, V, H♢)
+    GuidedBridge(tt, P, Pt, V, H♢)
 
 Guided proposal process for diffusion bridge of `P` to `v` on 
 the time grid `tt` using guiding term derived from linear process `Pt`.

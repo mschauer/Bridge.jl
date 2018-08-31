@@ -106,11 +106,14 @@ include("cspline.jl")
 include("wiener.jl")
 include("ellipse.jl")
 include("ode.jl")
+include("gode.jl")
 include("ode!.jl")
 include("diffusion.jl")
 include("linpro.jl")
 include("guip.jl")
 include("guip!.jl")
+
+include("hypoguip.jl")
 
 include("euler.jl")
 
