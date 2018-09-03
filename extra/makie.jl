@@ -1,9 +1,10 @@
 using Makie, GeometryTypes, Distributions
-#import Makie: to_positions
+import Makie: convert_arguments
 import Bridge: mcsvd3, visualize_uncertainty
 
-#to_positions(S::Makie.Scene, X::Bridge.SamplePath) = to_positions(S, X.yy)
-#to_positions(S::Makie.Scene, X::Bridge.VSamplePath) = to_positions(S, X.yy)
+convert_arguments(P::Type{<:Scatter}, X::SamplePath{<:AbstractVector}) = convert_arguments(P, X.yy)
+convert_arguments(P::Type{<:Scatter}, X::SamplePath{<:Real}) = convert_arguments(P, X.tt, X.yy)
+
 
 """
     mcsvd3(mcstates) -> mean, q, sv
