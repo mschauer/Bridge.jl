@@ -2,8 +2,8 @@ using Makie, GeometryTypes, Distributions
 import Makie: convert_arguments
 import Bridge: mcsvd3, visualize_uncertainty
 
-convert_arguments(P::Type{<:Scatter}, X::SamplePath{<:AbstractVector}) = convert_arguments(P, X.yy)
-convert_arguments(P::Type{<:Scatter}, X::SamplePath{<:Real}) = convert_arguments(P, X.tt, X.yy)
+convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{<:AbstractVector}) = convert_arguments(P, X.yy)
+convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{<:Real}) = convert_arguments(P, X.tt, X.yy)
 
 
 """
