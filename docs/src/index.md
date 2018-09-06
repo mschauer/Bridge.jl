@@ -11,7 +11,6 @@ Secondly, the struct
 struct SamplePath{T}
     tt::Vector{Float64}
     yy::Vector{T}
-    SamplePath{T}(tt, yy) where {T} = new(tt, yy)
 end
 ```
 serves as container for sample path returned by direct and approximate samplers (`sample`, `euler`, ...).
@@ -19,13 +18,12 @@ serves as container for sample path returned by direct and approximate samplers 
 
 Help is available at the REPL:
 ```
-help?> euler
-search: euler euler! eulergamma default_worker_pool schedule @schedule
+help?> Bridge.ContinuousTimeProcess
+  ContinuousTimeProcess{T}
 
-  euler(u, W, P) -> X
-
-  Solve stochastic differential equation ``dX_t = b(t, X_t)dt + σ(t, X_t)dW_t, X_0 = u``
-  using the Euler scheme.
+  Types inheriting from the abstract type ContinuousTimeProcess{T}
+  characterize the properties of a T-valued stochastic process, play a similar
+  role as distribution types like Exponential in the package Distributions.
 ```
 
 Pre-defined processes defined are
