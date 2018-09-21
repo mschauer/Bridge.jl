@@ -165,7 +165,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.solve!",
     "category": "function",
-    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n\n\nsolve!(::EulerMaruyama, Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t  using the Euler-Maruyama scheme in place.\n\n\n\n\n\n"
+    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n\n\nsolve!(::EulerMaruyama, Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using the Euler-Maruyama scheme in place.\n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.solvebackward!",
+    "page": "Library",
+    "title": "Bridge.solvebackward!",
+    "category": "function",
+    "text": "Currently only timedependent sigma, as Ito correction is necessary\n\n\n\n\n\n"
 },
 
 {
@@ -205,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Ordinary differential equations and quadrature",
     "category": "section",
-    "text": "Bridge.ODESolver\nsolve!\nBridge.R3\nBridge.BS3\nLeftRule\nBridge.fundamental_matrix"
+    "text": "Bridge.ODESolver\nsolve!\nBridge.solvebackward!\nBridge.R3\nBridge.BS3\nLeftRule\nBridge.fundamental_matrix"
 },
 
 {
@@ -293,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.solve",
     "category": "function",
-    "text": "solve(method::SDESolver, u, W::SamplePath, P) -> X\nsolve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t  using method in place.\n\nExample\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))\n\nstruct OU <: ContinuousTimeProcess{Float64}\n    μ::Float64\nend\nBridge.b(s, x, P::OU) = -P.μ*x\nBridge.σ(s, x, P::OU) = I\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))\n\n\n\n\n\nsolve(method::SDESolver, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t  using method.\n\n\n\n\n\n"
+    "text": "solve(method::SDESolver, u, W::SamplePath, P) -> X\nsolve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method in place.\n\nExample\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))\n\nstruct OU <: ContinuousTimeProcess{Float64}\n    μ::Float64\nend\nBridge.b(s, x, P::OU) = -P.μ*x\nBridge.σ(s, x, P::OU) = I\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))\n\n\n\n\n\nsolve(method::SDESolver, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method.\n\n\n\n\n\n"
 },
 
 {
@@ -605,7 +613,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Miscellaneous",
     "category": "section",
-    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate \nBridge.logpdfnormal\nBridge.runmean\nBridge.PSD\nBridge.Gaussian\nBridge.refine\nBridge.quaternion\nBridge._viridis\nBridge.supnorm"
+    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate\nBridge.logpdfnormal\nBridge.runmean\nBridge.PSD\nBridge.Gaussian\nBridge.refine\nBridge.quaternion\nBridge._viridis\nBridge.supnorm"
 },
 
 {
@@ -733,7 +741,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.PartialBridge",
     "category": "type",
-    "text": "PartialBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nPartialBridge(tt, P, Pt,  L, v, Σ)\n\nGuided proposal process for a partial diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt.\n\nSimulate with bridge!.\n\n\n\n\n\n"
+    "text": "PartialBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nPartialBridge(tt, P, Pt,  L, v, Σ)\n\nGuided proposal process for a partial diffusion bridge of P to v on the time grid tt using guiding term derived from linear process Pt.\n\nSimulate with bridge!.\n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.PartialBridgeνH",
+    "page": "Library",
+    "title": "Bridge.PartialBridgeνH",
+    "category": "type",
+    "text": "PartialBridgeνH\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nPartialBridgeνH(tt, P, Pt,  L, v,ϵ Σ)\n\nGuided proposal process for a partial diffusion bridge of P to v on the time grid tt using guiding term derived from linear process Pt.\n\nSimulate with bridge!.\n\n\n\n\n\n"
 },
 
 {
@@ -765,7 +781,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.bridge",
     "category": "function",
-    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal. \n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nbridge(BridgePre(), W, P°)\n\n\n\n\n\n"
+    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal.\n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nbridge(BridgePre(), W, P°)\n\n\n\n\n\n"
 },
 
 {
@@ -821,7 +837,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.PartialBridge\nBridgePre\nBridgeProp\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.gpV!\nBridge.r\nBridge.gpHinv!\nBridge.gpupdate"
+    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.PartialBridge\nBridge.PartialBridgeνH\nBridgePre\nBridgeProp\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.gpV!\nBridge.r\nBridge.gpHinv!\nBridge.gpupdate"
 },
 
 {
@@ -957,7 +973,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis "
+    "text": "LocalGammaProcess\nBridge.compensator0\nBridge.compensator\nBridge.θ\nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis"
 },
 
 ]}
