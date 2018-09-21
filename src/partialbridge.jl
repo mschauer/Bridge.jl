@@ -35,7 +35,6 @@ the time grid `tt` using guiding term derived from linear process `Pt`.
 
 Simulate with `bridge!`.
 """
-
 struct PartialBridge{T,R,R2,Tv,TL,TM} <: ContinuousTimeProcess{T}
     Target::R
     Pt::R2
@@ -108,4 +107,3 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge; skip = 0)
     end
     som
 end
-
