@@ -1,5 +1,6 @@
+# reminder, to type H*, do H\^+
 cd("/Users/Frank/.julia/dev/Bridge")
-outdir="/Users/Frank/Dropbox/DiffBridges/simresults/"
+outdir="/Users/Frank/Sync/DOCUMENTS/onderzoek/code/diffbridges/out_nclar/"
 
 using Bridge, StaticArrays, Distributions
 using Test, Statistics, Random, LinearAlgebra
@@ -8,39 +9,49 @@ using DelimitedFiles
 using DataFrames
 using CSV
 
-
-
 T = 0.5
 dt = 1/5000
-tt = 0.:dt:T
-sk = 10 # skipped in evaluating loglikelihood, should take 10 probably
+τ(T) = (x) ->  x * (2-x/T)
+tt = τ(T).(0.:dt:T)
 
-obs_scheme =["full","firstcomponent"][1]
-generate_data = true
+sk = 0 # skipped in evaluating loglikelihood
+
+obs_scheme =["full","firstcomponent"][2]
+easy_conditioning = false # if true, then path to 1, else to 2
+
+νHparam = false
+generate_data = false
+
+# settings in case of νH - parametrisation
+ϵ = 10^(-3)
+Σdiagel = 10^(-10)
 
 # settings sampler
-iterations = 5*10^3
+iterations = 5*10^4
 skip_it = 1000
 subsamples = 0:skip_it:iterations
 
-ρ = 0.9
+ρ = obs_scheme=="full" ? 0.85 : 0.95
 
 if obs_scheme=="full"
-    L = @SMatrix [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-    Σ = @SMatrix [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-    v = ℝ{3}(0.5*0.25^2,0.25,1.0)      
+    L = SMatrix{3,3}(1.0I)
+#    Σ = SMatrix{3,3}(0.0I)
+    v = easy_conditioning ?  ℝ{3}(1/32,1/4,1) :  ℝ{3}(5/128,3/8,2)
 end
 if obs_scheme=="firstcomponent"
     L = @SMatrix [1. 0. 0.]
-    Σ = @SMatrix [0.0]
-    v = 0.5*0.25^2         #v = ℝ{1}(2.5 + √Σ[1,1]*randn())
+#    Σ = @SMatrix [0.0]
+    v = easy_conditioning ? 1/32 : 5/128
 end
+
+m, d = size(L)
+Σ = SMatrix{m,m}(Σdiagel*I)
 
 # specify target process
 struct NclarDiffusion <: ContinuousTimeProcess{ℝ{3}}
     α::Float64
     ω::Float64
-    σ::Float64      
+    σ::Float64
 end
 
 Bridge.b(t, x, P::NclarDiffusion) = ℝ{3}(x[2],x[3],-P.α * sin(P.ω * x[3]))
@@ -51,14 +62,14 @@ P = NclarDiffusion(2*3.0, 2pi, 1.0)
 x0 = ℝ{3}(0.0, 0.0, 0.0)
 
 if generate_data
-    include{"truepaths_nclar.jl"}
+     include("/Users/Frank/Sync/DOCUMENTS/onderzoek/code/diffbridges/truepaths_nclar.jl")
 end
 
 # specify auxiliary process
 struct NclarDiffusionAux <: ContinuousTimeProcess{ℝ{3}}
     α::Float64
     ω::Float64
-    σ::Float64      
+    σ::Float64
 end
 
 Random.seed!(42)
@@ -72,18 +83,14 @@ Bridge.a(t, P::NclarDiffusionAux) = Bridge.σ(t,0,P) * Bridge.σ(t, 0, P)'
 Pt = NclarDiffusionAux(P.α, P.ω, P.σ)
 
 # Solve Backward Recursion
-if obs_scheme=="full"
-    Po = Bridge.PartialBridge(tt, P, Pt, L, ℝ{3}(v), Σ)  
-end
-if obs_scheme=="firstcomponent"
-    Po = Bridge.PartialBridge(tt, P, Pt, L, ℝ{1}(v), Σ) 
-end     
+Po = νHparam ? Bridge.PartialBridgeνH(tt, P, Pt, L, ℝ{m}(v),ϵ, Σ) : Bridge.PartialBridge(tt, P, Pt, L, ℝ{m}(v), Σ)
 
 ####################### MH algorithm ###################
 W = sample(tt, Wiener())
+X = solve(Euler(), x0, W, P)
 Xo = copy(X)
 bridge!(Xo, x0, W, Po)
-sample!(W, Wiener())
+
 bridge!(X, x0, W, Po)
 ll = llikelihood(Bridge.LeftRule(), X, Po,skip=sk)
 
@@ -95,7 +102,7 @@ if 0 in subsamples
     push!(XX, copy(X))
 end
 
-acc = 0 
+acc = 0
 
 for iter in 1:iterations
     # Proposal
@@ -106,14 +113,14 @@ for iter in 1:iterations
 
     llo = llikelihood(Bridge.LeftRule(), Xo, Po,skip=sk)
     print("ll $ll $llo, diff_ll: ",round(llo-ll,3))
-    
+
     if log(rand()) <= llo - ll
         X.yy .= Xo.yy
         W.yy .= Wo.yy
         ll = llo
         print("✓")
-        acc +=1 
-    end    
+        acc +=1
+    end
     println()
     if iter in subsamples
         push!(XX, copy(X))
@@ -122,9 +129,9 @@ end
 
 @info "Done."*"\x7"^6
 
-# write mcmc iterates to csv file 
+# write mcmc iterates to csv file
 
-fn = outdir*"out_nclar/iterates-"*obs_scheme*".csv"
+fn = outdir*"iterates-"*obs_scheme*".csv"
 f = open(fn,"w")
 head = "iteration, time, component, value \n"
 write(f, head)
@@ -132,13 +139,13 @@ iterates = [Any[s, tt[j], d, XX[i].yy[j][d]] for d in 1:3, j in 1:length(X), (i,
 writecsv(f,iterates)
 close(f)
 
-ave_acc_perc = 100*round(acc/iterations,2) 
-println("Average acceptance percentage: ",ave_acc_perc,"\n")
+ave_acc_perc = 100*round(acc/iterations,2)
 
 # write info to txt file
-fn = outdir*"out_nclar/info-"*obs_scheme*".txt"
+fn = outdir*"info-"*obs_scheme*".txt"
 f = open(fn,"w")
 write(f, "Choice of observation schemes: ",obs_scheme,"\n")
+write(f, "Easy conditioning (means going up to 1 for the rough component instead of 2): ",string(easy_conditioning),"\n")
 write(f, "Number of iterations: ",string(iterations),"\n")
 write(f, "Skip every ",string(skip_it)," iterations, when saving to csv","\n\n")
 write(f, "Starting point: ",string(x0),"\n")
@@ -148,7 +155,11 @@ write(f, "Noise Sigma: ",string(Σ),"\n")
 write(f, "L: ",string(L),"\n\n")
 write(f,"Mesh width: ",string(dt),"\n")
 write(f, "rho (Crank-Nicholsen parameter: ",string(ρ),"\n")
-write(f, "Average acceptance percentage: ",string(ave_acc_perc),"\n")
+write(f, "Average acceptance percentage: ",string(ave_acc_perc),"\n\n")
+write(f, "Backward type parametrisation in terms of nu and H? ",string(νHparam),"\n")
 close(f)
 
 
+println("Average acceptance percentage: ",ave_acc_perc,"\n")
+println(obs_scheme)
+println("Parametrisation of nu and H? ", νHparam)
