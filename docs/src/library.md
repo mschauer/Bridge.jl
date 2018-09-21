@@ -15,6 +15,7 @@ Bridge.outertype
 ```@docs
 Bridge.ODESolver
 solve!
+Bridge.solvebackward!
 Bridge.R3
 Bridge.BS3
 LeftRule
@@ -87,7 +88,7 @@ Bridge.cumsum0
 Bridge.mat
 Bridge.outer
 CSpline
-Bridge.integrate 
+Bridge.integrate
 Bridge.logpdfnormal
 Bridge.runmean
 Bridge.PSD
@@ -134,6 +135,7 @@ Bridge.LinProBridge
 GuidedProp
 Bridge.GuidedBridge
 Bridge.PartialBridge
+Bridge.PartialBridgeνH
 BridgePre
 BridgeProp
 Bridge.Mdb
@@ -150,9 +152,9 @@ Bridge.gpupdate
 
 ```@docs
 LocalGammaProcess
-Bridge.compensator0 
+Bridge.compensator0
 Bridge.compensator
-Bridge.θ 
+Bridge.θ
 Bridge.soft
 Bridge.tofs
 Bridge.dotVs
@@ -164,6 +166,5 @@ Bridge.BridgePre!
 Bridge.aeuler
 Bridge.MeanCov
 Bridge.upsample
-Bridge.viridis 
+Bridge.viridis
 ```
- 

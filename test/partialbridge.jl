@@ -23,7 +23,8 @@ end
 
 βu(t, x::Float64, P::IntegratedDiffusionAux) = -x + 1/2
 Bridge.b(t, x, P::IntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
-Bridge.σ(t, x, P::IntegratedDiffusionAux) = ℝ{2}(0.0, P.γ)
+Bridge.σ(t, P::IntegratedDiffusionAux) =  ℝ{2}(0.0, P.γ)
+Bridge.σ(t, x, P::IntegratedDiffusionAux) = Bridge.σ(t, P)
 
 Bridge.B(t, P::IntegratedDiffusionAux) = @SMatrix [0.0 1.0; 0.0 -1.0]
 Bridge.β(t, P::IntegratedDiffusionAux) = ℝ{2}(0, 1/2)
@@ -43,7 +44,7 @@ X = solve(Euler(), x0, W, P)
 
 L = @SMatrix [1. 0.]
 Σ = @SMatrix [0.0]
-v = ℝ{1}(2.5)    
+v = ℝ{1}(2.5)
 
 # Solve Backward Recursion
 
@@ -53,15 +54,15 @@ T = typeof(diag(L*L'))
 
 N = length(tt)
 Lt = zeros(S2, N)
-M⁺t = zeros(S, N)
-μt = zeros(T, N) 
+Mt = zeros(S, N)
+μt = zeros(T, N)
 
-Bridge.partialbridgeode!(Bridge.R3(), tt, L, Σ, Lt, M⁺t, μt, Pt)
+Bridge.partialbridgeode!(Bridge.R3(), tt, L, Σ, Lt, Mt, μt, Pt)
 
 j = 10
 
 @test norm((μt[j+1] - μt[j])/dt - (-Lt[j+1]*Bridge.β(tt[j+1], Pt))) < 0.01
-@test norm((M⁺t[j+1] - M⁺t[j])/dt - (-Lt[j+1]*Bridge.a(tt[j+1], Pt)*Lt[j+1]')) < 0.01
+@test norm((inv(Mt[j+1]) - inv(Mt[j]))/dt - (-Lt[j+1]*Bridge.a(tt[j+1], Pt)*Lt[j+1]')) < 0.01
 
 Po = Bridge.PartialBridge(tt, P, Pt, L, v, Σ)
 
@@ -104,7 +105,7 @@ ll = llikelihood(Bridge.LeftRule(), Xo, Po)
         # Proposal
         sample!(W2, Wiener())
         Wo.yy .= ρ*W.yy + sqrt(1-ρ^2)*W2.yy
-  
+
         bridge!(Xo, x0, Wo, Po)
         llo = llikelihood(Bridge.LeftRule(), Xo, Po)
         if log(rand()) <= llo - ll
@@ -112,7 +113,7 @@ ll = llikelihood(Bridge.LeftRule(), Xo, Po)
             W.yy .= Wo.yy
             ll = llo
             acc += 1
-        end    
+        end
         if iter in subsamples
             push!(XX, copy(X))
         end
@@ -120,4 +121,3 @@ ll = llikelihood(Bridge.LeftRule(), Xo, Po)
     @test 1 < acc < iterations
 
 end
-

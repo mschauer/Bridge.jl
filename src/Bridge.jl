@@ -116,6 +116,7 @@ include("guip.jl")
 include("guip!.jl")
 
 include("partialbridge.jl")
+include("partialbridgenuH.jl")
 
 include("euler.jl")
 include("sde.jl")
