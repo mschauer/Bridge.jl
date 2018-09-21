@@ -133,6 +133,7 @@ Bridge.LinProBridge
 ```@docs
 GuidedProp
 Bridge.GuidedBridge
+Bridge.PartialBridge
 BridgePre
 BridgeProp
 Bridge.Mdb

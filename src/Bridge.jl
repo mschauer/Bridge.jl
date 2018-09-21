@@ -113,7 +113,8 @@ include("linpro.jl")
 include("guip.jl")
 include("guip!.jl")
 
-include("hypoguip.jl")
+include("partialbridge.jl")
+include("partialbridgenuH.jl")
 
 include("euler.jl")
 

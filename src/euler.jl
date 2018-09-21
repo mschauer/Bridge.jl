@@ -6,7 +6,7 @@ _scale(w::Number, σ::UniformScaling) = σ.λ*w
 
 Abstract (super-)type for solving methods for stochastic differential equations.
 """
-abstract type SDESolver 
+abstract type SDESolver
 end
 
 struct EulerMaruyama <: SDESolver
@@ -77,7 +77,7 @@ function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
     for i in 1:N-2 # fix me
         yy[.., i] = y
         B = b(tt[i], y, P)
-        y2 = y + B*(tt[i+1]-tt[i]) 
+        y2 = y + B*(tt[i+1]-tt[i])
         y = y + 0.5*(b(tt[i+1], y2, P) + B)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N-1] = y
@@ -91,8 +91,8 @@ end
 """
     solve(method::SDESolver, u, W::SamplePath, P) -> X
     solve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X
-  
-Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t``
 using `method` in place.
 
 # Example
@@ -116,8 +116,8 @@ solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T
 
 """
     solve(method::SDESolver, u, W::VSamplePath, P) -> X
-  
-Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t``
 using `method`.
 """
 solve(method::SDESolver, u, W::VSamplePath{T}, P::ProcessOrCoefficients) where {T} =
@@ -125,8 +125,8 @@ solve(method::SDESolver, u, W::VSamplePath{T}, P::ProcessOrCoefficients) where {
 
 """
     solve!(::EulerMaruyama, Y, u, W, P) -> X
-  
-Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t`` 
+
+Solve stochastic differential equation ``dX_t = b(t,X_t)dt + σ(t,X_t)dW_t``
 using the Euler-Maruyama scheme in place.
 """
 function solve!(::EulerMaruyama, Y, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T}
@@ -173,7 +173,7 @@ end
 """
     bridge(method, W, P) -> Y
 
-Integrate with `method`, where `P` is a bridge proposal. 
+Integrate with `method`, where `P` is a bridge proposal.
 
 # Examples
 
@@ -189,7 +189,7 @@ bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess) = bridge!(BridgePre
 
 function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
-    
+
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 
@@ -199,7 +199,7 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
     tt[:] = P.tt
 
     y::T = P.v[1]
-    
+
     for i in 1:N-1
         yy[.., i] = y
         y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
@@ -219,7 +219,7 @@ Integrate guided bridge proposal `P` from `u`, returning endpoint `v`.
 """
 function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
-    
+
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 
@@ -229,7 +229,7 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     tt[:] = P.tt
 
     y::T = u
-    
+
     for i in 1:N-1
         yy[.., i] = y
         y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
@@ -241,6 +241,27 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     end
     yy[.., N]
 end
+function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge{T},PartialBridgeνH{T}}) where {T}
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y::T = u
+
+    for i in 1:N-1
+        yy[.., i] = y
+        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+    end
+    yy[.., N] = y
+    yy[.., N]
+end
+
 
 ####
 
@@ -255,7 +276,7 @@ bridge!
 
 function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
-    
+
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
 
@@ -265,7 +286,7 @@ function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     tt[:] = P.tt
 
     y::T = P.v[1]
-    
+
     for i in 1:N-1
         yy[.., i] = y
         y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
@@ -278,7 +299,7 @@ function solve!(::StochasticRungeKutta, Y, u::T, W::SamplePath, P::ProcessOrCoef
 
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
- 
+
     ww = W.yy
     tt = Y.tt
     yy = Y.yy
@@ -296,7 +317,7 @@ function solve!(::StochasticRungeKutta, Y, u::T, W::SamplePath, P::ProcessOrCoef
         y = y + B*delta + S*dw
         ups = y + B*delta + S*sqdelta
         y = y + 0.5(σ(tt[i+1], ups, P) - S)*(dw^2 - delta)/sqdelta
-        
+
     end
     yy[.., N] = y
     SamplePath{T}(tt, yy)
@@ -317,7 +338,7 @@ function innovations!(::EulerMaruyama, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W
@@ -357,10 +378,8 @@ function innovations!(::Mdb, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i])) 
+        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W
 end
-
-
