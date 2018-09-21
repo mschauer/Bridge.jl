@@ -162,5 +162,8 @@ Bridge.sizedtype
 Bridge.piecewise
 Bridge.BridgePre!
 Bridge.aeuler
+Bridge.MeanCov
+Bridge.upsample
+Bridge.viridis 
 ```
  

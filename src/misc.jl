@@ -111,6 +111,36 @@ function piecewise(Y::SamplePath, tend = Y.tt[end])
     tt, repeat(Y.yy, inner=2)
 end
 
+"""
+    upsample(x, td, t) 
+
+If `x` is piecewise constant with jumps at `td`, return values of `x`
+at times `t`.
+"""
+upsample(x, td, t) = [x[s == td[end] ? end : searchsortedlast(td, s)] for s in t]
+
+"""
+    viridis
+
+Map `s` onto the first `maxviri` viridis colors 
+"""
+function viridis(s, alpha = 0.9f0, maxviri = 200, RGBA=RGBA) 
+    l, u = extrema(s)
+    map(x->RGBA(Float32.(Bridge._viridis[1+floor(Int,x*maxviri)])..., alpha), (s .- l)/(u .- l))
+end
+
+
+function iterateall(it)
+    u = iterate(it)
+    u === nothing && error("Empty iterator")
+    x, state = u
+    while true
+        u = iterate(it, state)
+        u === nothing && return x
+        x, state = u
+    end
+end
+
 
 """
     _viridis

@@ -1,3 +1,8 @@
+ismutable(_) = Val(false)
+ismutable(::Type{<:Array}) = Val(true)
+
+
+
 import Base: getindex, setindex!, length, copy, vcat, keys, values, iterate
 import Base: zero
 
@@ -66,6 +71,7 @@ end
 SamplePath(tt, yy::Vector{T}) where {T} = SamplePath{T}(tt, yy)
 
 samplepath(tt, v) = SamplePath(tt, fill(v, length(tt))) 
+samplepath(tt, v::Vector) = SamplePath(tt, [copy(v) for t in tt]) 
 
 
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))

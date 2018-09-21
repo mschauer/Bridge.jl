@@ -30,3 +30,19 @@ function solvebackward!(::Bridge.R3!, f!, X, xT)
     end
     X
 end
+
+function solvebackward!(::Bridge.R3!, f!, X::SamplePath, xT)
+    tt = X.tt
+    n = length(tt)
+    yy = X.yy
+    y = copy(xT)
+    z = yy[n] 
+    z .= y 
+    ws = (copy(y), copy(y), copy(y), copy(y)) # y2, k1, k2, k3
+    for i in n-1:-1:1
+        kernelr3!(f!, tt[i+1], y, ws, y, tt[i] - tt[i+1])  
+        z = yy[i] 
+        z .= y
+    end
+    X
+end
