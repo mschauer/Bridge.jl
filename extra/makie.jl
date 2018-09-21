@@ -5,6 +5,15 @@ import Bridge: mcsvd3, visualize_uncertainty
 convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{<:AbstractVector}) = convert_arguments(P, X.yy)
 convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{<:Real}) = convert_arguments(P, X.tt, X.yy)
 
+function band!(scene, x, ylower, yupper; nargs...)
+    n = length(x)
+    coordinates = [x ylower; x yupper]
+    ns = 1:n-1
+    ns2 = n+1:2n-1
+    connectivity = [ns ns .+ 1 ns2;
+                    ns2 ns2 .+ 1 ns .+ 1]
+    mesh!(scene, coordinates, connectivity; shading = false, nargs...)
+end
 
 """
     mcsvd3(mcstates) -> mean, q, sv

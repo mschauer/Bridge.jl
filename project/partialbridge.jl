@@ -1,5 +1,3 @@
-cd("/Users/Frank/.julia/dev/Bridge")
-
 using Bridge, StaticArrays, Distributions
 using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
@@ -104,7 +102,7 @@ for iter in 1:iterations
 end
 
 # write mcmc iterates to csv file 
-f = open("/Users/Frank/Dropbox/DiffBridges/Rcode/integrated_diff/iterates.csv","w")
+f = open("output/integrated_diff/iterates.csv","w")
 head = "iteration, time, component, value \n"
 write(f, head)
 iterates = [Any[s, tt[j], d, XX[i].yy[j][d]] for d in 1:2, j in 1:length(X), (i,s) in enumerate(subsamples) ][:]
@@ -136,9 +134,9 @@ library(tidyverse)
 library(grDevices)
 
 theme_set(theme_minimal())
-setwd("~/Dropbox/DiffBridges/Rcode/integrated_diff")
+setwd("output/integrated_diff")
 
-d <- read.csv("~/Dropbox/DiffBridges/Rcode/integrated_diff/iterates.csv")
+d <- read.csv("output/integrated_diff/iterates.csv")
 dsub <- d[d$iteration %in% c(seq(0,1000,by=200),seq(40000,50000,by=2000)),]
 
 
@@ -148,10 +146,8 @@ dsub %>% ggplot(aes(x=time,y=value,colour=iteration)) +
   facet_wrap(~component,ncol=1,scales='free_y')+
   scale_colour_gradient(low='yellow',high='Darkred')
 dev.off()    
-
-#setwd("/Users/Frank/.julia/dev/Bridge")
 """
-cd("/Users/Frank/.julia/dev/Bridge")
+
 # import variables in Julia 
 @rget d
 

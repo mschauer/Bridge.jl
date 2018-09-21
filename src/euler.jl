@@ -61,6 +61,9 @@ struct EulerMaruyama! <: SDESolver
 end
 
 
+struct EulerMaruyamaWithIndex! <: SDESolver
+end
+
 
 function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
 

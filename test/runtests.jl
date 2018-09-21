@@ -17,4 +17,6 @@ include("gamma.jl")
 include("gaussian.jl")
 include("bessel.jl")
 
+include("onlinestat.jl")
+
 include("with_srand.jl") # run last
