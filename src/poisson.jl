@@ -20,7 +20,7 @@ Sampling method for `InhomogPoisson` by the 'thinning' algorithm.
 #### Examples:
 
 ```
-sample(Thinning(λmax), T, InhomogPoisson(λ))
+sample(ThinningAlg(λmax), T, InhomogPoisson(λ))
 ```
 """
 struct ThinningAlg <: PoissonSampler
