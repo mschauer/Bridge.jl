@@ -1,5 +1,5 @@
-cd("/Users/Frank/.julia/dev/Bridge")
-outdir="/Users/Frank/Sync/DOCUMENTS/onderzoek/code/diffbridges/out_fh/"
+mkpath("output/out_fh")
+outdir="output/out_fh/"
 
 using Bridge, StaticArrays, Distributions
 using Test, Statistics, Random, LinearAlgebra
@@ -83,6 +83,7 @@ for k1 in (1:3)
         iterations =  !(k1==3) ? 5*10^4 : 10*10^4
         skip_it = 1000
         subsamples = 0:skip_it:iterations
+        printiter = 100
 
         if endpoint == "first"
             #v = -0.959
@@ -153,20 +154,24 @@ for k1 in (1:3)
 
             llo = llikelihood(Bridge.LeftRule(), Xo, Po)
 
-            if mod(iter,50)==0
-                print(iter," ll $ll $llo, diff_ll: ",round(llo-ll,3))#, X[10], " ", Xo[10])
+            if mod(iter, printiter) == 0
+                print(iter," ll $ll $llo, diff_ll: ",round(llo-ll, digits=3))#, X[10], " ", Xo[10])
             end
-
+            accept = false
             if log(rand()) <= llo - ll
                 X.yy .= Xo.yy
                 W.yy .= Wo.yy
                 ll = llo
-                #print("✓")
+                accept = true
                 acc +=1
             end
-            println()
+
             if iter in subsamples
                 push!(XX, copy(X))
+            end
+            if mod(iter, printiter) == 0
+                accept && print("✓")
+                println()
             end
         end
 
@@ -183,7 +188,7 @@ for k1 in (1:3)
         writedlm(f,iterates,',')
         close(f)
 
-        ave_acc_perc = 100*round(acc/iterations,2)
+        ave_acc_perc = 100*round(acc/iterations, digits=2)
 
         # write info to txt file
         fn = outdir*"info-"*endpoint*"-"*aux_choice*".txt"
