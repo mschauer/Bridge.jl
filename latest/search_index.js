@@ -437,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.ThinningAlg",
     "category": "type",
-    "text": "ThinningAlg(λmax)\n\nSampling method for InhomogPoisson by the \'thinning\' algorithm. \n\nExamples:\n\nsample(Thinning(λmax), T, InhomogPoisson(λ))\n\n\n\n\n\n"
+    "text": "ThinningAlg(λmax)\n\nSampling method for InhomogPoisson by the \'thinning\' algorithm. \n\nExamples:\n\nsample(ThinningAlg(λmax), T, InhomogPoisson(λ))\n\n\n\n\n\n"
 },
 
 {
@@ -929,11 +929,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.MeanCov",
+    "page": "Library",
+    "title": "Bridge.MeanCov",
+    "category": "type",
+    "text": "MeanCov(itr)\n\nIterator interface for online mean and covariance Iterates are triples mean, λ, cov/λ  \n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.upsample",
+    "page": "Library",
+    "title": "Bridge.upsample",
+    "category": "function",
+    "text": "upsample(x, td, t)\n\nIf x is piecewise constant with jumps at td, return values of x at times t.\n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.viridis",
+    "page": "Library",
+    "title": "Bridge.viridis",
+    "category": "function",
+    "text": "viridis\n\nMap s onto the first maxviri viridis colors \n\n\n\n\n\n"
+},
+
+{
     "location": "library.html#Unsorted-1",
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler"
+    "text": "LocalGammaProcess\nBridge.compensator0 \nBridge.compensator\nBridge.θ \nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis "
 },
 
 ]}
