@@ -74,10 +74,8 @@ struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
 end
 
 # define drift and diffusion coefficient of OrnsteinUhlenbeck
-import Bridge: b, σ, a, transitionprob
-Bridge.b(t,x, P::OrnsteinUhlenbeck) = -P.β*x
+Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β*x
 Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
-Bridge.a(t, x, P::OrnsteinUhlenbeck) = P.σ^2
 
 # simulate OrnsteinUhlenbeck using Euler scheme
 W = sample(0:0.01:10, Wiener()) 

@@ -41,6 +41,7 @@ include("chol.jl")
 
 using StaticArrays
 using Distributions
+using Colors
 
 
 
@@ -94,6 +95,7 @@ hasbi(::Any) = false
 hasai(::Any) = false
 
 include("expint.jl")
+#include("setcol.jl")
 
 include("fsa.jl")
 include("gaussian.jl")
@@ -117,6 +119,7 @@ include("partialbridge.jl")
 include("partialbridgenuH.jl")
 
 include("euler.jl")
+include("sde.jl")
 
 include("sde!.jl")
 include("levy.jl")

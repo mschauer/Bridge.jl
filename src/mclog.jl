@@ -107,3 +107,68 @@ function mcmarginalstats(states)
     end 
     Xmean, Xstd
 end
+
+"""
+    MeanCov(itr)
+
+Iterator interface for online mean and covariance
+Iterates are triples `mean, λ, cov/λ`  
+   
+"""
+struct MeanCov{T}
+    iter::T
+end
+import Base: length, IteratorSize
+length(x::MeanCov) = length(x.iter)
+IteratorSize(::Type{MeanCov{T}}) where {T} = IteratorSize(T) isa Base.HasShape ?  Base.HasLength() : IteratorSize(T)
+
+
+@inline function iterate(mc::MeanCov) 
+    u = iterate(mc.iter)
+    if u === nothing
+        return nothing
+    end
+    x, state = u
+    n = 0
+    delta = copy(x)
+    m = delta/(n+1)
+    
+    m2 = outer(delta, x - m)
+    (m, 1/n, m2), (m, m2, delta, n + 1, state)
+end
+
+
+iterate(mc::MeanCov, mcstate) = iterate_(mc, ismutable(typeof(mcstate[1])), mcstate...)    
+
+function iterate_(mc::MeanCov, ::Val{false}, m, m2, delta, n, state ) 
+    u = iterate(mc.iter, state)
+    if u === nothing
+        return nothing
+    end
+    x, state = u
+    delta = x - m
+    m  += delta/(n+1)
+    m2 += outer(delta, x - m)
+    (m, 1/n, m2), (m, m2, delta, n + 1, state)
+end
+
+
+function iterate_(mc::MeanCov, ::Val{true}, m, m2, delta, n, state ) 
+    u = iterate(mc.iter, state)
+    if u === nothing
+        return nothing
+    end
+    x, state = u
+        
+    for i in eachindex(m)
+        delta[i] = x[i] - m[i]
+        m[i] += (delta[i])/(n+1)
+    end
+    for i in eachindex(m)
+        for j in eachindex(m)
+            m2[i,j] += outer(delta[i], x[j]-m[j])
+        end
+    end
+    (m, 1/n, m2), (m, m2, delta, n + 1, state)
+end
+

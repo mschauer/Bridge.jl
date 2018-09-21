@@ -1,7 +1,6 @@
 using Bridge, Distributions, StaticArrays
-
-PLOT = :winston
-include("plot.jl")
+using Plots
+using LinearAlgebra
 
 #
 t = 2. 
@@ -24,11 +23,13 @@ supertype(typeof(P))
 W = sample(range(0., stop=t, length=n), P)
 W = sample(0:dt:t, P) # similar way
 
-print(W.tt) 
+println(W.tt) 
 # prints [0.0,0.03,0.06,..., 0.93.96,0.99]
 plot(W.tt, W.yy) 
 # plots path 
 
+plot(W) 
+# Bridge defines a plot @recipe (via RecipesBase)
 
 
 # sample complex Brownian motion on a nonequidistant grid
@@ -41,8 +42,8 @@ s = 1.
 v = 0.
 
 B = sample(0:dt:s, WienerBridge(s, v)) 
-plot(W.tt, W.yy, "b")
-oplot(B.tt, B.yy, "r")
+plot(W.tt, W.yy, color="blue")
+plot!(B.tt, B.yy, color="red")
 # displays X and  Brownian bridge B in red
 
 
@@ -82,9 +83,9 @@ plot(Float64[β for (β, ll) in LL], Float64[ll for (β, ll) in LL])
 
 # sample OrnsteinUhlenbeck exactly. compare with euler scheme which degrates as dt = 0.07
 X = solve(EulerMaruyama(), 0.1, sample(0:0.07:10, Wiener{Float64}()), OrnsteinUhlenbeck(20., 1.))
-X2 =  sample(0:0.07:10, OrnsteinUhlenbeck(20., 1.), 0.1)
-plot(X.tt, 1+X.yy)
-oplot(X2.tt, X2.yy)
+X2 = sample(0:0.07:10, OrnsteinUhlenbeck(20., 1.), 0.1)
+plot(X.tt, 1 .+ X.yy)
+plot!(X2.tt, X2.yy)
 
 # sample vector Brownian motion
 W2 = sample(0:0.1:10, Wiener{SVector{4,Float64}}())
@@ -95,13 +96,13 @@ X = solve(EulerMaruyama(), 0.1, sample(0:0.01:1, Wiener{Float64}()),P)
 
 P2 = PBridgeProp(OrnsteinUhlenbeck(3., 1.), 0., 0., 1., 2., 2., 0., 1., 0.3, 1.)
 Y = solve(EulerMaruyama(), 0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
-plot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3))
+p = plot(Y.tt, Y.yy, xlim=(0, 2), ylim=(-3,3), legend=false)
 
 for i in 1:100
-    Y = solve(EulerMaruyama(), 0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
-    oplot(Y.tt, Y.yy, xrange=(0, 2), yrange=(-3,3), linewidth=0.2)
+    global Y = solve(EulerMaruyama(), 0.1, sample(0:0.01:2, Wiener{Float64}()),P2)
+    plot!(p, Y.tt, Y.yy, xlim=(0, 2), ylim=(-3,3), linewidth=0.2)
 end
-oplot()
+display(p)
 
 
 # Define a diffusion process
@@ -125,6 +126,6 @@ X = solve(EulerMaruyama(), SVector(0., 0.), sample(tt, Wiener{SVector{2,Float64}
 
 
 yy = Bridge.mat(X.yy)
-plot(yy[1,:], yy[2,:], xrange=(-2, 2), yrange=(-2,2),  linewidth=0.5)
+plot(yy[1,:], yy[2,:], xlim=(-2, 2), ylim=(-2,2), linewidth=0.5)
 
 

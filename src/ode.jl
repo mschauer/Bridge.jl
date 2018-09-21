@@ -73,7 +73,7 @@ function kernelbs3(t, y, dt, P, k = F(t, y, P))
     yº, k4, err
 end
 
-function solvebackward!(method, F, X, xT, P) 
+function solvebackward!(method::ODESolver, F, X, xT, P) 
     _solvebackward!(method, F, X, xT, P) 
 end
 @inline function _solvebackward!(::R3, F, X::SamplePath{T}, xT, P) where {T}
