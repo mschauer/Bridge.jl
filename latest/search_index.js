@@ -109,7 +109,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.ContinuousTimeProcess",
     "category": "type",
-    "text": "ContinuousTimeProcess{T}\n\nTypes inheriting from the abstract type ContinuousTimeProcess{T} characterize  the properties of a T-valued stochastic process, play a similar role as distribution types like Exponential in the package Distributions.\n\n\n\n\n\n"
+    "text": "ContinuousTimeProcess{T}\n\nTypes inheriting from the abstract type ContinuousTimeProcess{T} characterize the properties of a T-valued stochastic process, play a similar role as distribution types like Exponential in the package Distributions.\n\n\n\n\n\n"
 },
 
 {
@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.SamplePath",
     "category": "type",
-    "text": "SamplePath{T} <: AbstractPath{T}\n\nThe struct\n\nstruct SamplePath{T}\n    tt::Vector{Float64}\n    yy::Vector{T}\n    SamplePath{T}(tt, yy) where {T} = new(tt, yy)\nend\n\nserves as container for discretely observed ContinuousTimeProcesses and for the sample path returned by direct and approximate samplers. tt is the vector of the grid points of the observation/simulation  and yy is the corresponding vector of states.\n\nIt supports getindex, setindex!, length, copy, vcat.\n\n\n\n\n\n"
+    "text": "SamplePath{T} <: AbstractPath{T}\n\nThe struct\n\nstruct SamplePath{T}\n    tt::Vector{Float64}\n    yy::Vector{T}\n    SamplePath{T}(tt, yy) where {T} = new(tt, yy)\nend\n\nserves as container for discretely observed ContinuousTimeProcesses and for the sample path returned by direct and approximate samplers. tt is the vector of the grid points of the observation/simulation and yy is the corresponding vector of states.\n\nIt supports getindex, setindex!, length, copy, vcat.\n\n\n\n\n\n"
 },
 
 {
@@ -389,7 +389,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.GammaProcess",
     "category": "type",
-    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\nν(x)=γ x^-1exp(-λ x) \n\nHere Gamma(α,θ) is the Gamma distribution in julia\'s parametrization with shape parameter α and scale θ.\n\n\n\n\n\n"
+    "text": "GammaProcess\n\nA GammaProcess with jump rate γ and inverse jump size λ has increments Gamma(t*γ, 1/λ) and Levy measure\n\nν(x)=γ x^-1exp(-λ x)\n\nHere Gamma(α,θ) is the Gamma distribution in julia\'s parametrization with shape parameter α and scale θ.\n\n\n\n\n\n"
 },
 
 {
@@ -429,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.uniform_thinning!",
     "category": "function",
-    "text": "uniformthinning!(X, P::GammaProcess, γᵒ)\n\nReturn a Gamma process Y with new intensity γᵒ, such that X-Y has intensity γ-γᵒ and Y and X-Y are independent. In the limit dt to infty the new Gamma process has each of is jump removed with probability γᵒ/γ. Overwrites X with Y.\n\n\n\n\n\n"
+    "text": "uniform_thinning!(X, P::GammaProcess, γᵒ)\n\nReturn a Gamma process Y with new intensity γᵒ, such that X-Y has intensity γ-γᵒ and Y and X-Y are independent. In the limit dt to infty the new Gamma process has each of is jump removed with probability γᵒ/γ. Overwrites X with Y.\n\n\n\n\n\n"
 },
 
 {
@@ -609,11 +609,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.posterior",
+    "page": "Library",
+    "title": "Bridge.posterior",
+    "category": "function",
+    "text": "posterior(Val{:λ}, P::GammaProcess, U::SamplePath, prior = (0.0, 0.0))\n\nMarginal posterior distribution of parameter λ. Interpretation of conjugate prior is \"observed time, observed increment\".\n\n\n\n\n\n"
+},
+
+{
     "location": "library.html#Miscellaneous-1",
     "page": "Library",
     "title": "Miscellaneous",
     "category": "section",
-    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate\nBridge.logpdfnormal\nBridge.runmean\nBridge.PSD\nBridge.Gaussian\nBridge.refine\nBridge.quaternion\nBridge._viridis\nBridge.supnorm"
+    "text": "Bridge.endpoint!\nBridge.inner\nBridge.cumsum0\nBridge.mat\nBridge.outer\nCSpline\nBridge.integrate\nBridge.logpdfnormal\nBridge.runmean\nBridge.PSD\nBridge.Gaussian\nBridge.refine\nBridge.quaternion\nBridge._viridis\nBridge.supnorm\nBridge.posterior"
 },
 
 {
@@ -661,7 +669,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.mcmarginalstats",
     "category": "function",
-    "text": "mcmarginalstats(mcstates) -> mean, std\n\nCompute meanand marginal standard deviationsstd` for 2d plots. \n\n\n\n\n\n"
+    "text": "mcmarginalstats(mcstates) -> mean, std\n\nCompute meanand marginal standard deviationsstd` for 2d plots.\n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.OnlineStat",
+    "page": "Library",
+    "title": "Bridge.OnlineStat",
+    "category": "type",
+    "text": "stats = map(OnlineStat, (x, θ, η))\n\nmap(push!, stats, (x, θ, η))\n\nmean.(stats)\ncov.(stats)\n\n\n\n\n\n"
 },
 
 {
@@ -669,7 +685,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Online statistics",
     "category": "section",
-    "text": "Online updating of the tuple state = (m, m2, n) wherem - mean(x[1:n])m2 - sum of squares of differences from the current mean, textstylesum_i=1^n (x_i - bar x_n)^2n - number of iterationsmcstart\nmcnext\nmcband\nmcbandmean\nBridge.mcstats\nBridge.mcmarginalstats"
+    "text": "Online updating of the tuple state = (m, m2, n) wherem - mean(x[1:n])m2 - sum of squares of differences from the current mean, textstylesum_i=1^n (x_i - bar x_n)^2n - number of iterationsmcstart\nmcnext\nmcband\nmcbandmean\nBridge.mcstats\nBridge.mcmarginalstats\nBridge.OnlineStat"
 },
 
 {
@@ -693,7 +709,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.LinearNoiseAppr",
     "category": "type",
-    "text": "LinearNoiseAppr(tt, P, x, a, direction = forward)\n\nPrecursor of the linear noise approximation of P. For now no attempt is taken  to add in a linearization around the deterministic path. direction can be one of :forward, :backward or :nothing. The latter corresponds to choosing β == 0.\n\n\n\n\n\n"
+    "text": "LinearNoiseAppr(tt, P, x, a, direction = forward)\n\nPrecursor of the linear noise approximation of P. For now no attempt is taken to add in a linearization around the deterministic path. direction can be one of :forward, :backward or :nothing. The latter corresponds to choosing β == 0.\n\n\n\n\n\n"
 },
 
 {
@@ -733,7 +749,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.GuidedBridge",
     "category": "type",
-    "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nGuidedBridge(tt, P, Pt, v)\n\nConstructor of guided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt.\n\nGuidedBridge(tt, P, Pt, V, H♢)\n\nGuided proposal process for diffusion bridge of P to v on  the time grid tt using guiding term derived from linear process Pt. Initialize using Bridge.gpupdate(H♢, V, L, Σ, v)\n\n\n\n\n\n"
+    "text": "GuidedBridge\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nGuidedBridge(tt, P, Pt, v)\n\nConstructor of guided proposal process for diffusion bridge of P to v on the time grid tt using guiding term derived from linear process Pt.\n\nGuidedBridge(tt, P, Pt, V, H♢)\n\nGuided proposal process for diffusion bridge of P to v on the time grid tt using guiding term derived from linear process Pt. Initialize using Bridge.gpupdate(H♢, V, L, Σ, v)\n\n\n\n\n\n"
 },
 
 {
@@ -829,7 +845,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.gpupdate",
     "category": "function",
-    "text": "gpupdate(H♢, V, L, Σ, v)\ngpupdate(P, L, Σ, v)\n\nReturn updated H♢, V when observation v at time zero with error Σ is observed.\n\n\n\n\n\n"
+    "text": "gpupdate(H♢, V, L, Σ, v)\ngpupdate(P, V, L, Σ, v)\n\nReturn updated H♢, V when observation v at time zero with error Σ is observed.\n\n\n\n\n\n"
 },
 
 {
@@ -861,7 +877,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.compensator",
     "category": "function",
-    "text": "compensator(kstart, P::LocalGammaProcess)\n\nCompensator of LocalGammaProcess  For kstart = 1, this is sum_k=1^N nu(B_k), for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant).\n\n\n\n\n\n"
+    "text": "compensator(kstart, P::LocalGammaProcess)\n\nCompensator of LocalGammaProcess For kstart = 1, this is sum_k=1^N nu(B_k), for kstart = 0, this is sum_k=0^N nu(B_k) - C (where C is a constant).\n\n\n\n\n\n"
 },
 
 {
@@ -909,7 +925,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.Increments",
     "category": "type",
-    "text": "Increments{S<:AbstractPath{T}}\n\nIterator over the increments of an AbstractPath.  Iterates over (i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i]).\n\n\n\n\n\n"
+    "text": "Increments{S<:AbstractPath{T}}\n\nIterator over the increments of an AbstractPath. Iterates over (i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i]).\n\n\n\n\n\n"
 },
 
 {
@@ -949,7 +965,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.MeanCov",
     "category": "type",
-    "text": "MeanCov(itr)\n\nIterator interface for online mean and covariance Iterates are triples mean, λ, cov/λ  \n\n\n\n\n\n"
+    "text": "MeanCov(itr)\n\nIterator interface for online mean and covariance estimates. Iterates are triples mean, λ, cov/λ\n\nExample:\n\nc = Channel{Vector}(1)\nm = Bridge.MeanCov(c)\nput!(c, rand(5))\nu = iterate(m)\nput!(c, rand(5))\nu = iterate(m, u[2])\nclose(c)\nu[1][1]\n\nm = Bridge.MeanCov(Channel{Vector{Float64}}(1))\nu = register!(m, rand(5))\nu = register!(m, rand(5), u)\nclose(m)\nu[1][1]\n\n\n\n\n\n"
 },
 
 {
@@ -965,7 +981,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.viridis",
     "category": "function",
-    "text": "viridis\n\nMap s onto the first maxviri viridis colors \n\n\n\n\n\n"
+    "text": "viridis\n\nMap s onto the first maxviri viridis colors\n\n\n\n\n\n"
+},
+
+{
+    "location": "library.html#Bridge.rescale",
+    "page": "Library",
+    "title": "Bridge.rescale",
+    "category": "function",
+    "text": "rescale(x, a=>b, u=>v)\n\nLinearly map the interval [a,b] to [u,v].\n\nExample:\n\nrescale.(x, Ref(extrema(x)))\n\n\n\n\n\n"
 },
 
 {
@@ -973,7 +997,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0\nBridge.compensator\nBridge.θ\nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis"
+    "text": "LocalGammaProcess\nBridge.compensator0\nBridge.compensator\nBridge.θ\nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis\nBridge.rescale"
 },
 
 ]}
