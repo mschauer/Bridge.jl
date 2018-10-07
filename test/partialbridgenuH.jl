@@ -6,36 +6,36 @@ T = 2.0
 dt = 1/1000
 
 tt = 0.:dt:T
-#struct IntegratedDiffusion <: ContinuousTimeProcess{ℝ{2}}
+#struct PBIntegratedDiffusion <: ContinuousTimeProcess{ℝ{2}}
 #    γ::Float64
 #end
 
-Bridge.b(t, x, P::IntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t, x, P::PBIntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
 
 @test Bridge.b!(0, X1.yy[1], copy( X1.yy[1]),  P) == Bridge.b(0, X1.yy[1], P)
 
-Bridge.σ(t, x, P::IntegratedDiffusion) = ℝ{2}(0.0, P.γ)
+Bridge.σ(t, x, P::PBIntegratedDiffusion) = ℝ{2}(0.0, P.γ)
 
 @test Bridge.σ!(0, X1.yy[1], 1.0, copy( X1.yy[1]),  P) == Bridge.σ(0, X1.yy[1], P)
 
 
-Bridge.constdiff(::IntegratedDiffusion) = true
+Bridge.constdiff(::PBIntegratedDiffusion) = true
 
-#struct IntegratedDiffusionAux <: ContinuousTimeProcess{ℝ{2}}
+#struct PBIntegratedDiffusionAux <: ContinuousTimeProcess{ℝ{2}}
 #    γ::Float64
 #end
 
-Bridge.b(t, x, P::IntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t, x, P::PBIntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
 
 @test Bridge.b!(0, X1.yy[1], copy( X1.yy[1]),  Pt) == Bridge.b(0, X1.yy[1], Pt)
 
 
-Bridge.σ(t, P::IntegratedDiffusionAux) =  ℝ{2}(0.0, P.γ)
-Bridge.σ(t, x, P::IntegratedDiffusionAux) = Bridge.σ(t, P)
+Bridge.σ(t, P::PBIntegratedDiffusionAux) =  ℝ{2}(0.0, P.γ)
+Bridge.σ(t, x, P::PBIntegratedDiffusionAux) = Bridge.σ(t, P)
 
-Bridge.B(t, P::IntegratedDiffusionAux) = @SMatrix [0.0 1.0; 0.0 -1.0]
-Bridge.β(t, P::IntegratedDiffusionAux) = ℝ{2}(0, 1/2)
-Bridge.a(t, P::IntegratedDiffusionAux) = @SMatrix [0.0 0.0; 0.0 P.γ^2]
+Bridge.B(t, P::PBIntegratedDiffusionAux) = @SMatrix [0.0 1.0; 0.0 -1.0]
+Bridge.β(t, P::PBIntegratedDiffusionAux) = ℝ{2}(0, 1/2)
+Bridge.a(t, P::PBIntegratedDiffusionAux) = @SMatrix [0.0 0.0; 0.0 P.γ^2]
 
 
 # Generate Data

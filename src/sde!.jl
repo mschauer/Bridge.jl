@@ -31,7 +31,7 @@ function solve!(solver::EulerMaruyama!, Y::VSamplePath, u::T, W, P::ProcessOrCoe
         for k in eachindex(dw)
             @inbounds dw[k] = W.yy[k, i+1] - W.yy[k, i]
         end
-        bti!((t,i), y, tmp1, P)
+        bti!((t¯,i), y, tmp1, P)
         σ!(t¯, y, dw, tmp2, P)
         for k in eachindex(y)
             @inbounds y[k] = y[k] + tmp1[k]*dt + tmp2[k]

@@ -97,6 +97,7 @@ Bridge.refine
 Bridge.quaternion
 Bridge._viridis
 Bridge.supnorm
+Bridge.posterior
 ```
 
 ## Online statistics
@@ -116,6 +117,7 @@ mcband
 mcbandmean
 Bridge.mcstats
 Bridge.mcmarginalstats
+Bridge.OnlineStat
 ```
 
 ## Linear Processes
@@ -167,4 +169,5 @@ Bridge.aeuler
 Bridge.MeanCov
 Bridge.upsample
 Bridge.viridis
+Bridge.rescale
 ```

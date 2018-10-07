@@ -6,18 +6,18 @@ T = 2.0
 dt = 1/1000
 
 tt = 0.:dt:T
-struct IntegratedDiffusion <: ContinuousTimeProcess{Float64}
+struct PBIntegratedDiffusion <: ContinuousTimeProcess{Float64}
     γ::Float64
 end
-struct IntegratedDiffusionAux <: ContinuousTimeProcess{Float64}
+struct PBIntegratedDiffusionAux <: ContinuousTimeProcess{Float64}
     γ::Float64
 end
 
-PorPtilde = Union{IntegratedDiffusion, IntegratedDiffusionAux}
+PorPtilde = Union{PBIntegratedDiffusion, PBIntegratedDiffusionAux}
 
 
-βu(t, x::Float64, P::IntegratedDiffusion) = - (x+sin(x)) + 1/2
-βu(t, x::Float64, P::IntegratedDiffusionAux) = -x + 1/2
+βu(t, x::Float64, P::PBIntegratedDiffusion) = - (x+sin(x)) + 1/2
+βu(t, x::Float64, P::PBIntegratedDiffusionAux) = -x + 1/2
 # not really a 'beta'
 
 Bridge.b(t, x, P::PorPtilde) = Bridge.b!(t, x, copy(x), P)
@@ -39,12 +39,12 @@ Bridge.a(t, x, P::PorPtilde) = Bridge.a(t, P::PorPtilde)
 
 Bridge.constdiff(::PorPtilde) = true
 
-function Bridge.B!(t, arg, out, P::IntegratedDiffusionAux)
+function Bridge.B!(t, arg, out, P::PBIntegratedDiffusionAux)
     B = [0.0 1.0; 0.0 -1.0]
     out .= (B*arg)
     out
 end
-function BBt!(t, arg, out, P::IntegratedDiffusionAux)
+function BBt!(t, arg, out, P::PBIntegratedDiffusionAux)
     B = [0.0 1.0; 0.0 -1.0]
     out .= (B*arg + arg*B')
     out
@@ -59,8 +59,8 @@ end
 # Generate Data
 Random.seed!(1)
 
-P = IntegratedDiffusion(0.7)
-Pt = IntegratedDiffusionAux(0.7)
+P = PBIntegratedDiffusion(0.7)
+Pt = PBIntegratedDiffusionAux(0.7)
 
 W1 = sample(tt, Wiener())
 x0 = [2.0, 1.0]
@@ -160,5 +160,5 @@ end
 
 @time @testset "MCMC1" begin
     mcmc1(x0, tt, Po2)
-    
+
 end
