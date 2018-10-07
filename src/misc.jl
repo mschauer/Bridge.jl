@@ -1,12 +1,22 @@
 export supnorm
 
 """
-    refine(tt, n) 
+    refine(tt, n)
 
 Refine range by decreasing stepsize by a factor `n`.
 """
 refine(tt, n) =  first(tt):(Base.step(tt)/n):last(tt)
 
+"""
+    rescale(x, a=>b, u=>v)
+
+Linearly map the interval [a,b] to [u,v].
+
+Example:
+
+    rescale.(x, Ref(extrema(x)))
+"""
+rescale(x, (a,b)::Union{Pair,NTuple{2}}, (u,v)::Union{Pair,NTuple{2}}=(zero(x)=>one(x))) = (x-a)/(b-a)*(v-u) + u
 
 """
     runmean(x)
@@ -15,7 +25,7 @@ Running mean of the vector `x`.
 """
 runmean(x, cx = cumsum(x)) = [cx[n]/n for n in 1:length(x)]
 
-function runmean(xx::Matrix) 
+function runmean(xx::Matrix)
     yy = copy(xx) / 1
     m = 0 * (copy(xx[1,:])/1)
     for i in 1:size(yy, 1)
@@ -33,9 +43,9 @@ Cumulative sum starting at 0 such that `cumsum0(diff(x)) ≈ x`.
 function cumsum0(dx::Vector)
         n = length(dx) + 1
         x = similar(dx, n)
-        x[1] = 0.0      
+        x[1] = 0.0
         for i in 2:n
-                x[i] = x[i-1] + dx[i-1] 
+                x[i] = x[i-1] + dx[i-1]
         end
         x
 end
@@ -47,7 +57,7 @@ supnorm(x) = maximum(abs.(x))
 
 """
     outer(x[, y])
-    
+
 Short-hand for quadratic form xx' (or xy').
 """
 outer(x) = x*x'
@@ -112,7 +122,7 @@ function piecewise(Y::SamplePath, tend = Y.tt[end])
 end
 
 """
-    upsample(x, td, t) 
+    upsample(x, td, t)
 
 If `x` is piecewise constant with jumps at `td`, return values of `x`
 at times `t`.
@@ -122,9 +132,9 @@ upsample(x, td, t) = [x[s == td[end] ? end : searchsortedlast(td, s)] for s in t
 """
     viridis
 
-Map `s` onto the first `maxviri` viridis colors 
+Map `s` onto the first `maxviri` viridis colors
 """
-function viridis(s, alpha = 0.9f0, maxviri = 200, RGBA=RGBA) 
+function viridis(s, alpha = 0.9f0, maxviri = 200, RGBA=RGBA)
     l, u = extrema(s)
     map(x->RGBA(Float32.(Bridge._viridis[1+floor(Int,x*maxviri)])..., alpha), (s .- l)/(u .- l))
 end

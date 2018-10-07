@@ -15,8 +15,8 @@ struct FitzHughNagumo  <: ContinuousTimeProcess{ℝ{2}}
     σ2::Float64
 end
 
-Bridge.b(t, x, P::FitzHughNagumo) = ℝ{2}(P.ϵ\(x[1] - x[1]^3 - x[2] + s), P.γ*x[1] - x[2] + P.β)
-Bridge.σ(t, x, P::FitzHughNagumo) = ℝ{2}(P.σ1, P.σ2)
+Bridge.b(t, x, P::FitzHughNagumo) = ℝ{2}(P.ϵ\(x[1] - x[1]^3 - x[2] + P.s), P.γ*x[1] - x[2] + P.β)
+Bridge.σ(t, x, P::Models.FitzHughNagumo) = SDiagonal(ℝ{2}(P.σ1, P.σ2))
 Bridge.constdiff(::FitzHughNagumo) = true
 
 
@@ -28,7 +28,7 @@ struct Linear2  <: ContinuousTimeProcess{ℝ{2}}
     β1::Float64
     β2::Float64
     σ1::Float64
-    σ2::Float64 
+    σ2::Float64
 end
 
 Bridge.B(t, P::Linear2) = SMatrix{2,2,Float}(P.b11, P.b21, P.b12, P.b22)
@@ -51,7 +51,7 @@ Bridge.bderiv(t, x, P::Lorenz) = @SMatrix Float64[
     (P.θ[2]-x[3])   -1      -x[1]
     x[2]            x[1]    -P.θ[3]
 ]
-    
+
 Bridge.F(t, x, P::Lorenz) = Bridge.b(t, x, P)
 
 Bridge.σ(t, x, P::Lorenz) = SDiagonal(P.σ)
@@ -82,7 +82,7 @@ Bridge.bderiv(t, x, P::Pendulum) = @SMatrix Float64[
     0.0                 1.0
     -P.θ²*cos(x[1])     0.0
 ]
-    
+
 
 Bridge.σ(t, x, P::Pendulum) = ℝ{2}(0.0, P.γ)
 Bridge.constdiff(::Pendulum) = true

@@ -1,4 +1,5 @@
-ismutable(_) = Val(false)
+ismutable(el) = ismutable(typeof(el))
+ismutable(::Type) = Val(false)
 ismutable(::Type{<:Array}) = Val(true)
 
 
@@ -10,7 +11,7 @@ import Base: valtype
 """
     ContinuousTimeProcess{T}
 
-Types inheriting from the abstract type `ContinuousTimeProcess{T}` characterize 
+Types inheriting from the abstract type `ContinuousTimeProcess{T}` characterize
 the properties of a `T`-valued stochastic process, play
 a similar role as distribution types like `Exponential` in the package
 `Distributions`.
@@ -58,7 +59,7 @@ struct SamplePath{T}
 end
 ```
 serves as container for discretely observed `ContinuousTimeProcess`es and for the sample path returned
-by direct and approximate samplers. `tt` is the vector of the grid points of the observation/simulation 
+by direct and approximate samplers. `tt` is the vector of the grid points of the observation/simulation
 and `yy` is the corresponding vector of states.
 
 It supports `getindex, setindex!, length, copy, vcat`.
@@ -70,8 +71,10 @@ struct SamplePath{T} <: AbstractPath{T}
 end
 SamplePath(tt, yy::Vector{T}) where {T} = SamplePath{T}(tt, yy)
 
-samplepath(tt, v) = SamplePath(tt, fill(v, length(tt))) 
-samplepath(tt, v::Vector) = SamplePath(tt, [copy(v) for t in tt]) 
+samplepath(tt, v) = samplepath(tt, v, ismutable(v))
+
+samplepath(tt, v, ::Val{false}) = SamplePath(tt, fill(v, length(tt)))
+samplepath(tt, v, ::Val{true}) = SamplePath(tt, [copy(v) for t in tt])
 
 
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))
@@ -115,22 +118,22 @@ broadcast(f, X::SamplePath, Y::SamplePath) = (X.tt != Y.tt) ? throw(ArgumentErro
 struct VSamplePath{T} <: Bridge.AbstractPath{T}
     tt::Vector{Float64}
     yy::Matrix{T}
-    function VSamplePath(tt, yy::Matrix{T}) where {T} 
+    function VSamplePath(tt, yy::Matrix{T}) where {T}
         length(tt) != size(yy, 2) && throw(DimensionMismatch("length(tt) != size(yy, 2)"))
-        new{T}(tt, yy) 
-    end    
+        new{T}(tt, yy)
+    end
 end
 
 length(X::VSamplePath) = length(X.tt)
 
 allsametime(xx) = all(x -> x.tt == xx[1].tt, xx)
-function stack(args::SamplePath...) 
+function stack(args::SamplePath...)
     assert(allsametime(args))
     VSamplePath(args[1].tt, vcat((X.yy' for X in args)...))
 end
 
 # separate a Zip2
-sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} = 
+sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} =
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
 
 
@@ -152,8 +155,8 @@ length(X::GSamplePath) = length(X.tt)
 
 """
     Increments{S<:AbstractPath{T}}
-    
-Iterator over the increments of an AbstractPath. 
+
+Iterator over the increments of an AbstractPath.
 Iterates over `(i, tt[i], tt[i+1]-tt[i], yy[i+1]-y[i])`.
 """
 mutable struct Increments{S<:AbstractPath}

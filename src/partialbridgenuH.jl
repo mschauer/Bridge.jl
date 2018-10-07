@@ -1,20 +1,20 @@
-function partialbridgeodeνH!(::R3, t, L, Σ, v, νt, H⁺t, P, ϵ)
+function partialbridgeodeνH!(::R3, t, L, Σ, v, νt, Ht, P, ϵ)
     m, d = size(L)
     # print(typeof(H⁺t))
     # print(typeof(νt))
     # print(typeof(inv(L' * inv(Σ) * L + ϵ * I)   ))
-    H⁺t[end] =  inv(L' * inv(Σ) * L + ϵ * I)
-    νt[end] =  H⁺t[end] * L' * inv(Σ) * v
-    H⁺ = H⁺t[end]
+    Ht[end] = (L' * inv(Σ) * L + ϵ * I)
+    H⁺ = inv(Ht[end])
+    νt[end] = H⁺ * L' * inv(Σ) * v
     ν = νt[end]
 
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
         ν = kernelr3((t, y, P) -> B(t, P)*y + β(t,P), t[i+1], ν, dt, P)
-        H⁺ = kernelr3((t,  y, (L,P)) -> B(t, P)*y + y * B(t,P)'-a(t, P), t[i+1], H⁺, dt, (L,P))
+        H⁺ = kernelr3((t,  y, P) -> B(t, P)*y + y * B(t,P)'-a(t, P), t[i+1], H⁺, dt, P)
 
         νt[i] = ν
-        H⁺t[i] = H⁺
+        Ht[i] = inv(H⁺)
     end
     νt, H⁺t
  end
@@ -38,28 +38,28 @@ struct PartialBridgeνH{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
     tt::Vector{Float64}
     v::Tv
     ν::Vector{Tν}
-    H⁺::Vector{TH}
+    H::Vector{TH}
 
     function PartialBridgeνH(tt_, P, Pt, L, v::Tv,ϵ, Σ = Bridge.outer(zero(v))) where {Tv}
         tt = collect(tt_)
         N = length(tt)
         m, d = size(L)
         TH = typeof(SMatrix{d,d}(1.0I))
-        H⁺t = zeros(TH, N)
+        Ht = zeros(TH, N)
         Tν = typeof(@SVector zeros(d))
         νt = zeros(Tν, N)
 
-        partialbridgeodeνH!(R3(), tt, L, Σ, v, νt, H⁺t, Pt,ϵ)
-        new{Bridge.valtype(P),typeof(P),typeof(Pt),Tv,Tν,TH}(P, Pt, tt, v, νt, H⁺t)
+        partialbridgeodeνH!(R3(), tt, L, Σ, v, νt, Ht, Pt,ϵ)
+        new{Bridge.valtype(P),typeof(P),typeof(Pt),Tv,Tν,TH}(P, Pt, tt, v, νt, Ht)
     end
 end
 
 
 function bi(i::Integer, x, P::PartialBridgeνH)
-    b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H⁺[i]\(P.ν[i] - x))
+    b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H[i]*(P.ν[i] - x))
 end
 
-ri(i::Integer, x, P::PartialBridgeνH) = P.H⁺[i]\(P.ν[i] - x)
+ri(i::Integer, x, P::PartialBridgeνH) = P.H[i]*(P.ν[i] - x)
 Hi(i::Integer, x, P::PartialBridgeνH) = inv(P.H⁺[i])
 
 σ(t, x, P::PartialBridgeνH) = σ(t, x, P.Target)

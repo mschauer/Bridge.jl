@@ -24,7 +24,7 @@ end
 function sample!(W::SamplePath{SVector{d,T}}, P::Wiener{SVector{d,T}}, y1 = zero(SVector{d,T})) where {d,T}
     sz = d
     W.yy[1] = y1
-    yy = mat(W.yy) 
+    yy = mat(W.yy)
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
         for j = 1:sz
@@ -70,13 +70,13 @@ function sample(tt, P::WienerBridge{T}, y1) where T
 end
 
 function sample!(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 = W.yy[1]) where {d,T}
-    
+
     TT = P.t - W.tt[1]
     sz = d
     W.yy[1] = y1
     v = SVector(P.v)
-    yy = mat(W.yy) 
-  
+    yy = mat(W.yy)
+
     wtotal = zeros(sz)
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
@@ -101,17 +101,17 @@ function sample!(W::SamplePath{SVector{d,T}}, P::WienerBridge{SVector{d,T}}, y1 
     if W.tt[end] == P.t
         yy[:,end] = v
     end
-       
+
     W
 end
 
 function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
-    
+
     TT = P.t - W.tt[1]
     W.yy[1] = y1
     v = P.v
     yy = W.yy
-  
+
     wtotal = zero(T)
     for i = 2:length(W.tt)
         rootdt = sqrt(W.tt[i]-W.tt[i-1])
@@ -120,8 +120,8 @@ function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
 
     # noise between tt[end] and P.t
     rootdt = sqrt(P.t-W.tt[end])
-    wtotal += rootdt*randn(T) 
-    
+    wtotal += rootdt*randn(T)
+
     # normalize
     wtotal += (yy[1] - v)
 
@@ -133,8 +133,8 @@ function sample!(W::SamplePath{T}, P::WienerBridge{T}, y1 = W.yy[1]) where T
     if W.tt[end] == P.t
         yy[end] = v
     end
-       
-    
+
+
     W
 end
 
@@ -172,6 +172,7 @@ end
 
 # transition density
 transitionprob(s, x, t, P::Wiener{Float64}) = Normal(x,sqrt(t-s))
+increment(dt, P::Wiener{Float64}) = Normal(0.0, sqrt(dt))
 
 transitionprob(s, x, t, P::Wiener{SVector{N,Float64}}) where {N} = MvNormal(Vector(x),(t-s))
 lp(s, x, t, y, P::Wiener{SVector{N,Float64}}) where {N} = logpdf(transitionprob(s, x, t, P), Vector(y))

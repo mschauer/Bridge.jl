@@ -115,7 +115,8 @@ solve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))
 ```
 """
 solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T} =
-    solve!(method, SamplePath{T}(W.tt, T[zero(u) for t in W.tt]), u, W, P)
+    solve!(method, samplepath(W.tt, zero(u)), u, W, P)
+#    solve!(method, SamplePath{T}(W.tt, T[zero(u) for t in W.tt]), u, W, P)
 
 """
     solve(method::SDESolver, u, W::VSamplePath, P) -> X
@@ -244,7 +245,9 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
     end
     yy[.., N]
 end
-function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge{T},PartialBridgeνH{T}}) where {T}
+
+bridge(u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH}) = let X = samplepath(W.tt, zero(u)); bridge!(X, u, W, P); X end
+function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH})
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
 
     N = length(W)
@@ -255,8 +258,10 @@ function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge{T},PartialBridgeνH
     yy = Y.yy
     tt[:] = P.tt
 
-    y::T = u
-
+    y::typeof(u) = u
+    if typeof(u) != valtype(P)
+    #    @warn "Starting point not of valtype." maxlog=10
+    end
     for i in 1:N-1
         yy[.., i] = y
         y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
