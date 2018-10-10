@@ -112,6 +112,8 @@ include("wiener.jl")
 include("ellipse.jl")
 include("ode.jl")
 include("gode.jl")
+include("lyap.jl")
+
 include("ode!.jl")
 include("diffusion.jl")
 include("linpro.jl")
