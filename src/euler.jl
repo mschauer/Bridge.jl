@@ -23,14 +23,6 @@ Euler-Maruyama scheme. `Euler` is defined as alias.
 Euler, EulerMaruyama
 
 
-"""
-    BridgePre() <: SDESolver
-
-Precomputed Euler-Maruyama scheme for bridges using `bi`.
-"""
-struct BridgePre <: SDESolver
-end
-
 
 
 
@@ -62,9 +54,7 @@ end
 struct EulerMaruyama! <: SDESolver
 end
 
-
-struct EulerMaruyamaWithIndex! <: SDESolver
-end
+endpoint(y, P) = y
 
 
 function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
@@ -85,7 +75,7 @@ function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
         y2 = y + B*(tt[i+1]-tt[i])
         y = y + 0.5*(_b((i+1,tt[i+1]), y2, P) + B)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
     end
-    yy[.., N-1] = y
+    yy[.., N-1] = endpoint(y, P)
     Y
 end
 
@@ -149,7 +139,7 @@ function solve!(::EulerMaruyama, Y, u::T, W::SamplePath, P::ProcessOrCoefficient
         yy[.., i] = y
         y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
-    yy[.., N] = y
+    yy[.., N] = endpoint(y, P)
     Y
 end
 
@@ -169,16 +159,17 @@ function solve!(::EulerMaruyama, Y, u::T, W::AbstractPath, P::ProcessOrCoefficie
         yy[.., i] = y
         y = y + _b((i,t), y, P)*dt + _scale(dw, σ(t, y, P))
     end
-    yy[.., N] = y
+    yy[.., N] = endpoint(y, P)
     Y
 end
 
 
 
 """
-    bridge(method, W, P) -> Y
+    solve(method, W, P) -> Y
 
-Integrate with `method`, where `P` is a bridge proposal.
+Integrate with `method`, where `P` is a bridge proposal from
+`startpoint(P)`` to `endpoint(P)`.
 
 # Examples
 
@@ -186,69 +177,21 @@ Integrate with `method`, where `P` is a bridge proposal.
 cs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))
 P° = BridgeProp(Pσ, v), Pσ.a, cs)
 W = sample(tt, Wiener())
-bridge(BridgePre(), W, P°)
+solve(Euler(), W, P°)
 ```
 """
-bridge(method::SDESolver, W, P) = bridge!(method, copy(W), W, P)
-bridge!(::Euler, Y, W::SamplePath, P::ContinuousTimeProcess) = bridge!(BridgePre(), Y, W, P)
-
-function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
-    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
-
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    ww = W.yy
-    tt = Y.tt
-    yy = Y.yy
-    tt[:] = P.tt
-
-    y::T = P.v[1]
-
-    for i in 1:N-1
-        yy[.., i] = y
-        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
-    end
-    yy[.., N] = P.v[end]
-    Y
-end
+solve(method, W::SamplePath, P) = let u = startpoint(P), Y = samplepath(W.tt, zero(u)); solve!(method, Y, u, W, P); Y end
+solve!(method, Y::SamplePath, W::SamplePath, P::ContinuousTimeProcess) = solve!(method, Y, startpoint(P), W, P)
 
 
 #### Guided Bridges
+endpoint(y, P::GuidedBridge) =
+ norm(P.H♢[end], 1) < eps() ? P.V[end] : y
 
-bridge(u::T, W::SamplePath, P::GuidedBridge{T}) where {T} = bridge!(samplepath(W.tt, u), W, P)
-"""
-    bridge!(Y, u, W, P::GuidedBridge) -> v
 
-Integrate guided bridge proposal `P` from `u`, returning endpoint `v`.
-"""
-function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
-    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
 
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    ww = W.yy
-    tt = Y.tt
-    yy = Y.yy
-    tt[:] = P.tt
-
-    y::T = u
-
-    for i in 1:N-1
-        yy[.., i] = y
-        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
-    end
-    if norm(P.H♢[end], 1) < eps()
-        yy[.., N] = P.V[end]
-    else
-        yy[.., N] = y
-    end
-    yy[.., N]
-end
-
-bridge(u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH}) = let X = samplepath(W.tt, zero(u)); bridge!(X, u, W, P); X end
-function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH})
+solve(::Euler, u, W::SamplePath, P::Union{GuidedBridge,PartialBridge,PartialBridgeνH}) = let X = samplepath(W.tt, zero(u)); solve!(Euler(), X, u, W, P); X end
+function solve!(::Euler, Y, u, W::SamplePath, P::Union{GuidedBridge,PartialBridge,PartialBridgeνH})
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
 
     N = length(W)
@@ -267,7 +210,7 @@ function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH})
         yy[.., i] = y
         y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
-    yy[.., N] = y
+    yy[.., N] = endpoint(y, P)
     yy[.., N]
 end
 
@@ -276,14 +219,14 @@ end
 
 
 """
-    bridge!(method, Y, W, P) -> Y
+    solve!(method, Y, W, P) -> Y
 
 Integrate with `method`, where `P is a bridge proposal overwriting `Y`.
 """
-bridge!
+solve!
 
 
-function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
+function solve!(::Mdb, Y, u, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
 
     N = length(W)
@@ -294,13 +237,13 @@ function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
     yy = Y.yy
     tt[:] = P.tt
 
-    y::T = P.v[1]
+    y::T = u
 
     for i in 1:N-1
         yy[.., i] = y
         y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
     end
-    yy[.., N] = P.v[end]
+    yy[.., N] = endpoint(y, P)
     Y
 end
 
