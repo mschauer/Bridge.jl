@@ -12,7 +12,7 @@ struct IntegratedDiffusion <: ContinuousTimeProcess{ℝ{2}}
 end
 
 βu(t, x::Float64, P::IntegratedDiffusion) = - (x+sin(x)) + 1/2
-Bridge.b(t, x, P::IntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t::Float64, x, P::IntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
 Bridge.σ(t, x, P::IntegratedDiffusion) = ℝ{2}(0.0, P.γ)
 
 Bridge.constdiff(::IntegratedDiffusion) = true
@@ -22,7 +22,7 @@ struct IntegratedDiffusionAux <: ContinuousTimeProcess{ℝ{2}}
 end
 
 βu(t, x::Float64, P::IntegratedDiffusionAux) = -x + 1/2
-Bridge.b(t, x, P::IntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t::Float64, x, P::IntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
 Bridge.σ(t, P::IntegratedDiffusionAux) =  ℝ{2}(0.0, P.γ)
 Bridge.σ(t, x, P::IntegratedDiffusionAux) = Bridge.σ(t, P)
 

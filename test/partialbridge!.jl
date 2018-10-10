@@ -20,7 +20,7 @@ PorPtilde = Union{PBIntegratedDiffusion, PBIntegratedDiffusionAux}
 βu(t, x::Float64, P::PBIntegratedDiffusionAux) = -x + 1/2
 # not really a 'beta'
 
-Bridge.b(t, x, P::PorPtilde) = Bridge.b!(t, x, copy(x), P)
+Bridge.b(t::Float64, x, P::PorPtilde) = Bridge.b!(t, x, copy(x), P)
 function Bridge.b!(t, x, out, P::PorPtilde)
     out[1] = x[2]
     out[2] = βu(t, x[2], P)

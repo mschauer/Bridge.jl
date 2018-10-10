@@ -13,8 +13,12 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 
 # fallback
-btilde(t, x, Po) = b(t, x, P(Po))
-btilde!(t, x, out, Po) = b!(t, x, out, P(Po))
+btilde(t, x, Po) = b(t, x, Pt(Po))
+btilde!(t, x, out, Po) = b!(t, x, out, Pt(Po))
+_btilde(t, x, Po) = _b(t, x, Pt(Po))
+_btilde!(t, x, out, Po) = _b!(t, x, out, Pt(Po))
+
+
 
 #####################
 
@@ -40,7 +44,6 @@ BridgeProp(Target::ContinuousTimeProcess{T}, tt, v, a, cs=CSpline(first(tt), las
 
 h(t,x, P::BridgeProp) = P.v[2] - x -  integrate(P.cs, t,  last(P.tt))
 b(t, x, P::BridgeProp) = b(t, x, P.Target) + a(t, x, P.Target)*r(t, x, P)
-bi(i, x, P::BridgeProp) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*r(P.tt[i], x, P)
 
 function bderiv(t, x, P::BridgeProp)
     @assert(constdiff(P))
@@ -130,13 +133,11 @@ struct LinearNoiseAppr{R,S,T} <: ContinuousTimeProcess{T}
 end
 
 
-bi(i, x, P::LinearNoiseAppr) = βi(max(i,2), P)
-Bi(i, P::LinearNoiseAppr) = 0I
-βi(i, P::LinearNoiseAppr) = (P.Y.yy[i]-P.Y.yy[i-1])/(P.Y.tt[i]-P.Y.tt[i-1])
-ai(i, P::LinearNoiseAppr) = P.a
+_b((i,t)::IndexedTime, x, P::LinearNoiseAppr) = β_((max(i,2),t), P)
+B(t, P::LinearNoiseAppr) = 0I
+β_((i,t)::IndexedTime, P::LinearNoiseAppr) = (P.Y.yy[i]-P.Y.yy[i-1])/(P.Y.tt[i]-P.Y.tt[i-1])
 a(t, x, P::LinearNoiseAppr) = P.a
 constdiff(::LinearNoiseAppr) = true
-hasbi(::LinearNoiseAppr) = true
 
 
 """
@@ -176,33 +177,28 @@ struct GuidedBridge{T,S,R2,R} <: ContinuousTimeProcess{T}
         N = length(tt)
         H♢ = SamplePath(tt, zeros(S, N))
         V = SamplePath(tt, zeros(T, N))
-        solvebackwardi!(R3(), (t, K, iP) ->  Bi(iP...)*K + K*Bi(iP...)' - ai(iP...), H♢, h♢, Pt)
-        solvebackwardi!(R3(), (t, v, iP) ->  bi(iP[1], v, iP[2]), V, v, Pt)
+        solvebackwardi!(Heun(), ((i,t), K, P) ->  B((i,t), P)*K + K*B((i,t), P)' - a((i,t), P), H♢, h♢, Pt)
+        solvebackwardi!(Heun(), b, V, v, Pt)
         new{T,S,typeof(Pt),R}(P, Pt, tt, H♢.yy, V.yy)
     end
 end
 
-bi(i::Integer, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H♢[i]\(P.V[i] - x))
-ri(i::Integer, x, P::GuidedBridge) = P.H♢[i]\(P.V[i] - x)
-Hi(i::Integer, x, P::GuidedBridge) = inv(P.H♢[i])
+_b((i,t)::IndexedTime, x, P::GuidedBridge) = b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*(P.H♢[i]\(P.V[i] - x))
+r((i,t)::IndexedTime, x, P::GuidedBridge) = P.H♢[i]\(P.V[i] - x)
+H((i,t)::IndexedTime, x, P::GuidedBridge) = inv(P.H♢[i])
 
 σ(t, x, P::GuidedBridge) = σ(t, x, P.Target)
 a(t, x, P::GuidedBridge) = a(t, x, P.Target)
 Γ(t, x, P::GuidedBridge) = Γ(t, x, P.Target)
 constdiff(P::GuidedBridge) = constdiff(P.Target) && constdiff(P.Pt)
-btilde(t, x, P::GuidedBridge) = b(t, x, P.Pt)
-atilde(t, x, P::GuidedBridge) = a(t, x, P.Pt)
-aitilde(t, x, P::GuidedBridge) = ai(t, x, P.Pt)
-bitilde(i, x, P::GuidedBridge) = bi(i, x, P.Pt)
+btilde(it, x, P::GuidedBridge) = b(it, x, P.Pt)
+atilde(it, x, P::GuidedBridge) = a(it, x, P.Pt)
 
 @inline _traceB(t, x, P) = tr(Bridge.B(t, P))
 traceB(tt, P) = solve(Bridge.R3(), _traceB, tt, 0.0, P)
 
 lptilde(P::GuidedBridge, u) = logpdfnormal(P.V[1] - u, P.H♢[1]) - traceB(P.tt, P.Pt)
 
-hasbi(::GuidedBridge) = true
-hasbitilde(P::GuidedBridge) = hasbi(P.Pt)
-hasaitilde(P::GuidedBridge) = hasai(P.Pt)
 
 # fallback for testing
 lptilde2(P::GuidedBridge, u) = logpdfnormal(P.V[end] - gpmu(P.tt, u, P.Pt), gpK(P.tt, Bridge.outer(zero(u)), P.Pt))
@@ -412,9 +408,9 @@ function llikelihoodleft(Xcirc::SamplePath{T}, Po) where T
         s = tt[i]
         x = xx[i]
         r = Bridge.r(s, x, Po)
-        som += (dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
+        som += (dot(b(s,x, target(Po)) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
-            som -= 0.5*tr((a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
+            som -= 0.5*tr((a(s,x, target(Po)) - atilde(s, x, Po))*(H(s,x,Po) -  r*r')) * (tt[i+1]-tt[i])
         end
     end
     som
@@ -430,24 +426,12 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::GuidedBridge; skip = 0)
     for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
-#        x2 = xx[i+1]
-        r = Bridge.ri(i, x, Po)
-#        r2 = Bridge.ri(i+1, x2, Po)
-
-        if hasbitilde(Po)
-            som += dot( b(s, x, Po.Target) - bitilde(i, x, Po), r ) * (tt[i+1]-tt[i])
-        else
-            som += dot(b(s, x, Po.Target) - btilde(s, x, Po), r ) * (tt[i+1]-tt[i])
-        end
+        r = Bridge.r((i,s), x, Po)
+        som += dot( _b((i,s), x, target(Po)) - _b((i,s), x, auxiliary(Po)), r ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
             H = Hi(i, x, Po)
-            if hasaitilde(Po)
-                som -= 0.5*tr( (a(s, x, Po.Target) - aitilde(i, x, Po))*(H) ) * (tt[i+1]-tt[i])
-                som += 0.5*( r'*(a(s, x, Po.Target) - aitilde(i, x, Po))*r ) * (tt[i+1]-tt[i])
-            else
-                som -= 0.5*tr( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
-                som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
-            end
+            som -= 0.5*tr( (a((i,s), x, target(Po)) - atilde((i,s), x, Po))*(H) ) * (tt[i+1]-tt[i])
+            som += 0.5*( r'*(a((i,s), x, target(Po)) - atilde((i,s), x, Po))*r ) * (tt[i+1]-tt[i])
         end
     end
     som
@@ -465,18 +449,18 @@ function llikelihoodtrapez(Xcirc::SamplePath{T}, Po::Union{GuidedProp{T},BridgeP
     s = tt[i]
     x = xx[i]
     r = Bridge.r(s, x, Po)
-    som += 0.5*(dot(b(s,x, Po.Target) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
+    som += 0.5*(dot(b(s,x, target(Po)) - btilde(s,x, Po), r)  ) * (tt[i+1]-tt[i])
     if !constdiff(Po)
-        som -= 0.25*tr( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i])
+        som -= 0.25*tr( (a(s,x, target(Po)) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i])
     end
 
     for i in 2:length(tt)-1 #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
         r = Bridge.r(s, x, Po)
-        som += 0.5*( dot(b(s,x, Po.Target) - btilde(s,x, Po), r) ) * (tt[i+1]-tt[i-1])
+        som += 0.5*( dot(b(s,x, target(Po)) - btilde(s,x, Po), r) ) * (tt[i+1]-tt[i-1])
         if !constdiff(Po)
-            som -= 0.25*tr( (a(s,x, Po.Target) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i-1])
+            som -= 0.25*tr( (a(s,x, target(Po)) - atilde(s, x, Po))*(H(s,x,Po) -  r*r') ) * (tt[i+1]-tt[i-1])
         end
     end
     som

@@ -8,6 +8,10 @@ import Base: getindex, setindex!, length, copy, vcat, keys, values, iterate
 import Base: zero
 
 import Base: valtype
+
+const IndexedTime = Tuple{Int64,Float64}
+
+
 """
     ContinuousTimeProcess{T}
 

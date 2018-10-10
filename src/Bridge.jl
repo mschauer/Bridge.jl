@@ -63,8 +63,6 @@ function B!
 end
 function a!
 end
-function bitilde!
-end
 
 """
     b!(t, y, tmp1, P)
@@ -73,10 +71,7 @@ Compute drift ``b`` in `y` (without factor ``Δt``, modifying `tmp1`.
 """
 function b!
 end
-function bi!
-end
-function ri!
-end
+
 """
     σ!(t, y, Δw, tmp2, P)
 
@@ -85,14 +80,12 @@ Compute stochastic increment at `y`, ``σ Δw``, modifying `tmp2`.
 function σ!
 end
 
-function P
-end
-function Pt
-end
+P(Po) = Po.Target
+Pt(Po) = Po.Pt
 
+target(Po) = Po.Target
+auxiliary(Po) = Po.Pt
 
-hasbi(::Any) = false
-hasai(::Any) = false
 
 include("expint.jl")
 #include("setcol.jl")
@@ -103,6 +96,12 @@ include("gaussian.jl")
 include("types.jl")
 include("sizedtype.jl")
 include("misc.jl")
+
+_b((i,s)::IndexedTime, x, P) = b(s, x, P)
+#btilde((i,s)::IndexedTime, x, P) = btilde(s, x, P)
+a((i,s)::IndexedTime, x, P) = a(s, x, P)
+r((i,s)::IndexedTime, x, P) = r(s, x, P)
+H((i,s)::IndexedTime, P) = H(s, P)
 
 include("cspline.jl")
 include("wiener.jl")

@@ -10,13 +10,13 @@ tt = 0.:dt:T
 #    γ::Float64
 #end
 
-Bridge.b(t, x, P::PBIntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t::Float64, x, P::PBIntegratedDiffusion) = ℝ{2}(x[2], βu(t, x[2], P))
 
-@test Bridge.b!(0, X1.yy[1], copy( X1.yy[1]),  P) == Bridge.b(0, X1.yy[1], P)
+@test Bridge.b!(0.0, X1.yy[1], copy( X1.yy[1]),  P) == Bridge.b(0.0, X1.yy[1], P)
 
 Bridge.σ(t, x, P::PBIntegratedDiffusion) = ℝ{2}(0.0, P.γ)
 
-@test Bridge.σ!(0, X1.yy[1], 1.0, copy( X1.yy[1]),  P) == Bridge.σ(0, X1.yy[1], P)
+@test Bridge.σ!(0.0, X1.yy[1], 1.0, copy( X1.yy[1]),  P) == Bridge.σ(0.0, X1.yy[1], P)
 
 
 Bridge.constdiff(::PBIntegratedDiffusion) = true
@@ -25,9 +25,9 @@ Bridge.constdiff(::PBIntegratedDiffusion) = true
 #    γ::Float64
 #end
 
-Bridge.b(t, x, P::PBIntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.b(t::Float64, x, P::PBIntegratedDiffusionAux) = ℝ{2}(x[2], βu(t, x[2], P))
 
-@test Bridge.b!(0, X1.yy[1], copy( X1.yy[1]),  Pt) == Bridge.b(0, X1.yy[1], Pt)
+@test Bridge.b!(0.0, X1.yy[1], copy( X1.yy[1]),  Pt) == Bridge.b(0.0, X1.yy[1], Pt)
 
 
 Bridge.σ(t, P::PBIntegratedDiffusionAux) =  ℝ{2}(0.0, P.γ)

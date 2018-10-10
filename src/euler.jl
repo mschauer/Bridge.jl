@@ -206,7 +206,7 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = P.v[end]
     Y
@@ -236,7 +236,7 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     if norm(P.H♢[end], 1) < eps()
         yy[.., N] = P.V[end]
@@ -264,7 +264,7 @@ function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH})
     end
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = y
     yy[.., N]
@@ -297,7 +297,7 @@ function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
     end
     yy[.., N] = P.v[end]
     Y
@@ -366,7 +366,7 @@ function innovations!(::BridgePre, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - bi(i, yy[.., i], P)*(tt[i+1]-tt[i]))
+        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - _b((i, tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W

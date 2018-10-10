@@ -86,7 +86,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge!; skip = 0
         s = tt[i]
         x = xx[i]
         rti!((s,i), x, rout, Po)
-        b!(s, x, bout, Po.Target)
+        b!(s, x, bout, target(Po))
         btitilde!((s,i), x, btout, Po)
 
         som += dot(bout, rout) * (tt[i+1]-tt[i])

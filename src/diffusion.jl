@@ -27,7 +27,7 @@ end
 Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-ability)
 starting in `x1`.
 """
-sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = 
+sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} =
     sample!(SamplePath(tt, zeros(T,length(tt))), P, x1)
 
 """
@@ -53,7 +53,7 @@ end
 
 """
     quvar(X)
-             
+
 Computes the (realized) quadratic variation of the path `X`.
 """
 function quvar(X::SamplePath{T}) where T
@@ -68,9 +68,9 @@ end
 """
     bracket(X)
     bracket(X,Y)
-  
+
 Computes quadratic variation process of `X` (of `X` and `Y`).
-"""     
+"""
 function bracket(X::SamplePath)
         cumsum0(outer.(diff(X.yy)))
 end
@@ -94,15 +94,15 @@ function ito(X::SamplePath, W::SamplePath{T}) where T
                 @assert(X.tt[i] == W.tt[i])
                 yy[i] = yy[i-1] + X.yy[i-1]*(W.yy[i]-W.yy[i-1])
         end
-        SamplePath{T}(X.tt, yy) 
+        SamplePath{T}(X.tt, yy)
 end
 
 
 """
     girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)
 
-Girsanov log likelihood ``\\mathrm{d}P/\\mathrm{d}Pt(X)``    
-"""    
+Girsanov log likelihood ``\\mathrm{d}P/\\mathrm{d}Pt(X)``
+"""
 function girsanov(X::SamplePath{T}, P::ContinuousTimeProcess{T}, Pt::ContinuousTimeProcess{T}) where T
     tt = X.tt
     xx = X.yy
@@ -121,7 +121,7 @@ end
 
 
 """
-    NoDrift(tt, B, β, a) 
+    NoDrift(tt, B, β, a)
 """
 struct NoDrift{S,T} <: ContinuousTimeProcess{T}
     P::S
@@ -130,6 +130,4 @@ end
 
 b(t, x, P::NoDrift) = zero(valtype(P))
 bderiv(t, x, P::NoDrift) = zero(outertype(P))
-bi(i, x, P::NoDrift) = zero(valtype(P))
 σ(t, x, P::NoDrift) = σ(t, x, P.P)
-σi(i, x, P::NoDrift) = σi(i, x, P.P)
