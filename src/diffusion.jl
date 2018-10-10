@@ -28,17 +28,20 @@ Sample the process `P` on the grid `tt` exactly from its `transitionprob`(-abili
 starting in `x1`.
 """
 sample(tt, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} =
-    sample!(SamplePath(tt, zeros(T,length(tt))), P, x1)
+    sample!(samplepath(tt, zero(T), P, x1))
 
 """
-    sample!(X, P, x1=zero(T))
+    sample!([::Bridge.TransitionProb], X, P, x1=zero(T))
 
 Sample the process `P` on the grid `X.tt` exactly from its `transitionprob`(-ability)
 starting in `x1` writing into `X.yy`.
 """
-sample!(X, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = _sample!(X, P, x1)
+sample!(X, P::ContinuousTimeProcess{T}, x1=zero(T)) where {T} = sample!(TransitionProb(), X, P, x1)
 
-function _sample!(X, P::ContinuousTimeProcess{T}, x1) where T
+struct TransitionProb
+end
+
+function sample!(::TransitionProb, X, P::ContinuousTimeProcess{T}, x1) where T
     tt = X.tt
     yy = X.yy
     x = convert(T, x1)
@@ -57,9 +60,9 @@ end
 Computes the (realized) quadratic variation of the path `X`.
 """
 function quvar(X::SamplePath{T}) where T
-        s = zero(T)*zero(T)'
+        s = outer(zero(T))
         for u in diff(X.yy)
-            s += u*u'
+            s += outer(u)
         end
         s
 end
@@ -121,7 +124,9 @@ end
 
 
 """
-    NoDrift(tt, B, β, a)
+    NoDrift(tt, P)
+
+As `P`, but without drift.
 """
 struct NoDrift{S,T} <: ContinuousTimeProcess{T}
     P::S

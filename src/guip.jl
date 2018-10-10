@@ -13,10 +13,10 @@ tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 
 # fallback
-btilde(t, x, Po) = b(t, x, Pt(Po))
-btilde!(t, x, out, Po) = b!(t, x, out, Pt(Po))
-_btilde(t, x, Po) = _b(t, x, Pt(Po))
-_btilde!(t, x, out, Po) = _b!(t, x, out, Pt(Po))
+btilde(t, x, Po) = b(t, x, auxiliary(Po))
+btilde!(t, x, out, Po) = b!(t, x, out, auxiliary(Po))
+_btilde(t, x, Po) = _b(t, x, auxiliary(Po))
+_btilde!(t, x, out, Po) = _b!(t, x, out, auxiliary(Po))
 
 
 
@@ -135,7 +135,7 @@ end
 
 _b((i,t)::IndexedTime, x, P::LinearNoiseAppr) = β_((max(i,2),t), P)
 B(t, P::LinearNoiseAppr) = 0I
-β_((i,t)::IndexedTime, P::LinearNoiseAppr) = (P.Y.yy[i]-P.Y.yy[i-1])/(P.Y.tt[i]-P.Y.tt[i-1])
+β((i,t)::IndexedTime, P::LinearNoiseAppr) = (P.Y.yy[i]-P.Y.yy[i-1])/(P.Y.tt[i]-P.Y.tt[i-1])
 a(t, x, P::LinearNoiseAppr) = P.a
 constdiff(::LinearNoiseAppr) = true
 

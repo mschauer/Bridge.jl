@@ -99,9 +99,9 @@ include("misc.jl")
 
 _b((i,s)::IndexedTime, x, P) = b(s, x, P)
 #btilde((i,s)::IndexedTime, x, P) = btilde(s, x, P)
-a((i,s)::IndexedTime, x, P) = a(s, x, P)
+#a((i,s)::IndexedTime, x, P) = a(s, x, P)
 r((i,s)::IndexedTime, x, P) = r(s, x, P)
-H((i,s)::IndexedTime, P) = H(s, P)
+H((i,s)::IndexedTime, x, P) = H(s, x, P)
 
 include("cspline.jl")
 include("wiener.jl")

@@ -178,6 +178,9 @@ b!(t, u, du, fg::Tuple{Function,Function}) = fg[1](t, u, du)
 b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 σ(t, x, fg::Tuple{Function,Function}) = fg[2](t, x)
 
+_b!((i,t)::IndexedTime, u, du, fg::Tuple{Function,Function}) = fg[1](t, u, du)
+_b((i,t)::IndexedTime, x, fg::Tuple{Function,Function}) = fg[1](t, x)
+
 # Interoperatibility ODEs
 
 F(t, x, f::Tuple{Function}) = f[1](t, x)
