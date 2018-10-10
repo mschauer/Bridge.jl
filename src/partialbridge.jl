@@ -55,28 +55,18 @@ struct PartialBridge{T,R,R2,Tv,TL,TM} <: ContinuousTimeProcess{T}
     end
 end
 
-function bi(i::Integer, x, P::PartialBridge)
+function _b((i,t)::IndexedTime, x, P::PartialBridge)
     b(P.tt[i], x, P.Target) + a(P.tt[i], x, P.Target)*P.L[i]'*P.M[i]*(P.v - P.μ[i] -  P.L[i]*x)
 end
 
-ri(i::Integer, x, P::PartialBridge) = P.L[i]'*P.M[i]*(P.v - P.μ[i] -  P.L[i]*x)
-Hi(i::Integer, x, P::PartialBridge) = P.L[i]' * P.M[i] * P.L[i]
+r((i,t)::IndexedTime, x, P::PartialBridge) = P.L[i]'*P.M[i]*(P.v - P.μ[i] -  P.L[i]*x)
+H((i,t)::IndexedTime, x, P::PartialBridge) = P.L[i]' * P.M[i] * P.L[i]
 
 
 σ(t, x, P::PartialBridge) = σ(t, x, P.Target)
 a(t, x, P::PartialBridge) = a(t, x, P.Target)
 Γ(t, x, P::PartialBridge) = Γ(t, x, P.Target)
 constdiff(P::PartialBridge) = constdiff(P.Target) && constdiff(P.Pt)
-btilde(t, x, P::PartialBridge) = b(t, x, P.Pt)
-atilde(t, x, P::PartialBridge) = a(t, x, P.Pt)
-aitilde(t, x, P::PartialBridge) = ai(t, x, P.Pt)
-bitilde(i, x, P::PartialBridge) = bi(i, x, P.Pt)
-
-hasbi(::PartialBridge) = true
-hasbitilde(P::PartialBridge) = hasbi(P.Pt)
-hasaitilde(P::PartialBridge) = hasai(P.Pt)
-
-
 
 
 function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge; skip = 0)
@@ -87,22 +77,14 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge; skip = 0)
     for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
         s = tt[i]
         x = xx[i]
-        r = Bridge.ri(i, x, Po)
+        r = Bridge.r((i,s), x, Po)
 
-        if hasbitilde(Po)
-            som += dot( b(s, x, Po.Target) - bitilde(i, x, Po), r ) * (tt[i+1]-tt[i])
-        else
-            som += dot( b(s, x, Po.Target) - btilde(s, x, Po), r ) * (tt[i+1]-tt[i])
-        end
+        som += dot( _b((i,s), x, target(Po)) - _b((i,s), x, auxiliary(Po)), r ) * (tt[i+1]-tt[i])
+
         if !constdiff(Po)
-            H = Hi(i, x, Po)
-            if hasaitilde(Po)
-                som -= 0.5*tr( (a(s, x, Po.Target) - aitilde(i, x, Po))*(H) ) * (tt[i+1]-tt[i])
-                som += 0.5*( r'*(a(s, x, Po.Target) - aitilde(i, x, Po))*r ) * (tt[i+1]-tt[i])
-            else
-                som -= 0.5*tr( (a(s, x, Po.Target) - atilde(s, x, Po))*(H) ) * (tt[i+1]-tt[i])
-                som += 0.5*( r'*(a(s, x, Po.Target) - atilde(s, x, Po))*r ) * (tt[i+1]-tt[i])
-            end
+            H = H((i,s), x, Po)
+            som -= 0.5*tr( (a((i,s), x, target(Po)) - aitilde((i,s), x, Po))*(H) ) * (tt[i+1]-tt[i])
+            som += 0.5*( r'*(a((i,s), x, target(Po)) - aitilde((i,s), x, Po))*r ) * (tt[i+1]-tt[i])
         end
     end
     som

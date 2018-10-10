@@ -14,8 +14,8 @@ var0(x) = dot(x, x)/length(x)
 brown1(s, t, n) = sample(range(s, stop=t, length=n), Wiener())
 bb(u,v,t,n) = sample(range(0, stop=t, length=n), WienerBridge{Float64}(t,v), u)
 X = SamplePath([0.0, 1.0, 3.0], zeros(3))
-@test abs(mean(Bridge._sample!(X,  Wiener(), 0.0).yy[end] for i in 1:n) -  
-    mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))) < 
+@test abs(mean(Bridge.sample!(Bridge.TransitionProb(), X,  Wiener(), 0.0).yy[end] for i in 1:n) -  
+    mean(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))) <
     3*std(Bridge.transitionprob(0.0, 0.0, 3.0, Wiener()))/sqrt(n)
 
 
@@ -25,7 +25,7 @@ X = sample(range(0.0, stop=2.0, length=1000), Wiener())
 #quadratic variation of Brownian motion is proportional to time plus sampling bias
 quv = [quvar(sample(range(0.0, stop=2.0, length=1000), Wiener())) for j in 1:1000]
 s2 = var(quv)
-@test abs(mean(quv)-2)/sqrt(s2)*sqrt(1000) < 3 
+@test abs(mean(quv)-2)/sqrt(s2)*sqrt(1000) < 3
 
 
 # int0^T w_t dw_t = w_T^2/2 - T/2
@@ -46,9 +46,9 @@ X = [solve(EulerMaruyama(), 0.0, brown1(0.0,1.0,1000), WienerBridge(2.0, 1.0)).y
 quv = [quvar(solve(EulerMaruyama(), 0.0, brown1(0.0,1.0,1000), Diff())) for j in 1: 1000]
 s2 = var(quv)
 @test abs(mean(quv)-1)/sqrt(s2)*sqrt(1000) < 5.
- 
 
-#  B(t) = (1-t) W(t/(1-t)). 
+
+#  B(t) = (1-t) W(t/(1-t)).
 
 @test abs(mean([bb(0,1,1,3).yy[2] for i in 1:1000])-0.5)/sqrt(0.25)*sqrt(1000) < r
 @test abs(mean([bb(0,1,1,5).yy[3] for i in 1:1000])-0.5)/sqrt(0.25)*sqrt(1000) < r

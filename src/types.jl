@@ -8,6 +8,10 @@ import Base: getindex, setindex!, length, copy, vcat, keys, values, iterate
 import Base: zero
 
 import Base: valtype
+
+const IndexedTime = Tuple{Int64,Float64}
+
+
 """
     ContinuousTimeProcess{T}
 
@@ -173,6 +177,9 @@ b!(t, u, du, fg::Tuple{Function,Function}) = fg[1](t, u, du)
 σ!(t, u, dw, dm, fg::Tuple{Function,Function}) = fg[2](t, u, dw, dm)
 b(t, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 σ(t, x, fg::Tuple{Function,Function}) = fg[2](t, x)
+
+_b!((i,t)::IndexedTime, u, du, fg::Tuple{Function,Function}) = fg[1](t, u, du)
+_b((i,t)::IndexedTime, x, fg::Tuple{Function,Function}) = fg[1](t, x)
 
 # Interoperatibility ODEs
 

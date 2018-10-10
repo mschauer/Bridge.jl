@@ -73,7 +73,7 @@ function ubridge!(X, W::SamplePath{T}, Po) where T
         s = ss[i]
         t, x = txofsu(s, u, T1, T2, v, Pt)
         tt[i], xx[.., i] = t, x
-        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )
+        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, target(Po)) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )
         σUdW = (-sqrt(2.0/((T2-T1)*(T2-s))))*(σ(t, x, Po)*(ww[.., i+1]-ww[..,i]))
         u += bU*(ss[i+1]-s) + σUdW
     end
@@ -107,15 +107,15 @@ function uthetamethod!(Y, u, W::SamplePath, Po, theta=0.5)
         tt[i], xx[.., i] = t, x
         x2 = x
         dw = (ww[.., i+1]-ww[..,i])
-        delta1 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, Po.Target) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )*(ss[i+1]-s) 
+        delta1 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x, target(Po)) +   1/(T2-s)*(u - 2.0*a(t, x, Po)*Ju(s, T1, T2, Pt, u) )*(ss[i+1]-s) 
         local delta2
        
         eps2 = 5e-6
         MM = 8
         for mm in 1:MM
             
-            delta2 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x2, Po.Target) +   1/(T2-s)*(u2 - 2.0*a(t, x2, Po)*Ju(s, T1, T2, Pt, u2) )*(ss[i+1]-s) 
-            buderiv = -2/(T2-T1)*bderiv(t, x2, Po.Target) + 1/(T2-s)*(I - 2.0*a(t, x, Po)*J(s, T1, T2, Pt))*(ss[i+1]-s) 
+            delta2 = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t, x2, target(Po)) +   1/(T2-s)*(u2 - 2.0*a(t, x2, Po)*Ju(s, T1, T2, Pt, u2) )*(ss[i+1]-s) 
+            buderiv = -2/(T2-T1)*bderiv(t, x2, target(Po)) + 1/(T2-s)*(I - 2.0*a(t, x, Po)*J(s, T1, T2, Pt))*(ss[i+1]-s) 
             bderiv(tt[i+1], y2, P)
             dy2 = -inv(I - theta*(buderiv*(s[i+1]-s)))*(u2 - u - (1-theta)*delta1 - theta*delta2 - σ(tt[i], y, P)*dw)
             
@@ -142,7 +142,7 @@ function ullikelihood(Y::SamplePath{T}, Po) where T
     T1 = Po.tt[1]
     T2 = Po.tt[end]
     v = Po.v[2]
-    P = Po.Target
+    P = target(Po)
     Pt = ptilde(Po)
     s2 = soft(tt[1], T1, T2)
     som::Float64 = 0.
@@ -169,7 +169,7 @@ function ullikelihoodtrapez(Y::SamplePath{T}, Po) where T
     T1 = Po.tt[1]
     T2 = Po.tt[end]
     v = Po.v[2]
-    P = Po.Target
+    P = target(Po)
     Pt = ptilde(Po)
     ss = soft(tt, T1, T2)
     som::Float64 = 0.
@@ -225,7 +225,7 @@ function uinnovations!(W, Y::SamplePath{T}, Po) where T
         u2 = uofx(s2, yy[.., i+1], T1, T2, v, Pt) 
         
         
-        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t,  yy[.., i], Po.Target) +   1/(T2-s)*(u - 2.0*a(t,  yy[.., i], Po)*Ju(s, T1, T2, Pt, u) )
+        bU = 2/(T2-T1)*dotVs(s, T1, T2, v, Pt) - 2/(T2-T1)*b(t,  yy[.., i], target(Po)) +   1/(T2-s)*(u - 2.0*a(t,  yy[.., i], Po)*Ju(s, T1, T2, Pt, u) )
         σU = -sqrt(2.0/((T2-T1)*(T2-s)))*σ(t, yy[.., i], Po)
         
         w = w + inv(σU)*(u2 - u - bU*(s2 - s)) 

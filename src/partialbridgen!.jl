@@ -56,7 +56,7 @@ struct PartialBridge!{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
 end
 
 
-function bti!((t,i), x, out, P::PartialBridge!)
+function _b!((t,i), x, out, P::PartialBridge!)
     b!(t, x, out, P.Target)
     out .+= a(t, x, P.Target)*(P.H[i]*(P.ν[i] - x))
     out
@@ -69,7 +69,7 @@ function rti!((t,i), x, out, P::PartialBridge!)
     out
 end
 
-btitilde!((t,i), x, out, P) = bti!((t,i), x, out, P.Pt)
+btitilde!((t,i), x, out, P) = _b!((t,i), x, out, P.Pt)
 
 constdiff(P::PartialBridge!) = constdiff(P.Target) && constdiff(P.Pt)
 
@@ -86,7 +86,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge!; skip = 0
         s = tt[i]
         x = xx[i]
         rti!((s,i), x, rout, Po)
-        b!(s, x, bout, Po.Target)
+        b!(s, x, bout, target(Po))
         btitilde!((s,i), x, btout, Po)
 
         som += dot(bout, rout) * (tt[i+1]-tt[i])

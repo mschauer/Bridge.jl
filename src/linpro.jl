@@ -17,10 +17,10 @@ mutable struct Ptilde{T} <: ContinuousTimeProcess{T}
     Γ
     Ptilde{T}(cs, σ) where T = new(cs, σ, σ*σ', inv(σ*σ'))
 end
-b(t, x, P::Ptilde) = P.cs(t) 
+b(t::Float64, x, P::Ptilde) = P.cs(t)
 
-B(t, P::Ptilde) = 0.0
-β(t, P::Ptilde) = P.cs(t)
+B(t::Float64, P::Ptilde) = 0.0
+β(t::Float64, P::Ptilde) = P.cs(t)
 
 mu(s, x, t, P::Ptilde) = x + integrate(P.cs, s, t)
 σ(t, x, P::Ptilde) = P.σ
@@ -30,16 +30,16 @@ gamma(t, x, P::Ptilde) = P.Γ
 constdiff(::Ptilde) = true
 
 """
-    Ptilde(cs::CSpline, σ) 
-    
-Affine diffusion ``dX = cs(t) dt + σdW`` 
+    Ptilde(cs::CSpline, σ)
+
+Affine diffusion ``dX = cs(t) dt + σdW``
 with cs a cubic spline `::CSpline`.
-    
-"""    
+
+"""
 Ptilde(cs::CSpline{T}, σ) where {T} = Ptilde{T}(cs, σ)
 
 
-function lp(s, x, t, y, P::Ptilde{T}) where T 
+function lp(s, x, t, y, P::Ptilde{T}) where T
     logpdfnormal(y - mu(s,x,t,P), (t-s)*P.a)
 end
 
@@ -77,7 +77,7 @@ end
 
 B(t, P::LinPro) = P.B
 β(t, P::LinPro) = -P.B*P.μ
-b(t, x, P::LinPro) = P.B*(x .- P.μ)
+b(t::Float64, x, P::LinPro) = P.B*(x .- P.μ)
 σ(t, x, P::LinPro) = P.σ
 bderiv(t, x, P::LinPro) = P.B
 σderiv(t, x, P::LinPro) = 0*(P.σ)
@@ -87,15 +87,15 @@ a(t, P::LinPro) = P.a
 constdiff(::LinPro) = true
 
 """
-    LinPro(B, μ::T, σ) 
-    
+    LinPro(B, μ::T, σ)
+
 Linear diffusion ``dX = B(X - μ)dt + σdW``.
-    
-"""    
+
+"""
 LinPro
 
 
-function lp(s, x, t, y, P::LinPro{T}) where T 
+function lp(s, x, t, y, P::LinPro{T}) where T
     logpdfnormal(y - mu(s,x,t,P), K(s, t, P::LinPro))
 end
 
@@ -141,7 +141,7 @@ Bridge process of `P::LinPro` with `μ == 0` conditional on ending in `v` at tim
 struct LinProBridge{T,S<:LinPro} <: ContinuousTimeProcess{T}
     t::Float64  # end time
     v::T        # end point
-    P::S 
+    P::S
     LinProBridge(t, v::T, P::S) where {T,S<:LinPro} = !iszero(P.μ) ? throw(ArgumentError("μ ≠ 0")) : new{T,S}(t,v,P)
 end
 
@@ -164,7 +164,7 @@ mu(s, x, t, P::LinProBridge{Float64}) = inv(sinh(P.P.B*(P.t - s)))*( P.v*sinh(P.
 K(s, t, P::LinProBridge{Float64}) = 2 * P.P.lambda * csch(-P.P.B*(P.t - s)) * sinh(-P.P.B*(t-s))*sinh(-P.P.B*(P.t - t))
 # Wolfram alpha: integral_(1/e)^ gamma (sinh^2(-(π - gamma )))/(sinh^2(-(π - s))) ds = sinh(1/e - gamma ) sinh( gamma - π) (-csch(1/e - π))≈0.170692
 
-#function mu(s, x, t, Ps::LinProBridge) 
+#function mu(s, x, t, Ps::LinProBridge)
 #    T = Ps.t
 #    P = Ps.P
 #    inv(P.a - expm(P.B*(T-s))*P.a*expm(P.B*(T-s))')*(P.a - expm(P.B*(T-t))*P.a*expm(P.B*(T-t))')*x
@@ -176,7 +176,7 @@ transitionprob(s, x, t, P::LinProBridge{Float64}) = Gaussian(mu(s, x, t, P), K(s
 #################################################
 
 """
-    LinearAppr(tt, B, β, a) 
+    LinearAppr(tt, B, β, a)
 """
 struct LinearAppr{R,S,T} <: ContinuousTimeProcess{T}
     tt::Vector{Float64}
@@ -186,17 +186,15 @@ struct LinearAppr{R,S,T} <: ContinuousTimeProcess{T}
     Σ::Vector{R}
 end
 
-bi(i, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.b[i]
-Bi(i, P::LinearAppr) = P.B[i]
-βi(i, P::LinearAppr) = P.b[i] - P.B[i]*P.xx[i]
-ai(i, x, P::LinearAppr) = outer(P.Σ[i])
-ai(i, P::LinearAppr) = outer(P.Σ[i])
+_b((i,s)::IndexedTime, x, P::LinearAppr) = P.B[i]*(x - P.xx[i]) + P.b[i]
+B((i,s)::IndexedTime, P::LinearAppr) = P.B[i]
+β((i,s)::IndexedTime, P::LinearAppr) = P.b[i] - P.B[i]*P.xx[i]
+a((i,s)::IndexedTime, x, P::LinearAppr) = outer(P.Σ[i])
+a((i,s)::IndexedTime, P::LinearAppr) = outer(P.Σ[i])
 constdiff(::LinearAppr) = false
-hasbi(::LinearAppr) = true
-hasai(::LinearAppr) = true
 
 linearappr(Y, P) = LinearAppr(Y.tt, Y.yy, map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.b(t, x, P), Y.tt, Y.yy), map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy))
-function linearappr!(Pt::LinearAppr, Y, P) 
+function linearappr!(Pt::LinearAppr, Y, P)
     Pt.tt[:] = Y.tt
     Pt.xx[:] = Y.yy
     Pt.B[:] = map((t,x) -> Bridge.bderiv(t, x, P), Y.tt, Y.yy)
@@ -204,4 +202,3 @@ function linearappr!(Pt::LinearAppr, Y, P)
     Pt.Σ[:] = map((t,x) -> Bridge.σ(t, x, P), Y.tt, Y.yy)
     Pt
 end
-

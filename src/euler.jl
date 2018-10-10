@@ -1,3 +1,5 @@
+
+# Allow `UniformScaling`s as value for σ
 _scale(w, σ) = σ*w
 _scale(w::Number, σ::UniformScaling) = σ.λ*w
 
@@ -79,9 +81,9 @@ function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
 
     for i in 1:N-2 # fix me
         yy[.., i] = y
-        B = b(tt[i], y, P)
+        B = _b((i,tt[i]), y, P)
         y2 = y + B*(tt[i+1]-tt[i])
-        y = y + 0.5*(b(tt[i+1], y2, P) + B)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
+        y = y + 0.5*(_b((i+1,tt[i+1]), y2, P) + B)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N-1] = y
     Y
@@ -116,7 +118,6 @@ solve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))
 """
 solve(method::SDESolver, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T} =
     solve!(method, samplepath(W.tt, zero(u)), u, W, P)
-#    solve!(method, SamplePath{T}(W.tt, T[zero(u) for t in W.tt]), u, W, P)
 
 """
     solve(method::SDESolver, u, W::VSamplePath, P) -> X
@@ -146,7 +147,7 @@ function solve!(::EulerMaruyama, Y, u::T, W::SamplePath, P::ProcessOrCoefficient
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + b(tt[i], y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = y
     Y
@@ -166,7 +167,7 @@ function solve!(::EulerMaruyama, Y, u::T, W::AbstractPath, P::ProcessOrCoefficie
 
     for (i, t, dt, dw) in increments(W)
         yy[.., i] = y
-        y = y + b(t, y, P)*dt + _scale(dw, σ(t, y, P))
+        y = y + _b((i,t), y, P)*dt + _scale(dw, σ(t, y, P))
     end
     yy[.., N] = y
     Y
@@ -206,7 +207,7 @@ function bridge!(::BridgePre, Y, W::SamplePath, P::ContinuousTimeProcess{T}) whe
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = P.v[end]
     Y
@@ -236,7 +237,7 @@ function bridge!(Y, u, W::SamplePath, P::GuidedBridge{T}) where {T}
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     if norm(P.H♢[end], 1) < eps()
         yy[.., N] = P.V[end]
@@ -264,7 +265,7 @@ function bridge!(Y, u, W::SamplePath, P::Union{PartialBridge,PartialBridgeνH})
     end
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
     end
     yy[.., N] = y
     yy[.., N]
@@ -297,7 +298,7 @@ function bridge!(::Mdb, Y, W::SamplePath, P::ContinuousTimeProcess{T}) where {T}
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + bi(i, y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
     end
     yy[.., N] = P.v[end]
     Y
@@ -319,7 +320,7 @@ function solve!(::StochasticRungeKutta, Y, u::T, W::SamplePath, P::ProcessOrCoef
         yy[.., i] = y
         delta = tt[i+1]-tt[i]
         sqdelta = sqrt(delta)
-        B = b(tt[i], y, P)
+        B = _b((i,tt[i]), y, P)
         S = σ(tt[i], y, P)
         dw = ww[.., i+1]-ww[..,i]
         y = y + B*delta + S*dw
@@ -346,27 +347,7 @@ function innovations!(::EulerMaruyama, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i]))
-    end
-    ww[.., N] = w
-    W
-end
-
-function innovations!(::BridgePre, W, Y::SamplePath, P)
-
-    N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
-
-    yy = Y.yy
-    tt = Y.tt
-    ww = W.yy
-    W.tt[:] = Y.tt
-
-    w = zero(ww[.., 1])
-
-    for i in 1:N-1
-        ww[.., i] = w
-        w = w + σ(tt[i], yy[.., i], P)\(yy[.., i+1] - yy[.., i] - bi(i, yy[.., i], P)*(tt[i+1]-tt[i]))
+        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W
@@ -386,7 +367,7 @@ function innovations!(::Mdb, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - b(tt[i], yy[.., i], P)*(tt[i+1]-tt[i]))
+        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W

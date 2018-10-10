@@ -6,7 +6,7 @@ Precomputed, replacing Euler-Maruyama scheme for bridges using `bi`.
 struct BridgePre! <: SDESolver
 end
 
-bti!((t,i), y, out, P) = b!(t, y, out, P)
+_b!((t,i), y, out, P) = b!(t, y, out, P)
 function solve!(solver::EulerMaruyama!, Y::VSamplePath, u::T, W, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")
@@ -31,7 +31,7 @@ function solve!(solver::EulerMaruyama!, Y::VSamplePath, u::T, W, P::ProcessOrCoe
         for k in eachindex(dw)
             @inbounds dw[k] = W.yy[k, i+1] - W.yy[k, i]
         end
-        bti!((t¯,i), y, tmp1, P)
+        _b!((t¯,i), y, tmp1, P)
         σ!(t¯, y, dw, tmp2, P)
         for k in eachindex(y)
             @inbounds y[k] = y[k] + tmp1[k]*dt + tmp2[k]
@@ -65,7 +65,7 @@ function Bridge.solve!(solver::EulerMaruyama!, Y::SamplePath, u, W::SamplePath, 
             end
         end
 
-        bti!((t¯,i), y, tmp1, P)
+        _b!((t¯,i), y, tmp1, P)
         σ!(t¯, y, dw, tmp2, P)
 
         for k in eachindex(y)

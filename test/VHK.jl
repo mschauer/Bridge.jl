@@ -13,9 +13,9 @@ a = 0.7
 
 P1 = LinPro(-β, 0*mu, sqrt(a))
 
-cs = Bridge.CSpline(tt[1], tt[end],  
-    Bridge.b(tt[1], u, P1), 
-    Bridge.b(tt[end], v, P1), 
+cs = Bridge.CSpline(tt[1], tt[end],
+    Bridge.b(tt[1], u, P1),
+    Bridge.b(tt[end], v, P1),
     (Bridge.b(tt[2], u + Bridge.b(tt[1], u, P1)*(tt[2]-tt[1]), P1)-Bridge.b(tt[1], u, P1))/(tt[2]-tt[1]), # -P1.β*u*(1-exp(-P1.β*dt))/dt
     (Bridge.b(tt[end], v, P1) - Bridge.b(tt[end-1], v - Bridge.b(tt[end], v, P1)*(tt[end]-tt[end-1]), P1))/(tt[end]-tt[end-1])
 )
@@ -73,9 +73,9 @@ v = S(v)
 mu = S(mu)
 a = M(a)
 
-cs = Bridge.CSpline(tt[1], tt[end],  
-    Bridge.b(tt[1], u, P1), 
-    Bridge.b(tt[end], v, P1), 
+cs = Bridge.CSpline(tt[1], tt[end],
+    Bridge.b(tt[1], u, P1),
+    Bridge.b(tt[end], v, P1),
     (Bridge.b(tt[2], u + Bridge.b(tt[1], u, P1)*(tt[2]-tt[1]), P1)-Bridge.b(tt[1], u, P1))/(tt[2]-tt[1]), # -P1.β*u*(1-exp(-P1.β*dt))/dt
     (Bridge.b(tt[end], v, P1) - Bridge.b(tt[end-1], v - Bridge.b(tt[end], v, P1)*(tt[end]-tt[end-1]), P1))/(tt[end]-tt[end-1])
 )
@@ -97,10 +97,7 @@ t, x = 0.0, v
 @test norm(Bridge.r(t, x, T, v, Pt) - GP.H♢[1]\(GP.V[1] - x)) < 1e-4
 @test norm(Bridge.b(t, x, Po) -  Bridge.b(t, x, Ptarget) - Bridge.a(t, x, Ptarget)*Bridge.r(t, x, T, v, Pt)) < 1e-10
 @test norm(Bridge.b(t, x, Po) - Bridge.b(t, x, Ptarget) - a*(GP.H♢[1]\(GP.V[1] - x))) < 1e-5
-@test norm(Bridge.b(t, x, Po) - Bridge.bi(1, x, GP)) < 1e-5
+@test norm(Bridge.b(t, x, Po) - Bridge._b((1,NaN), x, GP)) < 1e-5
 
-@test norm(Bridge.solvebackward!(Bridge.R3(), Bridge.F, SamplePath(tt,zeros(length(tt))), 2.0, ((t,x)->-x,)).yy[1] - 
+@test norm(Bridge.solvebackward!(Bridge.R3(), Bridge.F, SamplePath(tt,zeros(length(tt))), 2.0, ((t,x)->-x,)).yy[1] -
     2exp(tt[end]-tt[1]))<1e-5
-
-
-
