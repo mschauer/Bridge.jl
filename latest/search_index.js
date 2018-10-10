@@ -189,7 +189,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.BS3",
     "category": "type",
-    "text": "BS3\n\nRalston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve y(t + dt) - y(t) = int_t^t+dt F(s y(s)) ds. Uses Bogacki–Shampine method  to give error estimate. \n\n\n\n\n\n"
+    "text": "BS3\n\nRalston (1965) update (order 3 step of the Bogacki–Shampine 1989 method) to solve y(t + dt) - y(t) = int_t^t+dt F(s y(s)) ds. Uses Bogacki–Shampine method to give error estimate.\n\n\n\n\n\n"
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "StatsBase.sample!",
     "category": "function",
-    "text": "sample!(X, P, x1=zero(T))\n\nSample the process P on the grid X.tt exactly from its transitionprob(-ability) starting in x1 writing into X.yy.\n\n\n\n\n\n"
+    "text": "sample!([::Bridge.TransitionProb], X, P, x1=zero(T))\n\nSample the process P on the grid X.tt exactly from its transitionprob(-ability) starting in x1 writing into X.yy.\n\n\n\n\n\n"
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.girsanov",
     "category": "function",
-    "text": "girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)\n\nGirsanov log likelihood mathrmdPmathrmdPt(X)    \n\n\n\n\n\n"
+    "text": "girsanov(X::SamplePath, P::ContinuousTimeProcess, Pt::ContinuousTimeProcess)\n\nGirsanov log likelihood mathrmdPmathrmdPt(X)\n\n\n\n\n\n"
 },
 
 {
@@ -341,7 +341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.NoDrift",
     "category": "type",
-    "text": "NoDrift(tt, B, β, a)\n\n\n\n\n\n"
+    "text": "NoDrift(tt, P)\n\nAs P, but without drift.\n\n\n\n\n\n"
 },
 
 {
@@ -701,7 +701,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.Ptilde",
     "category": "type",
-    "text": "Ptilde(cs::CSpline, σ)\n\nAffine diffusion dX = cs(t) dt + σdW  with cs a cubic spline ::CSpline.\n\n\n\n\n\n"
+    "text": "Ptilde(cs::CSpline, σ)\n\nAffine diffusion dX = cs(t) dt + σdW with cs a cubic spline ::CSpline.\n\n\n\n\n\n"
 },
 
 {
