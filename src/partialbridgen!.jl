@@ -56,7 +56,7 @@ struct PartialBridge!{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
 end
 
 
-function bti!((t,i), x, out, P::PartialBridge!)
+function _b!((t,i), x, out, P::PartialBridge!)
     b!(t, x, out, P.Target)
     out .+= a(t, x, P.Target)*(P.H[i]*(P.ν[i] - x))
     out
@@ -69,7 +69,7 @@ function rti!((t,i), x, out, P::PartialBridge!)
     out
 end
 
-btitilde!((t,i), x, out, P) = bti!((t,i), x, out, P.Pt)
+btitilde!((t,i), x, out, P) = _b!((t,i), x, out, P.Pt)
 
 constdiff(P::PartialBridge!) = constdiff(P.Target) && constdiff(P.Pt)
 
