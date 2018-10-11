@@ -75,6 +75,7 @@ InhomogPoisson
 
 ## Bessel processes
 ```@docs
+Bridge.Bessel{N}
 Bridge.Bessel3Bridge
 Bridge.BesselProp
 ```
@@ -138,11 +139,8 @@ GuidedProp
 Bridge.GuidedBridge
 Bridge.PartialBridge
 Bridge.PartialBridgeνH
-BridgePre
 BridgeProp
 Bridge.Mdb
-bridge
-bridge!
 Bridge.Vs
 Bridge.gpV!
 Bridge.r
@@ -164,7 +162,6 @@ Bridge.SDESolver
 Bridge.Increments
 Bridge.sizedtype
 Bridge.piecewise
-Bridge.BridgePre!
 Bridge.aeuler
 Bridge.MeanCov
 Bridge.upsample

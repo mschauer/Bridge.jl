@@ -70,7 +70,7 @@ Ht = zeros(S, N)
 Po2 = Bridge.PartialBridgeνH(tt, P, Pt, L, v, ϵ, Σ)
 
 Xo2 = copy(X2)
-bridge!(Xo2, ℝ{2}(x0), W2, Po2)
+solve!(Euler(), Xo2, ℝ{2}(x0), W2, Po2)
 
 @test norm(Xo1.yy - Xo2.yy) < 500*eps()
 
@@ -91,7 +91,7 @@ function mcmc2(x0, tt, Po2)
 
     # initalization
     W = sample(tt, Wiener())
-    X = bridge(x0, W, Po2)
+    X = solve(Euler(), x0, W, Po2)
     ll = llikelihood(Bridge.LeftRule(), X, Po2)
 
     acc = 0
@@ -109,7 +109,7 @@ function mcmc2(x0, tt, Po2)
         sample!(Wrho, Wiener())
         Wo.yy .= ρ*W.yy + sqrt(1-ρ^2)*Wrho.yy
 
-        bridge!(Xo, x0, Wo, Po2)
+        solve!(Euler(), Xo, x0, Wo, Po2)
         llo = llikelihood(Bridge.LeftRule(), Xo, Po2)
         push!(lls2, llo)
 

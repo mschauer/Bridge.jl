@@ -97,7 +97,7 @@ Po1 = Bridge.PartialBridge!(tt, P, Pt, L, v, ϵ, Σnoise)
 x0 = [2.0, 1.0]
 Xo1 = deepcopy(X1)
 
-solve!(Bridge.EulerMaruyama!(), Xo1, x0,  W1, Po1)
+solve!(Bridge.EulerMaruyama!(), Xo1, x0, W1, Po1)
 
 
 # Likelihood

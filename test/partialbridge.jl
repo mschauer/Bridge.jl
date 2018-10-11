@@ -71,7 +71,7 @@ Po = Bridge.PartialBridge(tt, P, Pt, L, v, Σ)
 W = sample(tt, Wiener())
 x0 = ℝ{2}(2.0, 1.0)
 Xo = copy(X)
-bridge!(Xo, x0, W, Po)
+solve!(Euler(), Xo, x0, W, Po)
 
 
 # Likelihood
@@ -89,7 +89,7 @@ ll = llikelihood(Bridge.LeftRule(), Xo, Po)
 
     # initalization
     sample!(W, Wiener())
-    bridge!(X, x0, W, Po)
+    solve!(Euler(), X, x0, W, Po)
     ll = llikelihood(Bridge.LeftRule(), X, Po)
 
     acc = 0
@@ -106,7 +106,7 @@ ll = llikelihood(Bridge.LeftRule(), Xo, Po)
         sample!(W2, Wiener())
         Wo.yy .= ρ*W.yy + sqrt(1-ρ^2)*W2.yy
 
-        bridge!(Xo, x0, Wo, Po)
+        solve!(Euler(), Xo, x0, Wo, Po)
         llo = llikelihood(Bridge.LeftRule(), Xo, Po)
         if log(rand()) <= llo - ll
             X.yy .= Xo.yy

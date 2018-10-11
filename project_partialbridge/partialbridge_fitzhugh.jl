@@ -125,9 +125,9 @@ for k1 in (1:3)
         W = sample(tt, Wiener())
         X = solve(Euler(), x0, W, P)
         Xo = copy(X)
-        bridge!(Xo, x0, W, Po)
+        solve!(Euler(),Xo, x0, W, Po)
 
-        bridge!(X, x0, W, Po)
+        solve!(Euler(),X, x0, W, Po)
         ll = llikelihood(Bridge.LeftRule(), X, Po,skip=sk)
 
         # further initialisation
@@ -150,7 +150,7 @@ for k1 in (1:3)
             #    Wo.yy[1:i0] .= W.yy[1:i0]
             #    Wo.yy[i0+1:end] .= W.yy[i0] + ρ*(W.yy[i0+1:end] - W.yy[i0+1]) + sqrt(1-ρ^2)*(W2.yy[i0+1:end]-W2.yy[i0+1])
 
-            bridge!(Xo, x0, Wo, Po)
+            solve!(Euler(),Xo, x0, Wo, Po)
 
             llo = llikelihood(Bridge.LeftRule(), Xo, Po)
 

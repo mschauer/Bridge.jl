@@ -40,6 +40,10 @@ struct BridgeProp{T} <: ContinuousTimeProcess{T}
     BridgeProp{T}(Target::ContinuousTimeProcess{T}, tt, v, a, cs) where T =
         new(Target, tt, v, cs, a, inv(a))
 end
+
+startpoint(P::BridgeProp) = P.v[1]
+endpoint(_, P::BridgeProp) = P.v[2]
+
 BridgeProp(Target::ContinuousTimeProcess{T}, tt, v, a, cs=CSpline(first(tt), last(tt), zero(T))) where {T} = BridgeProp{T}(Target, tt, v, a, cs)
 
 h(t,x, P::BridgeProp) = P.v[2] - x -  integrate(P.cs, t,  last(P.tt))
@@ -84,6 +88,8 @@ struct GuidedProp{T} <: ContinuousTimeProcess{T}
     GuidedProp{T}(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt) where T =
         new(Target, t0, v0, t1, v1, Pt)
 end
+startpoint(P::GuidedProp) = P.v0
+endpoint(_, P::GuidedProp) = P.v1
 
 GuidedProp(Target::ContinuousTimeProcess{T}, t0, v0, t1, v1, Pt::ContinuousTimeProcess{T}) where {T} = GuidedProp{T}(Target, t0, v0, t1, v1, Pt)
 
@@ -263,6 +269,8 @@ struct PBridgeProp{T} <: ContinuousTimeProcess{T}
         new(Target, t0, v0, tm, vm, t1, v1, L, L', Σ, cs, a, inv(a))
 end
 PBridgeProp(Target::ContinuousTimeProcess{T}, t0, v0, tm, vm, t1, v1, L, Σ, a, cs=CSpline(t0, t1, zero(T))) where {T} = PBridgeProp{T}(Target, t0, v0, tm, vm, t1, v1,  L, Σ, a, cs)
+
+
 
 h1(t, x, P::PBridgeProp) = P.vm - x - integrate(P.cs, t,  P.tm)
 h2(t, x, P::PBridgeProp) = P.v1 - x - integrate(P.cs, t,  P.t1)

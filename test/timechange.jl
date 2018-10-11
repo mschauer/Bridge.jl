@@ -1,7 +1,7 @@
 using Bridge, Distributions
 using Test, LinearAlgebra
 
-h = 1e-7    
+h = 1e-7
 n, m = 50, 10000
 T1 = 1.
 T2 = 2.
@@ -35,7 +35,7 @@ t = tt[div(n,2)]
 
 @test tt[1] == T1
 @test tt[end] == T2
-@test (Bridge.V(T1, T2, v, Pt) - u)/T ≈ Bridge.uofx(T1, Po.v[1], T1, T2, v, Pt) # 
+@test (Bridge.V(T1, T2, v, Pt) - u)/T ≈ Bridge.uofx(T1, Po.v[1], T1, T2, v, Pt) #
 @test [T1, u] ≈ [Bridge.txofsu(T1, Bridge.uofx(T1, Po.v[1], T1, T2, v, Pt), T1, T2, v, Pt)...]
 @test norm(Bridge.soft(Bridge.tofs(1:0.1:2, 1, 2), 1,2 ) .- (1:0.1:2)) < sqrt(eps())
 
@@ -43,8 +43,8 @@ if la == 1
     @test norm(Bridge.b(T1, u, P) - Bridge.b(T1, u, Pt)) + norm(Bridge.b(T2, v, P) - Bridge.b(T2, v,Pt)) < sqrt(eps())
 end
 
-X = Bridge.bridge(EulerMaruyama(), sample(ss, Wiener{Float64}()), Po)
-Y = Bridge.bridge(EulerMaruyama(), Bridge.innovations(EulerMaruyama(), X, Po), Po)
+X = Bridge.solve(EulerMaruyama(), sample(ss, Wiener{Float64}()), Po)
+Y = Bridge.solve(EulerMaruyama(), Bridge.innovations(EulerMaruyama(), X, Po), Po)
 @test Y.tt ≈ X.tt
 @test Y.yy ≈ X.yy
 
@@ -55,8 +55,8 @@ Y = ubridge(Bridge.uinnovations(X, Po), Po)
 @test Y.yy ≈ X.yy
 
 
-X = Bridge.bridge(Bridge.Mdb(), sample(ss, Wiener{Float64}()), Po)
-Y = Bridge.bridge(Bridge.Mdb(), innovations(Bridge.Mdb(), X, Po), Po)
+X = Bridge.solve(Bridge.Mdb(), sample(ss, Wiener{Float64}()), Po)
+Y = Bridge.solve(Bridge.Mdb(), innovations(Bridge.Mdb(), X, Po), Po)
 @test Y.tt ≈ X.tt
 @test Y.yy ≈ X.yy
 
@@ -66,45 +66,45 @@ pt = exp(lptilde(Po))
 C = []
 Co = []
 Cnames = []
-push!(Cnames, "Euler") 
+push!(Cnames, "Euler")
 z = Float64[
     let
-        X = bridge(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
+        X = solve(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
          Bridge.llikelihoodleft(X, Po)
     end
     for i in 1:m]
- 
+
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
- 
-push!(Cnames, "Euler + Trapez") 
+
+push!(Cnames, "Euler + Trapez")
 z = Float64[
     let
-        X = bridge(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
+        X = solve(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
          Bridge.llikelihoodtrapez(X, Po)
     end
     for i in 1:m]
- 
+
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "MDGP+Left")
 z = Float64[
     let
-        X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
+        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
         Bridge.llikelihoodleft(X, Po)
     end
     for i in 1:m]
- 
+
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 push!(Cnames, "MDGP+Trapez")
 z = Float64[
     let
-        X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
+        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
         Bridge.llikelihoodtrapez(X, Po)
     end
     for i in 1:m]
- 
+
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 
@@ -152,7 +152,7 @@ push!(Cnames, "TCSGP + Inno + Update")
 z = Float64[
                   let
                       X = ubridge(sample(ss, Wiener{Float64}()), Po2)
-                      Z = Bridge.uinnovations(X, Po2) 
+                      Z = Bridge.uinnovations(X, Po2)
                       Z2 = sample(Z.tt, Wiener{Float64}())
                       Z.yy[:] = sqrt(.8)*Z.yy + sqrt(0.2)*Z2.yy
                       Z.yy[end]
@@ -168,8 +168,8 @@ z = Float64[
            let
                W = sample(ss, Wiener{Float64}())
                X = ubridge(W, Po2)
-               Z = Bridge.innovations(EulerMaruyama(), X, Po2) 
-               X = bridge(EulerMaruyama(), Z, Po)
+               Z = Bridge.innovations(EulerMaruyama(), X, Po2)
+               X = solve(EulerMaruyama(), Z, Po)
                Bridge.llikelihoodtrapez(X, Po)
            end
            for i in 1:m]
@@ -178,13 +178,13 @@ o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt
 push!(Cnames, "MDGP + Trapez + Inno")
 z = Float64[
     let
-        X = bridge(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po2)
-        W = innovations(EulerMaruyama(), X, Po2) 
-        X = bridge(EulerMaruyama(), W, Po)
+        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po2)
+        W = innovations(EulerMaruyama(), X, Po2)
+        X = solve(EulerMaruyama(), W, Po)
         Bridge.llikelihoodtrapez(X, Po)
     end
     for i in 1:m]
- 
+
 o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
 display([Cnames C Co])

@@ -88,7 +88,7 @@ v0 = V.yy[1]
 y = x0
 for i in 1:m
     sample!(WW[i], Wiener{ℝ{3}}())
-    y = Bridge.bridge!(XX[i], y, WW[i], Pᵒ[i])
+    y = Bridge.solve!(Euler(), XX[i], y, WW[i], Pᵒ[i])
 end
 XXmean = [zero(XX[i]) for i in 1:m]
 

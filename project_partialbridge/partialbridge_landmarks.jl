@@ -111,7 +111,7 @@ Bridge.constdiff(::Landmarks) = true
 
 
 
-function Bridge.bi!(i, x, out, Po::LandmarksBridge)
+function Bridge._b!((i,s), x, out, Po::LandmarksBridge)
     Bridge.b!(Po.tt[i], x, out, Bridge.P(Po)) # original drift
     out2 = zero(out)
     Bridge.ri!(i, x, out2, Po)
@@ -157,9 +157,9 @@ Po = νHparam ? Bridge.PartialBridgeνH(tt, P, Pt, L, ℝ{m}(v),ϵ, Σ) : Bridge
 W = sample(tt, Wiener())
 X = solve(Euler(), x0, W, P)
 Xo = copy(X)
-bridge!(Xo, x0, W, Po)
+solve!(Euler(),Xo, x0, W, Po)
 
-bridge!(X, x0, W, Po)
+solve!(Euler(),X, x0, W, Po)
 ll = llikelihood(Bridge.LeftRule(), X, Po,skip=sk)
 
 # further initialisation
@@ -177,7 +177,7 @@ for iter in 1:iterations
     sample!(W2, Wiener())
     #ρ = rand(Uniform(0.95,1.0))
     Wo.yy .= ρ*W.yy + sqrt(1-ρ^2)*W2.yy
-    bridge!(Xo, x0, Wo, Po)
+    solve!(Euler(),Xo, x0, Wo, Po)
 
     llo = llikelihood(Bridge.LeftRule(), Xo, Po,skip=sk)
     print("ll $ll $llo, diff_ll: ",round(llo-ll,3))

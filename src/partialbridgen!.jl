@@ -56,7 +56,7 @@ struct PartialBridge!{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
 end
 
 
-function _b!((t,i), x, out, P::PartialBridge!)
+function _b!((i,t), x, out, P::PartialBridge!)
     b!(t, x, out, P.Target)
     out .+= a(t, x, P.Target)*(P.H[i]*(P.ν[i] - x))
     out
