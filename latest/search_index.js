@@ -165,7 +165,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.solve!",
     "category": "function",
-    "text": "solve!(method, F, X::SamplePath, x0, P) -> X, [err]\nsolve!(method, X::SamplePath, x0, F) -> X, [err]\n\nSolve ordinary differential equation (ddx) x(t) = F(t x(t)) or (ddx) x(t) = F(t x(t) P) on the fixed grid X.tt writing into X.yy .\n\nmethod::R3 - using a non-adaptive Ralston (1965) update (order 3).\n\nmethod::BS3 use non-adaptive Bogacki–Shampine method to give error estimate.\n\nCall _solve! to inline. \"Pretty fast if x is a bitstype or a StaticArray.\"\n\n\n\n\n\nsolve!(::EulerMaruyama, Y, u, W, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using the Euler-Maruyama scheme in place.\n\n\n\n\n\n"
+    "text": "solve!(method, Y, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal overwritingY`.\n\n\n\n\n\n"
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.solve",
     "category": "function",
-    "text": "solve(method::SDESolver, u, W::SamplePath, P) -> X\nsolve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method in place.\n\nExample\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))\n\nstruct OU <: ContinuousTimeProcess{Float64}\n    μ::Float64\nend\nBridge.b(s, x, P::OU) = -P.μ*x\nBridge.σ(s, x, P::OU) = I\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))\n\n\n\n\n\nsolve(method::SDESolver, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method.\n\n\n\n\n\n"
+    "text": "solve(method::SDESolver, u, W::SamplePath, P) -> X\nsolve(method::SDESolver, u, W::SamplePath, (b, σ)) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method in place.\n\nExample\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), ((t,x)->-x, (t,x)->I))\n\nstruct OU <: ContinuousTimeProcess{Float64}\n    μ::Float64\nend\nBridge.b(s, x, P::OU) = -P.μ*x\nBridge.σ(s, x, P::OU) = I\n\nsolve(EulerMaruyama(), 1.0, sample(0:0.1:10, Wiener()), OU(1.4))\n\n\n\n\n\nsolve(method::SDESolver, u, W::VSamplePath, P) -> X\n\nSolve stochastic differential equation dX_t = b(tX_t)dt + σ(tX_t)dW_t using method.\n\n\n\n\n\nsolve(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal from startpoint(P)toendpoint(P)`.\n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nsolve(Euler(), W, P°)\n\n\n\n\n\n"
 },
 
 {
@@ -465,11 +465,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "library.html#Bridge.Bessel",
+    "page": "Library",
+    "title": "Bridge.Bessel",
+    "category": "type",
+    "text": "Bessel{N}(σ)\n\nN-dimensional Bessel process with dispersion σ. Sample with\n\nu = 0.0\nt = 0:0.1:1\nσ = 1.0\nsample(u, t, Bridge.Bessel{3}(σ))\n\n\n\n\n\n"
+},
+
+{
     "location": "library.html#Bridge.Bessel3Bridge",
     "page": "Library",
     "title": "Bridge.Bessel3Bridge",
     "category": "type",
-    "text": "Bessel3Bridge(t, v, σ)\n\nBessel(3) bridge from below or above to the point v at time t,  not crossing v, with dispersion σ.\n\n\n\n\n\n"
+    "text": "Bessel3Bridge(t, v, σ)\n\nBessel(3) bridge from below or above to the point v at time t, not crossing v, with dispersion σ.\n\n\n\n\n\n"
 },
 
 {
@@ -485,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bessel processes",
     "category": "section",
-    "text": "Bridge.Bessel3Bridge\nBridge.BesselProp"
+    "text": "Bridge.Bessel{N}\nBridge.Bessel3Bridge\nBridge.BesselProp"
 },
 
 {
@@ -769,14 +777,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "library.html#Bridge.BridgePre",
-    "page": "Library",
-    "title": "Bridge.BridgePre",
-    "category": "type",
-    "text": "BridgePre() <: SDESolver\n\nPrecomputed Euler-Maruyama scheme for bridges using bi.\n\n\n\n\n\n"
-},
-
-{
     "location": "library.html#Bridge.BridgeProp",
     "page": "Library",
     "title": "Bridge.BridgeProp",
@@ -790,22 +790,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Bridge.Mdb",
     "category": "type",
     "text": "Mdb() <: SDESolver\n\nEuler scheme with the diffusion coefficient correction of the modified diffusion bridge.\n\n\n\n\n\n"
-},
-
-{
-    "location": "library.html#Bridge.bridge",
-    "page": "Library",
-    "title": "Bridge.bridge",
-    "category": "function",
-    "text": "bridge(method, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal.\n\nExamples\n\ncs = Bridge.CSpline(tt[1], tt[end], Bridge.b(tt[1], v[1], P),  Bridge.b(tt[end], v[2], P))\nP° = BridgeProp(Pσ, v), Pσ.a, cs)\nW = sample(tt, Wiener())\nbridge(BridgePre(), W, P°)\n\n\n\n\n\n"
-},
-
-{
-    "location": "library.html#Bridge.bridge!",
-    "page": "Library",
-    "title": "Bridge.bridge!",
-    "category": "function",
-    "text": "bridge!(method, Y, W, P) -> Y\n\nIntegrate with method, where P is a bridge proposal overwritingY`.\n\n\n\n\n\n"
 },
 
 {
@@ -853,7 +837,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridges",
     "category": "section",
-    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.PartialBridge\nBridge.PartialBridgeνH\nBridgePre\nBridgeProp\nBridge.Mdb\nbridge\nbridge!\nBridge.Vs\nBridge.gpV!\nBridge.r\nBridge.gpHinv!\nBridge.gpupdate"
+    "text": "GuidedProp\nBridge.GuidedBridge\nBridge.PartialBridge\nBridge.PartialBridgeνH\nBridgeProp\nBridge.Mdb\nBridge.Vs\nBridge.gpV!\nBridge.r\nBridge.gpHinv!\nBridge.gpupdate"
 },
 
 {
@@ -945,14 +929,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "library.html#Bridge.BridgePre!",
-    "page": "Library",
-    "title": "Bridge.BridgePre!",
-    "category": "type",
-    "text": "BridgePre!() <: SDESolver\n\nPrecomputed, replacing Euler-Maruyama scheme for bridges using bi.\n\n\n\n\n\n"
-},
-
-{
     "location": "library.html#Bridge.aeuler",
     "page": "Library",
     "title": "Bridge.aeuler",
@@ -997,7 +973,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Unsorted",
     "category": "section",
-    "text": "LocalGammaProcess\nBridge.compensator0\nBridge.compensator\nBridge.θ\nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.BridgePre!\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis\nBridge.rescale"
+    "text": "LocalGammaProcess\nBridge.compensator0\nBridge.compensator\nBridge.θ\nBridge.soft\nBridge.tofs\nBridge.dotVs\nBridge.SDESolver\nBridge.Increments\nBridge.sizedtype\nBridge.piecewise\nBridge.aeuler\nBridge.MeanCov\nBridge.upsample\nBridge.viridis\nBridge.rescale"
 },
 
 ]}
