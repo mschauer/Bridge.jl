@@ -7,17 +7,37 @@ function partialbridgeodeνH!(::R3, t, L, Σ, v, νt, Ht, P, ϵ)
     H⁺ = inv(Ht[end])
     νt[end] = H⁺ * L' * inv(Σ) * v
     ν = νt[end]
-
+    F(t, y, P) = B(t, P)*y + β(t,P)
+    Ri(t, y, P) = B(t, P)*y + y * B(t,P)' - a(t, P)
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
-        ν = kernelr3((t, y, P) -> B(t, P)*y + β(t,P), t[i+1], ν, dt, P)
-        H⁺ = kernelr3((t,  y, P) -> B(t, P)*y + y * B(t,P)'-a(t, P), t[i+1], H⁺, dt, P)
+        ν = kernelr3(F, t[i+1], ν, dt, P)
+        H⁺ = kernelr3(Ri, t[i+1], H⁺, dt, P)
 
         νt[i] = ν
         Ht[i] = inv(H⁺)
     end
-    νt, H⁺t
+    νt, Ht
  end
+
+struct Lyap
+end
+function partialbridgeodeνH!(::Lyap, t, νt, Ht, P, νend, Hend⁺)
+    Ht[end] = inv(Hend⁺)
+    νt[end] = νend
+    H⁺ = Hend⁺
+    ν = νend
+    F(t, y, P) = B(t, P)*y + β(t,P)
+
+    for i in length(t)-1:-1:1
+        dt = t[i] - t[i+1]
+        ν = kernelr3(F, t[i+1], ν, dt, P)
+        H⁺ = lyapunovpsdbackward_step(t[i+1], H⁺, -dt, P)
+        νt[i] = ν
+        Ht[i] = inv(H⁺)
+    end
+    ν, H⁺
+end
 
 
 """
@@ -25,22 +45,29 @@ function partialbridgeodeνH!(::R3, t, L, Σ, v, νt, Ht, P, ϵ)
 
 Guided proposal process for diffusion bridge using backward recursion.
 
-    PartialBridgeνH(tt, P, Pt,  L, v,ϵ Σ)
+    PartialBridgeνH(tt, P, Pt, L, v,ϵ Σ)
 
-Guided proposal process for a partial diffusion bridge of `P` to `v` on
-the time grid `tt` using guiding term derived from linear process `Pt`.
+    Guided proposal process for a partial diffusion bridge of `P` to `v` on
+    the time grid `tt` using guiding term derived from linear process `Pt`.
 
-Simulate with `bridge!`.
+    PartialBridgeνH(tt, P, Pt, ν, Hend⁺)
+
+    Guided proposal process on the time grid `tt` using guiding term derived from
+    linear process `Pt` with backwards equation initialized at `ν, Hend⁺`.
+
 """
-struct PartialBridgeνH{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
+struct PartialBridgeνH{T,TP,TPt,Tν,TH} <: ContinuousTimeProcess{T}
     Target::TP
     Pt::TPt
     tt::Vector{Float64}
-    v::Tv
     ν::Vector{Tν}
     H::Vector{TH}
+    PartialBridgeνH(P::TP, Pt::TPt, tt, νt::Vector{Tν}, Ht::Vector{TH}) where {TP,TPt,Tν,TH} =
+        new{Bridge.valtype(P),TP,TPt,Tν,TH}(P, Pt, tt, νt, Ht)
 
-    function PartialBridgeνH(tt_, P, Pt, L, v::Tv,ϵ, Σ = Bridge.outer(zero(v))) where {Tv}
+
+    # 6-7 arg
+    function PartialBridgeνH(tt_, P, Pt, L, v::Tv, ϵ, Σ = Bridge.outer(zero(v))) where {Tv}
         tt = collect(tt_)
         N = length(tt)
         m, d = size(L)
@@ -48,19 +75,26 @@ struct PartialBridgeνH{T,TP,TPt,Tv,Tν,TH} <: ContinuousTimeProcess{T}
         Ht = zeros(TH, N)
         Tν = typeof(@SVector zeros(d))
         νt = zeros(Tν, N)
-
-        partialbridgeodeνH!(R3(), tt, L, Σ, v, νt, Ht, Pt,ϵ)
-        new{Bridge.valtype(P),typeof(P),typeof(Pt),Tv,Tν,TH}(P, Pt, tt, v, νt, Ht)
+        partialbridgeodeνH!(R3(), tt, L, Σ, νt, Ht, Pt,ϵ)
+        PartialBridgeνH(P, Pt, tt, νt, Ht)
     end
 end
-
+# 5 arg
+function partialbridgeνH(tt_, P, Pt, νend::Tv, Hend⁺::TH) where {Tv,TH}
+    tt = collect(tt_)
+    N = length(tt)
+    Ht = zeros(TH, N)
+    νt = zeros(Tv, N)
+    ν, H⁺ = partialbridgeodeνH!(Lyap(), tt, νt, Ht, Pt, νend, Hend⁺)
+    PartialBridgeνH(P, Pt, tt, νt, Ht), ν, H⁺
+end
 
 function _b((i,t)::IndexedTime, x, P::PartialBridgeνH)
     b(t, x, P.Target) + a(t, x, P.Target)*(P.H[i]*(P.ν[i] - x))
 end
 
 r((i,t)::IndexedTime, x, P::PartialBridgeνH) = P.H[i]*(P.ν[i] - x)
-H((i,t)::IndexedTime, x, P::PartialBridgeνH) = inv(P.H⁺[i])
+H((i,t)::IndexedTime, x, P::PartialBridgeνH) = P.H[i]
 
 σ(t, x, P::PartialBridgeνH) = σ(t, x, P.Target)
 a(t, x, P::PartialBridgeνH) = a(t, x, P.Target)
@@ -81,7 +115,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridgeνH; skip =
 
         som += dot( _b((i,s), x, target(Po)) - _b((i,s), x, auxiliary(Po)), r ) * (tt[i+1]-tt[i])
         if !constdiff(Po)
-            H = H(i, x, Po)
+            H = H((i,s), x, Po)
             som -= 0.5*tr( (a((i,s), x, target(Po)) - atilde((i,s), x, Po))*(H) ) * (tt[i+1]-tt[i])
             som += 0.5*( r'*(a((i,s), x, target(Po)) - atilde((i,s), x, Po))*r ) * (tt[i+1]-tt[i])
         end
