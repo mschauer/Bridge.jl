@@ -2,7 +2,7 @@
 function lyapunovpsdbackward_step(t, y, dt, P)
     B = Bridge.B(t - dt/2, P)
     ϕ = (I + 1/2*dt*B)\(I - 1/2*dt*B)
-    symmetrize(ϕ *(y + 1/2*dt*a(t - dt, P))* ϕ' + 1/2*dt*Bridge.a(t, P))
+    ϕ *(y + 1/2*dt*a(t - dt, P))* ϕ' + 1/2*dt*Bridge.a(t, P)
 end
 
 
