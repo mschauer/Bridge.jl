@@ -20,6 +20,5 @@ dim(::Diff_Lyap{N}) where {N} = N
     Hend = Matrix(1.0I, d,d)
     out = Bridge.lyapunovpsdbackward(t, Pt, Hend)
 
-    @test all(map(x-> isposdef(Matrix(x)), out.yy))
-    @test all(map(x-> issymmetric(Matrix(x)), out.yy))
+    @test all(map(x-> isposdef(Matrix(Bridge.symmetrize(x))), out.yy))
 end
