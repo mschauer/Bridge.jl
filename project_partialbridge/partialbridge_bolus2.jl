@@ -179,6 +179,7 @@ for i in segnum:-1:1
     Poᵒ[i] = Po[i]
     global νend, Hend⁺ = gpupdate(νend, Hend⁺, Σ, L, V.yy[i])
 end
+H⁺i[1] = Hend⁺
 
 #elapsed_time= @elapsed begin
 
@@ -330,7 +331,7 @@ for iter in 1:iterations
             diffll += llikelihood(LeftRule(), XXo[i],  Poᵒ[i]) - llikelihood(LeftRule(), XX2[i],  Po[i])
         end
         if hasbegin
-             diffll += logpdfnormal(xstarto-νendᵒ,Hend⁺ᵒ)-logpdfnormal(xstart-νend,Hend⁺)               # plus possibly log q(X0|X0o) = log q(X0o|X0)
+             diffll += logpdfnormal(xstarto-νendᵒ, Bridge.symmetrize(Hend⁺ᵒ))-logpdfnormal(xstart-νend, Bridge.symmetrize(Hend⁺))               # plus possibly log q(X0|X0o) = log q(X0o|X0)
         end
         if updateparams
             diffll += -(V.tt[end]-V.tt[1]) *(trace(Bridge.B(0.0, Ptᵒ)) - trace(Bridge.B(0.0,Pt))) +
