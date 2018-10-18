@@ -212,10 +212,11 @@ R"""
 library(ggplot2)
 library(tidyverse)
 
+longpathDf$component <- as.factor(longpathDf$component)
 p <- ggplot() +
   ylab("") + geom_path(aes(x=time,y=value,colour=as.factor(component)),data=initpathDf)+
    geom_point(aes(x=time,y=value),data=obsDf,colour="red")+
-  geom_path(aes(x=time,y=value,colour=as.factor(component)),data=longpathDf)+theme_minimal()+
+  geom_path(aes(x=time,y=value,colour=component),data=longpathDf)+theme_minimal()+
   theme(legend.position="bottom")
   #facet_wrap(~component,ncol=1,scales='free_y') +
 
@@ -231,7 +232,7 @@ WWo = deepcopy(WW)
 # save some of the paths
 XXsave = Any[]
 if 0 in subsamples
-    push!(XXsave, copy(XX))
+    push!(XXsave, deepcopy(XX))
 end
 
 acc = 0
@@ -283,9 +284,9 @@ for iter in 1:iterations
             αᵒ = α
         end
 
-        Pᵒ = Diffusion(α,P.β,P.λ,P.k,P.σ1,P.σ2)
+        Pᵒ = Diffusion(αᵒ,P.β,P.λ,P.k,P.σ1,P.σ2)
         Ptᵒ = DiffusionAux(αᵒ,P.β,P.λ,P.k,P.σ1,P.σ2)
-        Pt = DiffusionAux(αᵒ, P.β,P.λ,P.k,P.σ1,P.σ2)
+        Pt = DiffusionAux(α, P.β,P.λ,P.k,P.σ1,P.σ2)
 
         # compute guiding term
         for i in ind
@@ -411,9 +412,9 @@ println("Average acceptance percentage: ",ave_acc_perc,"\n")
 
 # plotting the results
 iteratesDf = DataFrame(iteration = map(x->x[1],iterates), time=map(x->x[2],iterates), component = map(x->x[3],iterates),value=map(x->x[4],iterates) )
-
+iteratesaverageDf = DataFrame(iteration = map(x->x[1],iteratesaverage), time=map(x->x[2],iteratesaverage), value = map(x->x[3],iteratesaverage) )
 @rput iteratesDf
-
+@rput iteratesaverageDf
 
 
 
@@ -430,7 +431,15 @@ p <- ggplot() +
 theme_minimal()
 
 show(p)
+"""
 
+R"""
+ggplot() +
+  geom_path(mapping=aes(x=time,y=value,colour=iteration,group=iteration),data=iteratesaverageDf) +
+  scale_colour_gradient(low='green',high='blue')+
+   ylab("") + geom_point(aes(x=time,y=value),data=obsDf,colour="red")+
+   #geom_path(aes(x=time,y=value),data=longpathDf,colour="yellow")+
+   theme_minimal()
 """
 
 writeinfo = true
