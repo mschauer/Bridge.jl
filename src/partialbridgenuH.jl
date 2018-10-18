@@ -75,7 +75,7 @@ struct PartialBridgeνH{T,TP,TPt,Tν,TH} <: ContinuousTimeProcess{T}
         Ht = zeros(TH, N)
         Tν = typeof(@SVector zeros(d))
         νt = zeros(Tν, N)
-        partialbridgeodeνH!(R3(), tt, L, Σ, νt, Ht, Pt,ϵ)
+        partialbridgeodeνH!(R3(), tt, L, Σ, v, νt, Ht, Pt, ϵ)
         PartialBridgeνH(P, Pt, tt, νt, Ht)
     end
 end
