@@ -23,8 +23,8 @@ obs_scheme =["full","firstcomponent"][2]
 
 
 # settings sampler
-iterations = 5
-skip_it = 1# 1000
+iterations = 500
+skip_it = 50# 1000
 subsamples = 0:skip_it:iterations
 
 ρ = 0.0#95
