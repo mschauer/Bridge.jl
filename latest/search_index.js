@@ -773,7 +773,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Library",
     "title": "Bridge.PartialBridgeνH",
     "category": "type",
-    "text": "PartialBridgeνH\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nPartialBridgeνH(tt, P, Pt,  L, v,ϵ Σ)\n\nGuided proposal process for a partial diffusion bridge of P to v on the time grid tt using guiding term derived from linear process Pt.\n\nSimulate with bridge!.\n\n\n\n\n\n"
+    "text": "PartialBridgeνH\n\nGuided proposal process for diffusion bridge using backward recursion.\n\nPartialBridgeνH(tt, P, Pt, L, v,ϵ Σ)\n\nGuided proposal process for a partial diffusion bridge of `P` to `v` on\nthe time grid `tt` using guiding term derived from linear process `Pt`.\n\nPartialBridgeνH(tt, P, Pt, ν, Hend⁺)\n\nGuided proposal process on the time grid `tt` using guiding term derived from\nlinear process `Pt` with backwards equation initialized at `ν, Hend⁺`.\n\n\n\n\n\n"
 },
 
 {
