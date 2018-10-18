@@ -19,7 +19,7 @@ obs_scheme =["full","firstcomponent"][2]
 
 # settings in case of νH - parametrisation
 ϵ = 10^(-3)
-Σdiagel =  10^(-5)
+Σdiagel = 10^(-5)
 
 
 # settings sampler
@@ -51,8 +51,8 @@ end
 # dose(t, c) = 1. *(t > c)
 
 
-#Bridge.b(t, x, P::Diffusion) = ℝ{2}(P.α*dose(t) -(P.λ + P.β)*x[1] + (P.k-P.λ)*x[2],  P.λ*x[1] - (P.k-P.λ)*x[2])
-Bridge.b(t, x, P::Diffusion) = ℝ{2}(0.0 , 0.0)#P.α*dose(t)
+Bridge.b(t, x, P::Diffusion) = ℝ{2}(P.α*dose(t) -(P.λ + P.β)*x[1] + (P.k-P.λ)*x[2],  P.λ*x[1] - (P.k-P.λ)*x[2])
+#Bridge.b(t, x, P::Diffusion) = ℝ{2}(0.0 , 0.0)#P.α*dose(t)
 Bridge.σ(t, x, P::Diffusion) = @SMatrix [P.σ1 0.0 ;0.0  P.σ1]
 Bridge.constdiff(::Diffusion) = true
 
@@ -69,8 +69,11 @@ struct DiffusionAux <: ContinuousTimeProcess{ℝ{2}}
 end
 
 Random.seed!(42)
-Bridge.B(t, P::DiffusionAux) = @SMatrix [ 0.0  0.0 ;  0.0 0.0]
-Bridge.β(t, P::DiffusionAux) = ℝ{2}(0.0,0.0)#P.α*dose(t)
+Bridge.B(t, P::DiffusionAux) = @SMatrix [ -P.λ - P.β P.k-P.λ ;  P.λ  P.λ-P.k]
+Bridge.β(t, P::DiffusionAux) = ℝ{2}(P.α*dose(t),0.0)
+
+#Bridge.B(t, P::DiffusionAux) = @SMatrix [ 0.0  0.0 ;  0.0 0.0]
+#Bridge.β(t, P::DiffusionAux) = ℝ{2}(0.0,0.0)#P.α*dose(t)
 Bridge.σ(t, P::DiffusionAux) = @SMatrix [P.σ1 0.0 ;0.0   P.σ2]
 Bridge.constdiff(::DiffusionAux) = true
 Bridge.b(t, x, P::DiffusionAux) = Bridge.B(t,P) * x + Bridge.β(t,P)
@@ -236,7 +239,7 @@ mhsteps = 0
 mhstepsparams = 0
 Hrightmost⁺ = H⁺i[segnum]
 νrightmost = Po[segnum].ν[end]
-Hzero⁺ = SMatrix{d,d}(0.0*I)
+Hzero⁺ = SMatrix{d,d}(0.01*I)
 
 
 
@@ -372,7 +375,7 @@ end
 @info "Done."*"\x7"^6
 
 
-ave_acc_perc = 100*round(acc/mhsteps,2)
+ave_acc_perc = 100*round(acc/mhsteps, digits=2)
 
 limp = length(vcat(XXsave[1]...))
 iterates = [Any[s,  vcat(XXsave[i]...).tt[j], dind, vcat(XXsave[i]...).yy[j][dind]] for dind in 1:d, j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
