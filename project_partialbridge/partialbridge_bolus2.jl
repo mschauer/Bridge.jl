@@ -381,7 +381,7 @@ ave_acc_perc = 100*round(acc/mhsteps, digits=2)
 
 limp = length(vcat(XXsave[1]...))
 iterates = [Any[s,  vcat(XXsave[i]...).tt[j], dind, vcat(XXsave[i]...).yy[j][dind]] for dind in 1:d, j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
-
+iteratesaverage = [Any[s,  vcat(XXsave[i]...).tt[j], mean(vcat(XXsave[i]...).yy[j])] for j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
 
 write2csv = false
 if write2csv
