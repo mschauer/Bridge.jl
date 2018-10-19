@@ -1,5 +1,5 @@
 export MeanCov, MeanVar
-
+import Base.iterate
 
 #=
 Online statistics
@@ -239,6 +239,8 @@ Base.close(m::MeanVar{<:Channel}) = close(m.iter)
     (m, 1/n, m2), (m, m2, delta, n + 1, state)
 end
 
+iterate(mc::MeanVar, mcstate) = iterate_(mc, ismutable(typeof(mcstate[1])), mcstate...)
+
 
 function iterate_(mc::MeanVar, ::Val{false}, m, m2, delta, n, state )
     u = iterate(mc.iter, state)
@@ -263,11 +265,7 @@ function iterate_(mc::MeanVar, ::Val{true}, m, m2, delta, n, state )
     for i in eachindex(m)
         delta[i] = x[i] - m[i]
         m[i] += (delta[i])/(n+1)
-    end
-    for i in eachindex(m)
-        for j in eachindex(m)
-            m2[i,j] += outer(delta[i], x[j]-m[j])
-        end
+        m2[i] += outer(delta[i], x[i] - m[i])
     end
     (m, 1/n, m2), (m, m2, delta, n + 1, state)
 end
