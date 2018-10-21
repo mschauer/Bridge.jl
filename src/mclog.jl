@@ -272,7 +272,7 @@ end
 
 export OnlineStat
 import Base: push!
-import Statistics: mean, cov
+import Statistics: mean, cov, std
 
 """
 
@@ -300,7 +300,7 @@ function push!(o::OnlineStat, x)
     o.state = (o.state[1], u[1], u[2])
 end
 mean(o::OnlineStat) = o.state[2][1]
-cov(o::OnlineStat) = o.state[2][2]*o.state[2][3]
+std(o::OnlineStat) = sqrt.(o.state[2][2]*o.state[2][3])
 #=
 S = OnlineStat(ones(5))
 for i in 2:10
