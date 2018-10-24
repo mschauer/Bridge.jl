@@ -19,10 +19,10 @@ obs_scheme =["full","firstcomponent"][2]
 
 # settings in case of νH - parametrisation
 ϵ = 10^(-3)
-Σdiagel = 10^(-2)
+Σdiagel = 10^(-4)
 
 # settings sampler
-iterations = 13000
+iterations = 5000
 skip_it = 100# 1000
 subsamples = 0:skip_it:iterations
 
@@ -85,7 +85,7 @@ if simlongpath
     # Random.seed!(2)
     x0 = ℝ{2}(0.0, 0.0)
     #x0 = ℝ{2}(-8.0, 1.0)
-    T_long = 0.5#10.0
+    T_long = 8.0#10.0
     dt = 0.0001
     tt_long = 0.:dt:T_long
     W_long = sample(tt_long, Wiener{ℝ{dp}}())
@@ -102,7 +102,7 @@ if simlongpath
     # else
     #     error("provide valid number of observations ")
     # end
-    obsnum = 12
+    obsnum = 10
     if obsnum > 2
         obsind = 1:(lt÷obsnum):lt
         obsnum = length(obsind)
@@ -153,7 +153,7 @@ P = Diffusion(Ptrue.α, βinit,Ptrue.λ,Ptrue.μ,Ptrue.σ1,Ptrue.σ2)
 Pᵒ = deepcopy(P)
 Pt = DiffusionAux(P)
 Ptᵒ = DiffusionAux(P)
-H⁺i = Vector{typeof(Hend⁺)}(undef, segnum)
+#H⁺i = Vector{typeof(Hend⁺)}(undef, segnum)
 
 dtimp = 0.001  # mesh width for imputed paths
 τ(t, T0, Tend) = T0 +(t-T0)*(2-(t-T0)/(Tend-T0))
@@ -172,12 +172,12 @@ for i in segnum:-1:1
     #tt_ = V.tt[i]:dtimp:V.tt[i+1],V.tt[i],V.tt[i+1]
     XX[i] = Bridge.samplepath(tt_, zero(tX)) # initialise
     WW[i] = Bridge.samplepath(tt_, zero(tW)) # initialise
-    H⁺i[i] = Hend⁺
+#    H⁺i[i] = Hend⁺
     Q[i], νend, Hend⁺ = Bridge.partialbridgeνH(tt_, P, Pt, νend, Hend⁺)
     Qᵒ[i] = Q[i]
     global νend, Hend⁺ = gpupdate(νend, Hend⁺, Σ, L, V.yy[i])
 end
-H⁺i[1] = Hend⁺
+#H⁺i[1] = Hend⁺
 
 #elapsed_time= @elapsed begin
 
@@ -231,10 +231,10 @@ accparams = 0
 mhsteps = 0
 mhstepsparams = 0
 
-Hzero⁺ = SMatrix{d,d}(0.1*I)
+Hzero⁺ = SMatrix{d,d}(0.01*I)
 
 param(P) = P.β
-logπ(P) = logpdf(Gamma(1,10),P.β)
+logπ(P) = logpdf(Gamma(1,100),P.β)
 logq(P, Pᵒ) = 0.0
 function propose(σ, P)
 #    Diffusion(P.α,P.β,P.λ,P.μ + σ * randn(),P.σ1,P.σ2)
@@ -252,17 +252,17 @@ for iter in 1:iterations
 
     xstart = XX[1].yy[1]
     xstartᵒ = xstart
-    updateparams =  rand(Bool)#false#rand(Bool) #true #false#
+    updateparams = rand(Bool)#false#
     while !finished
-        if updateparams
+        if updateparams # update all segments
             ind = (segnum==2) ? (1:1) : (segnum:-1:1)
             kup = obsnum
         else
-            segnum_update = segnum# sample(1:obsnum-klow)   # number of segments to update
+            segnum_update = sample(1:obsnum-klow)   # number of segments to update
             kup = klow + segnum_update  # update on interval [t(klow), t(kup)]
             ind = (segnum_update==1) ? (1:1) : ((kup-1):-1:klow) # indices of segments to update
         end
-        hasbegin = ind[end]==1
+        #hasbegin = ind[end]==1
         hasend = ind[1]==segnum
 
         # initialise νend, Hend⁺, νendᵒ, Hend⁺ᵒ
@@ -289,41 +289,43 @@ for iter in 1:iterations
             end
         end
 
+        diffll = 0.0  # difference in loglikehood
+
         # simulate guided proposal
         for i in reverse(ind)
-            tt = Q[i].tt
+            #tt = Q[i].tt
             if !updateparams
                 sample!(WWᵒ[i], Wiener{ℝ{dp}}())
                 WWᵒ[i].yy .= ρ * WW[i].yy + sqrt(1-ρ^2) * WWᵒ[i].yy
             else
                 WWᵒ[i].yy .= WW[i].yy
             end
-            if updateparams
-                xstartᵒ = xstart = XX[1].yy[1]
-            elseif i==1
+            if i==1  # starting point
                 xstart = XX[1].yy[1]
-                u = randn()
-                xstartᵒ = xstart + 0.1 *  ℝ{2}(u, -u)   # ℝ{2}(randn(), randn())#
+                if updateparams
+                    u = randn()
+                    xstartᵒ = rand(Bool) ? (xstart .+ 0.1 *  ℝ{2}(u, -u)) : xstart  # with prob 0.5 propose joint update on starting point and parameter
+                else # propose new starting point
+                    u = randn()
+                    xstartᵒ = xstart .+ 0.1 *  ℝ{2}(u, -u)
+                end
+                diffll += logpdfnormal(xstartᵒ-νendᵒ, Bridge.symmetrize(Hend⁺ᵒ))-logpdfnormal(xstart-νend, Bridge.symmetrize(Hend⁺))               # plus possibly log q(X0|X0o) = log q(X0o|X0)
+                # need to put  it here, as xstart and xstartᵒ change later on
             else
-                xstartᵒ = xstart = XX[i-1].yy[end]
+                xstart = XXtemp[i-1].yy[end]
+                xstartᵒ = XXᵒ[i-1].yy[end]
             end
-            # at this point, either WW = WWᵒ or Q == Qᵒ (if updateparams=true)
             solve!(Euler(), XXtemp[i], xstart, WW[i], Q[i])
             solve!(Euler(), XXᵒ[i], xstartᵒ, WWᵒ[i], Qᵒ[i])
         end
-        # compute loglikelihood
-        diffll = 0.0
+
+        # update loglikelihood
         for i in ind
             diffll += llikelihood(LeftRule(), XXᵒ[i],  Qᵒ[i]) - llikelihood(LeftRule(), XXtemp[i],  Q[i])
         end
-        if hasbegin
-             diffll += logpdfnormal(xstartᵒ-νendᵒ, Bridge.symmetrize(Hend⁺ᵒ))-logpdfnormal(xstart-νend, Bridge.symmetrize(Hend⁺))               # plus possibly log q(X0|X0o) = log q(X0o|X0)
-        end
-        if updateparams
-            # diffll += - (V.tt[end]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))
-            #         + logπ(Pᵒ) - logπ(P)
-            diffll +=  (V.tt[2]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))
-                    + logπ(Pᵒ) - logπ(P)
+        if updateparams # this term is still not correct
+            diffll +=  (V.tt[end]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))        + logπ(Pᵒ) - logπ(P)
+            #diffll +=  (V.tt[2]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))+ logπ(Pᵒ) - logπ(P)
         end
 
         print("iter  diff_ll: ",round(diffll, digits=3))
@@ -374,8 +376,8 @@ plot(C,type="l"); abline(h=trueval,col='red')
 #error("STOP HERE")
 
 limp = length(vcat(XXsave[1]...))
-iterates = [Any[s,  vcat(XXsave[i]...).tt[j], dind, vcat(XXsave[i]...).yy[j][dind]] for dind in 1:d, j in 1:1:limp, (i,s) in enumerate(subsamples) ][:]
-iteratesaverage = [Any[s,  vcat(XXsave[i]...).tt[j], mean(vcat(XXsave[i]...).yy[j])] for j in 1:1:limp, (i,s) in enumerate(subsamples) ][:]
+iterates = [Any[s,  vcat(XXsave[i]...).tt[j], dind, vcat(XXsave[i]...).yy[j][dind]] for dind in 1:d, j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
+iteratesaverage = [Any[s,  vcat(XXsave[i]...).tt[j], mean(vcat(XXsave[i]...).yy[j])] for j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
 
 write2csv = false
 if write2csv
