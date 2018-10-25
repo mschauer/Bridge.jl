@@ -22,8 +22,8 @@ obs_scheme =["full","firstcomponent"][2]
 Σdiagel = 10^(-4)
 
 # settings sampler
-iterations = 5000
-skip_it = 100# 1000
+iterations = 25000
+skip_it = 1000# 1000
 subsamples = 0:skip_it:iterations
 
 ρ = 0.0#95
@@ -148,8 +148,9 @@ WW = Vector{typeW}(undef, segnum)
 Q = Vector{typeQ}(undef, segnum)
 Qᵒ = Vector{typeQ}(undef, segnum) # needed when parameter estimation is done
 
-βinit = Ptrue.β#3.0 ##10.0 #0.7 * Ptrue.μ
-P = Diffusion(Ptrue.α, βinit,Ptrue.λ,Ptrue.μ,Ptrue.σ1,Ptrue.σ2)
+βinit = 8.0#Ptrue.β#3.0 ##10.0 #0.7 * Ptrue.μ
+σ1init = 0.5
+P = Diffusion(Ptrue.α, βinit,Ptrue.λ,Ptrue.μ,σ1init,Ptrue.σ2)
 Pᵒ = deepcopy(P)
 Pt = DiffusionAux(P)
 Ptᵒ = DiffusionAux(P)
@@ -233,12 +234,12 @@ mhstepsparams = 0
 
 Hzero⁺ = SMatrix{d,d}(0.01*I)
 
-param(P) = P.β
-logπ(P) = logpdf(Gamma(1,100),P.β)
+param(P) = [P.β P.σ1]
+logπ(P) = logpdf(Gamma(1,100),P.β) + logpdf(Gamma(1,100),P.σ1)
 logq(P, Pᵒ) = 0.0
 function propose(σ, P)
 #    Diffusion(P.α,P.β,P.λ,P.μ + σ * randn(),P.σ1,P.σ2)
-    Diffusion(P.α,P.β + σ * randn(), P.λ,P.μ,P.σ1,P.σ2)
+    Diffusion(P.α,P.β + σ * randn(), P.λ,P.μ,P.σ1 + σ * randn(),P.σ2)
 end
 
 ################## MH-algorithm
@@ -258,7 +259,7 @@ for iter in 1:iterations
             ind = (segnum==2) ? (1:1) : (segnum:-1:1)
             kup = obsnum
         else
-            segnum_update = sample(1:obsnum-klow)   # number of segments to update
+            segnum_update = sample(1:obsnum-klow)   # number of segments to update (could also do min(2,obsnum-klow))
             kup = klow + segnum_update  # update on interval [t(klow), t(kup)]
             ind = (segnum_update==1) ? (1:1) : ((kup-1):-1:klow) # indices of segments to update
         end
@@ -268,28 +269,35 @@ for iter in 1:iterations
         # initialise νend, Hend⁺, νendᵒ, Hend⁺ᵒ
         νend  = hasend ? νrightmost :  XX[ind[1]].yy[end]  # initialise on rightmost segment
         Hend⁺ = hasend ? Hrightmost⁺ : Hzero⁺ # initialise on rightmost segment
-        νendᵒ = νend
-        Hend⁺ᵒ = Hend⁺
+        νendᵒ = deepcopy(νend)
+        Hend⁺ᵒ = deepcopy(Hend⁺)
 
         # propose new parameter value
-        Pᵒ = updateparams ? propose(.2, P) : P
+        Pᵒ = updateparams ? propose(.02, P) : P
         Ptᵒ = DiffusionAux(Pᵒ)
 
         # compute guiding term
         for i in ind
             tt = Q[i].tt
             Q[i], νend, Hend⁺ = Bridge.partialbridgeνH(tt, P, Pt, νend, Hend⁺)
-            νend, Hend⁺ = gpupdate(νend, Hend⁺, Σ, L, V.yy[i])
             if updateparams
                 Qᵒ[i], νendᵒ, Hend⁺ᵒ = Bridge.partialbridgeνH(tt, Pᵒ, Ptᵒ, νendᵒ, Hend⁺ᵒ)
-                νendᵒ, Hend⁺ᵒ = gpupdate(νendᵒ, Hend⁺ᵒ, Σ, L, V.yy[i])
             else
-                Qᵒ[i] = Q[i]
-                νendᵒ, Hend⁺ᵒ = νend, Hend⁺
+                Qᵒ[i], νendᵒ, Hend⁺ᵒ = Q[i], νend, Hend⁺
+            end
+            if !(i==last(ind))  # on the left endpoint we don't need to do gupdate
+                νend, Hend⁺ = gpupdate(νend, Hend⁺, Σ, L, V.yy[i])
+                if updateparams
+                    νendᵒ, Hend⁺ᵒ = gpupdate(νendᵒ, Hend⁺ᵒ, Σ, L, V.yy[i])
+                else
+                    νendᵒ, Hend⁺ᵒ = νend, Hend⁺
+                end
             end
         end
 
-        diffll = 0.0  # difference in loglikehood
+        ### to get the starting point updated correctly, we need to omit the very last step of gpupdate
+
+        global diffll = 0.0  # difference in loglikehood
 
         # simulate guided proposal
         for i in reverse(ind)
@@ -328,7 +336,7 @@ for iter in 1:iterations
             #diffll +=  (V.tt[2]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))+ logπ(Pᵒ) - logπ(P)
         end
 
-        print("iter  diff_ll: ",round(diffll, digits=3))
+        println("ind:  ",ind,"  updateparms= ",updateparams,"  diff_ll:   ",round(diffll, digits=3))
         # MH step
         if log(rand()) <= diffll
             print("✓")
@@ -338,9 +346,10 @@ for iter in 1:iterations
             end
             P = Pᵒ
             Pt = Ptᵒ
-            push!(C, param(P))
+
             if updateparams
                 accparams += 1
+                push!(C, param(P))
             else
                 acc += 1
             end
@@ -350,7 +359,7 @@ for iter in 1:iterations
         mhsteps += !updateparams
         mhstepsparams += updateparams
     end
-    println()
+    println("iteration finished")
     if iter in subsamples
         push!(XXsave, deepcopy(XX))
     end
@@ -364,13 +373,15 @@ println("Average acceptance percentage: ",ave_acc_perc,"\n")
 println("Average acceptance percentage params: ",ave_acc_percparams,"\n")
 
 trueval = param(Ptrue)
-@rput C
+est = DataFrame(iteration = 1:length(C), beta= map(x->x[1],C), sigma1=map(x->x[2],C))
+
+@rput est
 #@rput P
 @rput trueval
 
 R"""
-#plot.ts(C,ylim=c(0,10.2)); abline(h=trueval,col='red')
-plot(C,type="l"); abline(h=trueval,col='red')
+plot.ts(est$beta,ylim=c(0,10)); abline(h=trueval[1],col='red')
+lines(est$sigma1,col='blue'); abline(h=trueval[2],col='red')
 """
 
 #error("STOP HERE")
@@ -379,20 +390,29 @@ limp = length(vcat(XXsave[1]...))
 iterates = [Any[s,  vcat(XXsave[i]...).tt[j], dind, vcat(XXsave[i]...).yy[j][dind]] for dind in 1:d, j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
 iteratesaverage = [Any[s,  vcat(XXsave[i]...).tt[j], mean(vcat(XXsave[i]...).yy[j])] for j in 1:10:limp, (i,s) in enumerate(subsamples) ][:]
 
-write2csv = false
+
+
+write2csv = true
 if write2csv
     # write long path to csv file
-    f = open(outdir*"longforward_pendulum.csv","w")
+    f = open(outdir*"truepath.csv","w")
     headl = "time, component, value \n"
     write(f, headl)
     writedlm(f, longpath, ',')
     close(f)
     # write mcmc iterates to csv file
-    fn = outdir*"iterates-"*obs_scheme*".csv"
+    fn = outdir*"iterates.csv"
     f = open(fn,"w")
     headl = "iteration, time, component, value \n"
     write(f, headl)
     writedlm(f,iterates,",")
+    close(f)
+    # also average of iterates
+    fn = outdir*"iteratesaverage.csv"
+    f = open(fn,"w")
+    headl = "iteration, time,  value \n"
+    write(f, headl)
+    writedlm(f,iteratesaverage,",")
     close(f)
     # write observations to csv file
     fn = outdir*"observations.csv"
@@ -400,6 +420,13 @@ if write2csv
     headl = "time, component, value \n"
     write(f, headl)
     writedlm(f,obs,",")
+    close(f)
+
+    fn = outdir*"parestimates.csv"
+    f = open(fn,"w")
+    headl = "iterate, beta\n"
+    write(f,headl)
+    writedlm(f,hcat(1:length(C), C),",")
     close(f)
 end
 
