@@ -79,7 +79,7 @@ X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(2.0, 1.0))
 plot(X, label="X")
 ```
 
-![OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/ou.png)
+![OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/latest/assets/ou.png)
 
 ```julia
 # Levy (Difference-Gamma process) driven OrnsteinUhlenbeck
@@ -89,7 +89,7 @@ Y = solve(EulerMaruyama(), 0.1, Z, OrnsteinUhlenbeck(2.0, 1.0))
 plot(Y, label="Y")
 ```
 
-![Levy OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/levyou.png)
+![Levy OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/latest/assets/levyou.png)
 
 
 ## Feedback and Contributing
