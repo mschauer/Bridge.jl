@@ -5,9 +5,9 @@
 ![Logo](https://mschauer.github.io/Bridge.jl/bridgelogo.gif)
 
 # Bridge.jl
- 
+
 Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
-See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am personally interested in simulating diffusion bridges and doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome. 
+See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am personally interested in simulating diffusion bridges and doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome.
 
 - [x] Define and simulate diffusion processes in one or more dimension
 - [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
@@ -32,7 +32,7 @@ The example programs in the example/ directory have additional dependencies: Con
 
 The key objects introduced are the abstract type `ContinuousTimeProcess{T}` parametrised by the state space of the path, for example `T == Float64` and various `structs` suptyping it, for example `Wiener{Float64}` for a real Brownian motion. These play roughly a similar role as types subtyping `Distribution` in the Distributions.jl package.
 
-Secondly, the struct 
+Secondly, the struct
 ```julia
 struct SamplePath{T}
     tt::Vector{Float64}
@@ -61,16 +61,12 @@ It is also quite transparent how to add a new process:
 
 ```julia
 using Bridge
+using Plots
 
 # Define a diffusion process
 struct OrnsteinUhlenbeck  <: ContinuousTimeProcess{Float64}
     β::Float64 # drift parameter (also known as inverse relaxation time)
     σ::Float64 # diffusion parameter
-    function OrnsteinUhlenbeck(β::Float64, σ::Float64)
-        isnan(β) || β > 0. || error("Parameter λ must be positive.")
-        isnan(σ) || σ > 0. || error("Parameter σ must be positive.")
-        new(β, σ)
-    end
 end
 
 # define drift and diffusion coefficient of OrnsteinUhlenbeck
@@ -78,9 +74,23 @@ Bridge.b(t, x, P::OrnsteinUhlenbeck) = -P.β*x
 Bridge.σ(t, x, P::OrnsteinUhlenbeck) = P.σ
 
 # simulate OrnsteinUhlenbeck using Euler scheme
-W = sample(0:0.01:10, Wiener()) 
-X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(20.0, 1.0))
+W = sample(0:0.01:10, Wiener())
+X = solve(EulerMaruyama(), 0.1, W, OrnsteinUhlenbeck(2.0, 1.0))
+plot(X, label="X")
 ```
+
+![OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/docs/src/assets/ou.png)
+
+```julia
+# Levy (Difference-Gamma process) driven OrnsteinUhlenbeck
+Z = sample(0:0.01:10, GammaProcess(100.0,10.0))
+Z.yy .-= sample(0:0.01:10, GammaProcess(100.0,10.0)).yy
+Y = solve(EulerMaruyama(), 0.1, Z, OrnsteinUhlenbeck(2.0, 1.0))
+plot(Y, label="Y")
+```
+
+![Levy OrnsteinUhlenbeck](https://mschauer.github.io/Bridge.jl/docs/src/assets/levyou.png)
+
 
 ## Feedback and Contributing
 
