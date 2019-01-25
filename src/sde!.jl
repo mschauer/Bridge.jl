@@ -1,5 +1,23 @@
 
+"""
+Inplace sde solver.
 
+Typical call is like
+solve!(EulerMaruyama!(), X, x0, W, P)
+or
+solve!(StratonovichHeun!(), X, x0, W, P)
+
+Here
+- x0 is the starting point,
+- W the driving Wiener process,
+- P the ContinuousTimeProcess
+
+Requires
+- drift function _b!((i,t¯), y, tmp1, P)
+- diffusion function σ!(t¯, y, dw, tmp2, P)
+
+The result is written into X
+"""
 function solve!(solver::EulerMaruyama!, Y::VSamplePath, u::T, W, P::ProcessOrCoefficients) where {T}
     N = length(W)
     N != length(Y) && error("Y and W differ in length.")

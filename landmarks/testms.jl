@@ -9,3 +9,5 @@ out2 = copy(x)
 @time out2 = mul!(out2, B, x, true, false)
 
 @test vec(out1) ≈ out2
+
+Bridge.a(1.1,Pmsaux)

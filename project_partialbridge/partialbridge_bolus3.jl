@@ -22,8 +22,8 @@ obs_scheme =["full","firstcomponent"][2]
 Σdiagel = 10^(-4)
 
 # settings sampler
-iterations = 25000
-skip_it = 1000# 1000
+iterations = 20000
+skip_it = 400# 1000
 subsamples = 0:skip_it:iterations
 
 ρ = 0.0#95
@@ -85,7 +85,7 @@ if simlongpath
     # Random.seed!(2)
     x0 = ℝ{2}(0.0, 0.0)
     #x0 = ℝ{2}(-8.0, 1.0)
-    T_long = 8.0#10.0
+    T_long = 12.0#10.0
     dt = 0.0001
     tt_long = 0.:dt:T_long
     W_long = sample(tt_long, Wiener{ℝ{dp}}())
@@ -102,7 +102,7 @@ if simlongpath
     # else
     #     error("provide valid number of observations ")
     # end
-    obsnum = 10
+    obsnum = 15
     if obsnum > 2
         obsind = 1:(lt÷obsnum):lt
         obsnum = length(obsind)
@@ -232,7 +232,7 @@ accparams = 0
 mhsteps = 0
 mhstepsparams = 0
 
-Hzero⁺ = SMatrix{d,d}(0.01*I)
+Hzero⁺ = SMatrix{d,d}(0.1*I)
 
 param(P) = [P.β P.σ1]
 logπ(P) = logpdf(Gamma(1,100),P.β) + logpdf(Gamma(1,100),P.σ1)
@@ -333,7 +333,6 @@ for iter in 1:iterations
         end
         if updateparams # this term is still not correct
             diffll +=  (V.tt[end]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))        + logπ(Pᵒ) - logπ(P)
-            #diffll +=  (V.tt[2]-V.tt[1]) *(tr(Bridge.B(0.0, Ptᵒ)) - tr(Bridge.B(0.0,Pt)))+ logπ(Pᵒ) - logπ(P)
         end
 
         println("ind:  ",ind,"  updateparms= ",updateparams,"  diff_ll:   ",round(diffll, digits=3))
@@ -374,6 +373,7 @@ println("Average acceptance percentage params: ",ave_acc_percparams,"\n")
 
 trueval = param(Ptrue)
 est = DataFrame(iteration = 1:length(C), beta= map(x->x[1],C), sigma1=map(x->x[2],C))
+
 
 @rput est
 #@rput P
@@ -422,11 +422,15 @@ if write2csv
     writedlm(f,obs,",")
     close(f)
 
+#    CSV.write("parestimates.csv",est)
     fn = outdir*"parestimates.csv"
     f = open(fn,"w")
-    headl = "iterate, beta\n"
+    headl = "iterate, beta, sigma1 \n"
     write(f,headl)
-    writedlm(f,hcat(1:length(C), C),",")
+    truevals = [0 param(Ptrue)]
+    estim = hcat(1:length(C), first.(C),last.(C))
+    writedlm(f,vcat(truevals,estim),",")
+    # iterate 0 corresponds to the true values
     close(f)
 end
 

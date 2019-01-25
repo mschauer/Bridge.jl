@@ -1,14 +1,9 @@
-include("state.jl")
-
-const d = 2
-const Point = SArray{Tuple{d},Float64,1,d}       # point in R2
-const Unc = SArray{Tuple{d,d},Float64,d,d*d}     # Matrix presenting uncertainty
 
 #########
 struct Noisefield
     δ::Point   # locations of noise field
     λ::Point   # scaling at noise field
-    τ::Float64 # variance of noise field
+    τ::Float64 # std of Gaussian kernel noise field
 end
 
 #########
@@ -27,17 +22,15 @@ struct LandmarksAux{T} <: ContinuousTimeProcess{State{Point}}
     n::Int64   # numer of landmarks
     nfs::Vector{Noisefield}  # vector containing pars of noisefields
 end
-LandmarksAux(P::Landmarks, xT) = LandMarksAux(P.a, P.λ, xT, P.n, P.nfs)
+LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a, P.λ, xT, P.n, P.nfs)
 
 # Gaussian kernel
-kernel(x, P) = 1/(2*π*P.a)^(length(x)/2)*exp(-norm(x)^2/(2*P.a))
+kernel(x, P::Union{Landmarks, LandmarksAux}) = 1/(2*π*P.a)^(length(x)/2)*exp(-norm(x)^2/(2*P.a))
 
 # Kernel of the noise fields (need these functions to evaluate diffusion coefficient in ahs model)
-noiseσ(q, nf::Noisefield) = nf.λ * exp(-norm(nf.δ - q)^2/nf.τ)
-eta(q, p, nf::Noisefield) = dot(p, nf.λ)/nf.τ * (q - nf.δ) * exp(-norm(nf.δ - q)^2/nf.τ)
+noiseσ(q, nf::Noisefield) = nf.λ * exp(-norm(nf.δ - q)^2/nf.τ^2)
+eta(q, p, nf::Noisefield) = dot(p, nf.λ)/nf.τ^2 * (q - nf.δ) * exp(-norm(nf.δ - q)^2/nf.τ^2)
 
-
-zero!(v) = v[:] = fill!(v, zero(eltype(v)))
 function hamiltonian((q, p), P)
     s = 0.0
     for i in eachindex(q), j in eachindex(q)
@@ -48,6 +41,11 @@ function hamiltonian((q, p), P)
 end
 
 Bridge.b(t::Float64, x, P::Union{Landmarks, LandmarksAux}) = Bridge.b!(t, x, copy(x), P)
+
+"""
+Evaluate drift of landmarks in (t,x) and save to out
+x is a state and out as well
+"""
 function Bridge.b!(t, x, out, P::Landmarks)
     zero!(out)
     for i in 1:P.n
@@ -61,19 +59,94 @@ function Bridge.b!(t, x, out, P::Landmarks)
     out
 end
 
+"""
+Evaluate drift of landmarks auxiliary process in (t,x) and save to out
+x is a state and out as well
+"""
 function Bridge.b!(t, x, out, P::LandmarksAux)
     zero!(out)
     for i in 1:P.n
         for j in 1:P.n
-            out.q[i] += 0.5*p(x,j)*kernel(q(P.v,i) - q(P.v,j), P)
+            out.q[i] += 0.5*p(x,j)*kernel(q(P.xT,i) - q(P.xT,j), P)
             # heat bath
-            # out[posp(i)] += -P.λ*0.5*p(x,j)*kernel(q(x,i) - q(x,j), P) +
-            #     1/(2*P.a) * dot(p(x,i), p(x,j)) * (q(x,i)-q(x,j))*kernel(q(x,i) - q(x,j), P)
+            out.p[i] +=# -P.λ*0.5*p(x,j)*kernel(q(x,i) - q(x,j), P) +
+                 1/(2*P.a) * dot(p(P.xT,i), p(P.xT,j)) * (q(x,i)-q(x,j))*kernel(q(P.xT,i) - q(P.xT,j), P)
         end
     end
     out
 end
 
+
+"""
+Compute tildeB(t) for landmarks auxiliary process
+"""
+function Bridge.B(t, Paux::LandmarksAux)
+    I = Int[]
+    J = Int[]
+    X = Unc[]
+    for i in 1:Paux.n
+        for j in 1:Paux.n
+            # terms for out.q[i]
+            push!(I, 2i - 1)
+            push!(J, 2j)
+            push!(X, 0.5*kernel(q(Paux.xT,i) - q(Paux.xT,j), P)*one(Unc))
+
+            # terms for out.p[i]
+            push!(I, 2i)
+            push!(J, 2j-1)
+            if j==i
+                push!(X, sum([1/(2*Paux.a) * dot(p(Paux.xT,i), p(Paux.xT,j)) * kernel(q(Paux.xT,i) - q(Paux.xT,j), P)  for j in setdiff(1:Paux.n,i)]) * one(Unc))
+            else
+                push!(X, -1/(2*Paux.a) * dot(p(Paux.xT,i), p(Paux.xT,j)) * kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc))
+            end
+        end
+    end
+    B = sparse(I, J, X, 2Paux.n, 2Paux.n)
+end
+
+# function Bridge.B!(t,X,out, P::LandmarksAux)
+#     I = Int[]
+#     J = Int[]
+#     B = Unc[]
+#     for i in 1:P.n
+#         for j in 1:P.n
+#             push!(I, 2i - 1)
+#             push!(J, 2j)
+#             push!(B, 0.5*kernel(q(P.xT,i) - q(P.xT,j), P)*one(Unc))
+#         end
+#     end
+#     out .= Matrix(sparse(I, J, B, 2P.n, 2P.n)) * X  # BAD: inefficient
+# end
+"""
+Compute B̃(t) * X (B̃ from auxiliary process) and write to out
+Both B̃(t) and X are of type UncMat
+"""
+function Bridge.B!(t,X,out, Paux::LandmarksAux)
+    out .= 0.0 * out
+    for i in 1:Paux.n  # separately loop over even and odd indices
+        for k in 1:2Paux.n # loop over all columns
+            for j in 1:Paux.n
+                out[2i-1,k] += X[p(j), k] *0.5*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) *one(Unc)
+                if j==i
+                   out[2i,k] +=  X[q(j),k] *sum([1/(2*Paux.a) * dot(p(Paux.xT,i), p(Paux.xT,j)) *
+                                        kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)  for j in setdiff(1:Paux.n,i)])*one(Unc)
+                else
+                   out[2i,k] +=  X[q(j),k] *(-1/(2*Paux.a)) *  dot(p(Paux.xT,i), p(Paux.xT,j)) * kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc)
+                end
+            end
+        end
+    end
+    out
+end
+
+ #  A = reshape([Unc(rand(4)) for i in 1:6, j in 1:6],6,6))
+ # out = copy(A)
+ # Bridge.B!(1.0,A,out,Paux)
+
+"""
+Compute sigma(t,x) * dm where dm is a vector and sigma is the diffusion coefficient of landmarks
+write to out which is of type State
+"""
 function Bridge.σ!(t, x, dm, out, P::Landmarks)
     zero!(out)
     nfs = P.nfs
@@ -82,29 +155,70 @@ function Bridge.σ!(t, x, dm, out, P::Landmarks)
         for j in 1:length(nfs)
             #out.p[i] += noiseσ(q(x, i), nf) * dm
             #out.q[i] += eta(q(x, i), p(x, i), nf) * dm
-            out.p[i] += noiseσ(q(x, i), nfs[j]) * dm[j]
-            out.q[i] += eta(q(x, i), p(x, i), nfs[j]) * dm[j]
+            out.q[i] += noiseσ(q(x, i), nfs[j]) * dm[j]
+            out.p[i] += eta(q(x, i), p(x, i), nfs[j]) * dm[j]
         end
     end
     out
 end
 
+"""
+Compute tildesigma(t,x) * dm where dm is a vector and sigma is the diffusion coefficient of landmarksaux
+write to out which is of type State
+"""
 function Bridge.σ!(t, x, dm, out, P::LandmarksAux)
     Bridge.σ!(t, P.xT, dm, out, P::Landmarks)
 end
 
-# function Bridge.a(t,x, P::Landmarks)
-#     out = zeros(4*P.n,P.J)
+
+
+
+# function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
+#     I = Int[]
+#     X = Unc[]
+#     γ2 = P.γ^2
 #     for i in 1:P.n
-#         for j in 1:P.J
-#             out[posq(i),j] = noiseσ(q(x,i),P.nfs[j])
-#             out[posp(i),j] = eta(q(x,i),p(x,i),P.nfs[j])
-#         end
+#             push!(I, 2i)
+#             push!(X, γ2*one(Unc))
 #     end
-#     Bridge.outer(out)
+#     a = sparse(I, I, X, 2P.n, 2P.n)
 # end
-#
-# Bridge.a(t,P::LandmarksAux) = Bridge.a(t, cat(P.v, zeros(2*P.n)),P::Landmarks )
-# Bridge.a(t, x, P::LandmarksAux) = Bridge.a(t, P::LandmarksAux)
-Bridge.constdiff(Landmarks) = false
-Bridge.constdiff(LandmarksAux) = true
+
+
+
+function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
+    if P isa Landmarks
+        x = x_
+    else
+        x = P.xT
+    end
+    out = zeros(Unc,2P.n,2P.n)
+    for i in 1:P.n
+        for k in 1:P.n
+            for j in 1:length(P.nfs)
+                r1 =  noiseσ(q(x,i),P.nfs[j]) * noiseσ(q(x, k),P.nfs[j])'
+                r2 =  noiseσ(q(x,i),P.nfs[j]) * eta(q(x,k),p(x,k),P.nfs[j])'
+                r3 =  eta(q(x,i),p(x,i),P.nfs[j]) * eta(q(x,k),p(x,k),P.nfs[j])'
+                out[2i-1,2k-1] += r1
+                out[2i,2k-1] += r2
+                out[2i-1,2k] += r2
+                out[2i,2k] += r3
+
+            end
+        end
+    end
+    out
+end
+
+Bridge.a(t, P::LandmarksAux) =  Bridge.a(t, P.xT, P)
+
+"""
+Multiply a(t,x) times in (which is of type state)
+Returns multiplication of type state
+"""
+function amul(t, x, in::State, P)
+    State(Bridge.a(t, x, P)*vec(in))
+end
+
+Bridge.constdiff(::Landmarks) = false
+Bridge.constdiff(::LandmarksAux) = true

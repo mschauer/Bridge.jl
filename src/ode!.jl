@@ -7,7 +7,17 @@ to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} F(s, y(s)) ds``.
 struct R3! <: ODESolver
 end
 
-workspace(::Bridge.R3!, y) = (copy(y), copy(y), copy(y), copy(y)) 
+workspace(::Bridge.R3!, y) = (copy(y), copy(y), copy(y), copy(y))
+
+"""
+One step for inplace Ralston (1965) update (order 3 step of the Bogacki–Shampine 1989 method)
+to solve ``y(t + dt) - y(t) = \\int_t^{t+dt} f(s, y(s)) ds``.
+Starting point is specified by (t,y)
+
+f!(t,y,k) is a function that takes (t,y) and writes the result in k.
+ws contains 4 copies of the type of y
+the result is written into out which is of type y
+"""
 function kernelr3!(f!, t, y, ws, out, dt)
     y2, k1, k2, k3 = ws
     f!(t, y, k1)

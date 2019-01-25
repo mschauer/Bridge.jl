@@ -1,12 +1,4 @@
-include("state.jl")
 
-const d = 2
-const Point = SArray{Tuple{d},Float64,1,d}       # point in R2
-const Unc = SArray{Tuple{d,d},Float64,d,d*d}     # Matrix presenting uncertainty
-
-
-
-#########
 struct MarslandShardlow{T} <: ContinuousTimeProcess{State{Point}}  # used to be called Landmarks
     a::T # kernel parameter
     γ::T # noise level
@@ -26,13 +18,11 @@ end
 
 MarslandShardlowAux(P::MarslandShardlow, v) = MarslandShardlowAux(P.a, P.γ, P.λ, v, P.n)
 
-
 # Gaussian kernel
-kernel(x, P) = 1/(2*π*P.a)^(length(x)/2)*exp(-norm(x)^2/(2*P.a))
-
-
+kernel(x, P::Union{MarslandShardlow, MarslandShardlowAux}) = 1/(2*π*P.a)^(length(x)/2)*exp(-norm(x)^2/(2*P.a))
 
 zero!(v) = v[:] = fill!(v, zero(eltype(v)))
+
 function hamiltonian((q, p), P)
     s = 0.0
     for i in eachindex(q), j in eachindex(q)
@@ -69,6 +59,9 @@ function Bridge.b!(t, x, out, P::MarslandShardlowAux)
     out
 end
 
+"""
+Compute tildeB(t)
+"""
 function Bridge.B(t, P::MarslandShardlowAux)
     I = Int[]
     J = Int[]
@@ -83,6 +76,37 @@ function Bridge.B(t, P::MarslandShardlowAux)
     B = sparse(I, J, X, 2P.n, 2P.n)
 end
 
+# function Bridge.B!(t,x,out, P::MarslandShardlowAux)
+#     I = Int[]
+#     J = Int[]
+#     X = Unc[]
+#     for i in 1:P.n
+#         for j in 1:P.n
+#             push!(I, 2i - 1)
+#             push!(J, 2j)
+#             push!(X, 0.5*kernel(q(P.xT,i) - q(P.xT,j), P)*one(Unc))
+#         end
+#     end
+#     out .= Matrix(sparse(I, J, X, 2P.n, 2P.n)) * x  # BAD: inefficient
+# end
+
+"""
+Compute B̃(t) * X (B̃ from auxiliary process) and write to out
+Both B̃(t) and X are of type UncMat
+"""
+function Bridge.B!(t,X,out, Paux::MarslandShardlowAux)
+    out .= 0.0 * out
+    for k in 1:2Paux.n # loop over out[p(i), p(k)]
+        for i in 1:Paux.n
+            for j in 1:Paux.n
+                out[2i-1,k] += 0.5*X[p(j), k]*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
+                #out[2i,k] += -Paux.λ*0.5*X[p(j), k]*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
+             end
+        end
+    end
+    out
+end
+
 
 function Bridge.σ!(t, x, dm, out, P::Union{MarslandShardlow, MarslandShardlowAux})
     zero!(out.q)
@@ -90,41 +114,49 @@ function Bridge.σ!(t, x, dm, out, P::Union{MarslandShardlow, MarslandShardlowAu
     out
 end
 
-Bridge.constdiff(::Union{MarslandShardlow, MarslandShardlowAux}) = true
-
-
-if false
-
-#=
-function Bridge.a(t, P::Union{MarslandShardlow, MarslandShardlowAux})
-    out = zeros(4*P.n,4*P.n)
-    for i in (2*P.n+1): 4*P.n
-        out[i,i] = 1.0
-    end
-    out * P.γ^2
+"""
+Multiply a(t,x) times xin (which is of type state)
+Returns multiplication of type state
+"""
+function amul(t, x, xin::State, P::Union{MarslandShardlow, MarslandShardlowAux})
+    out = copy(xin)
+    zero!(out.q)
+    out.p .= P.γ^2 .* xin.p
+    out
 end
+
+
+function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
+    I = Int[]
+    X = Unc[]
+    γ2 = P.γ^2
+    for i in 1:P.n
+            push!(I, 2i)
+            push!(X, γ2*one(Unc))
+    end
+    sparse(I, I, X, 2P.n, 2P.n)
+end
+
+
 Bridge.a(t, x, P::Union{MarslandShardlow, MarslandShardlowAux}) = Bridge.a(t, P::Union{MarslandShardlow, MarslandShardlowAux})
-=#
 
+# """
+# Replacing out with dP, which is  B*arg + arg*B'- tilde_a
+# """
+# function Bridge.dP!(t, p, out, P::MarslandShardlowAux)
+#     Bridge.B!(t, p, out, P)
+#     out .= out .+ out'
+#     γ2 = P.γ^2
+#     for i in 1:P.n
+#         out[2i, 2i] -= γ2*one(Unc)  # according to ordering position, momentum ,position, momentum
+#     end
+#     out
+# end
+#
+# function dP!(t, p, out, P)
+#     B!(t, p, out, P)
+#     out .= out .+ out' - a(t, P)
+#     out
+# end
 
-
-function BBt!(t, arg, out, P::MarslandShardlowAux)
-    B = zeros(4 * P.n,4 * P.n)
-    for i in 1:P.n,  j in 1:P.n
-            B[posq(i),posp(j)] = 0.5 * kernel(q(P.v,i)-q(P.v,j),P) * Matrix(1.0I,2,2)
-    end
-    out .= (B*arg + arg*B')
-    out
-end
-
-# nog aan te passen
-function Bridge.dP!(t, p, out, P)
-    BBt!(t, p, out, P)
-    for i in (2*P.n+1): 4*P.n
-        out[i,i] -= P.γ^2
-    end
-    out
-end
-
-
-end
+Bridge.constdiff(::Union{MarslandShardlow, MarslandShardlowAux}) = true
