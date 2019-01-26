@@ -1,5 +1,8 @@
 
-#########
+"""
+Specify parameters for noisefield
+λ * exp(-|δ - q|^2/τ^2)
+"""
 struct Noisefield
     δ::Point   # locations of noise field
     λ::Point   # scaling at noise field
@@ -217,7 +220,7 @@ Multiply a(t,x) times in (which is of type state)
 Returns multiplication of type state
 """
 function amul(t, x, in::State, P)
-    State(Bridge.a(t, x, P)*vec(in))
+    vecofpoints2state(Bridge.a(t, x, P)*vec(in))
 end
 
 Bridge.constdiff(::Landmarks) = false

@@ -1,3 +1,4 @@
+import Base:iterate, eltype, copy, copyto!, zero, eachindex, getindex, setindex!, size, vec
 
 const Point = SArray{Tuple{d},Float64,1,d}       # point in R2
 const Unc = SArray{Tuple{d,d},Float64,d,d*d}     # Matrix presenting uncertainty
@@ -17,10 +18,6 @@ p(x::State, i) = x.p[i]
 q(i::Int) = 2i - 1
 p(i::Int) = 2i
 
-
-State(xflat) = State(xflat[1:2:end], xflat[2:2:end])
-
-import Base:iterate, eltype, copy, copyto!, zero, eachindex, getindex, setindex!, size, vec
 iterate(x::State) = (x.q, true)
 iterate(x::State, s) = s ? (x.p, false) : nothing
 copy(x::State) = State(copy(x.q), copy(x.p))
@@ -89,6 +86,48 @@ vec(x::State) = vec([x[J] for J in eachindex(x)]) #
 deepvec(x::State{P}) where {P} = vec([x[J][K] for K in eachindex(x.p[1]), J in eachindex(x)])
 
 
+
+# matrix multiplication of mat of Uncs
+function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
+    B::Array{SArray{Tuple{2,2},Float64,2,4},2})
+    C = zeros(Unc,size(A,1), size(B,2))
+    for i in 1:size(A,1)
+        for j in 1:size(B,2)
+            for k in 1:size(A,2)
+               C[i,j] += A[i,k] * B[k,j]
+            end
+        end
+    end
+    C
+end
+
+function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
+    B::Adjoint{Array{SArray{Tuple{2,2},Float64,2,4},2}})
+    C = zeros(Unc,size(A,1), size(B,1))
+    for i in 1:size(A,1)
+        for j in 1:size(B,1)
+            for k in 1:size(A,2)
+               C[i,j] += A[i,k] * B[j,k]
+            end
+        end
+    end
+    C
+end
+
+if TEST
+    A = reshape(rand(Unc,6),3,2)
+    B = reshape(rand(Unc,8),2,4)
+    C = B'
+    @test norm(deepmat(A*B) - deepmat(A) * deepmat(B))<10^(-8)
+    @test norm(deepmat(A*C') - deepmat(A) * deepmat(C'))<10^(-8)
+
+    # backsolving matrix equation A X = using lu
+    A1=reshape(rand(Unc,9),3,3)
+    B1=reshape(rand(Unc,9),3,3)
+    @test norm(deepmat(A1\B1) - deepmat(A1)\deepmat(B1))<10^(-10)
+end
+
+
 """
 Convert vector to State. it is assumed that x is ordered as follows
 - position landmark 1
@@ -108,13 +147,13 @@ function deepvec2state(x)
    State(q,p)
 end
 
+vecofpoints2state(x::Vector{Point}) = State(x[1:d:end], x[d:d:end])
+
 function deepmat(H::AbstractMatrix{S}) where {S}
     d1, d2 = size(S)
     reshape([H[i,j][k,l] for k in 1:d1, i in 1:size(H, 1), l in 1:d2, j in 1:size(H,2)], d1*size(H,1), d2*size(H,2))
 end
 #@test  outer(deepvec(x0)) == deepmat(outer(vec(x0)))
-
-
 
 function deepmat2unc(A::Matrix)  # d is the dimension of the square subblocks
   k =size(A,1)
@@ -122,27 +161,18 @@ function deepmat2unc(A::Matrix)  # d is the dimension of the square subblocks
   [Unc(A[(i-1)*d+1:i*d,(j-1)*d+1:j*d]) for i in 1:m, j in 1:m]
 end
 
-
-
-
-
 function outer(x::State, y::State)
     [outer(x[i],y[j]) for i in eachindex(x), j in eachindex(y)]
 end
-# unc(a::Array) = State([sqrt(a[1, i, 1, i]) for i in 1:size(a, 2)],[sqrt(a[2, i, 2, i]) for i in 1:size(a, 2)])
 
-# Frank: this seems wrong
-norm(x::State) = norm(x.q) + norm(x.q)
+norm(x::State) = norm(vec(x))
 
+"""
+Good display of variable of type State
+"""
 function Base.show(io::IO, state::State)
   show(io,  "text/plain", hcat(q(state),p(state)))
 end
-
-struct InverseCholesky{T}
-    L::T
-end
-
-
 
 """
 Solve L L'y =x using two backsolves,
@@ -152,6 +182,13 @@ function cholinverse!(L, x)
     LinearAlgebra.naivesub!(L, x) # triangular backsolves
     LinearAlgebra.naivesub!(UpperTriangular(L'), x)
     x
+end
+
+lchol(A) = LowerTriangular(Matrix(LinearAlgebra._chol!(copy(A), UpperTriangular)[1])')
+
+############################ InverseCholesky ########################
+struct InverseCholesky{T}
+    L::T
 end
 
 """
@@ -167,23 +204,23 @@ L is a lower triangular matrix with element of type UncMat
 x is a State or vector of points
 Returns a State (Todo: split up again and return vector for vector input)
 """
-function Base.:*(H::InverseCholesky, x::Union{State,Vector{Point}})
-    y = copy(x)
-    if isa(x,State)
-        y = cholinverse!(H.L,  vec(x)) # triangular backsolves
-    else
-        y = cholinverse!(H.L,  x) # triangular backsolve
-    end
-    State(y[1:d:end], y[d:d:end])
+function Base.:*(H::InverseCholesky, x::State)
+    y = copy(vec(x))
+    cholinverse!(H.L,  y) # triangular backsolve
+    vecofpoints2state(y)
 end
 
+function Base.:*(H::InverseCholesky, x::Vector{Point})
+    y = copy(x)
+    cholinverse!(H.L,  y) # triangular backsolve
+end
 
 """
 Compute y = H*X where Hinv = L*L' (Cholesky decomposition
 
 Input are L and X, output is Y
 
-y=Hx is equivalent to LL'y=X, which can be solved
+y=HX is equivalent to LL'y=X, which can be solved
 by first backsolving LZ=X for z and next
 backsolving L'Y=Z
 
@@ -197,36 +234,7 @@ end
 
 
 
-# """
-# Input:  H = inverse(L L'), with L lower-triangular
-# Output: H*v
-# """
-# function Base.:*(H::InverseCholesky, v)
-#     # two backsolves
-#     y =copy(v)
-#     cholinverse!(H.L,y)
-#     y
-# end
-
-
-
-
-# L = LowerTriangular(rand(5,5))
-# H = InverseCholesky(L)
-# v = rand(5)
-# H*v - inv(L*L')*v
-#
-
-lchol(A) = LowerTriangular(Matrix(LinearAlgebra._chol!(copy(A), UpperTriangular)[1])')
-
-
-# di = 10
-# L_ = Matrix(LowerTriangular(rand(di,di)))
-# L = LowerTriangular(deepmat2unc(L_))
-# H = InverseCholesky(L)
-# v = reinterpret(Point, rand(di))
-# H*v - deepmat2unc(inv(L_*L_'))*v
-
+############################ LowRank ########################
 """
 Hdagger = U S U' with S = L L' (cholesky)
 U has orthonormal columns, S is a small positive definite symmetric matrix given
@@ -245,9 +253,33 @@ function Base.:*(H::LowRank, x::State)
     deepvec2state(H.U * (inv(H.S) * (H.U' * deepvec(x))))
 end
 
-# function isposdef(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
-#     LinearAlgebra.isposdef(deepmat(A))
-# end
+############################ InverseCholesky ########################
+struct InverseLu{TL,TU}
+    L::TL
+    U::TU
+end
+
+"""
+Compute y = H x where x is a state vector and
+Hinv = LU (LU decomposition)
+
+From LU y =x, it follows that we
+solve first z from  Lz=x, and next y from  Uy=z
+"""
+function Base.:*(H::InverseLu, x::Vector{Point})
+    LinearAlgebra.naivesub!(LowerTriangular(H.L), x)
+    LinearAlgebra.naivesub!(UpperTriangular(H.U), x)
+    x
+end
+
+function Base.:*(H::InverseLu, x::State)
+    y = vec(x)
+    LinearAlgebra.naivesub!(LowerTriangular(H.L), y)
+    LinearAlgebra.naivesub!(UpperTriangular(H.U), y)
+    vecofpoints2state(y)
+end
+
+
 
 if TEST
     A = reshape([Unc(1:4), Unc(5:8), Unc(9:12), Unc(13:16)],2,2)
@@ -262,10 +294,20 @@ if TEST
     isposdef(deepmat(C))
 
     # check cholinverse!
-    H = InverseCholesky(lchol(C))
+    HH = InverseCholesky(lchol(C))
     x = rand(4)
     xstate = deepvec2state(x)
-    @test norm(deepvec(H*xstate) -  inv(deepmat(C))*x)<10^(-10)
+    @test norm(deepvec(HH*xstate) -  inv(deepmat(C))*x)<10^(-10)
 
     LinearAlgebra.naivesub!(lchol(C), A) # triangular backsolves
+
+    A = reshape(rand(Unc,16),4,4)
+    L, U = lu(A)
+    W = InverseLu(L,U)
+
+    xs= rand(Point,4)
+    xss = [xs[1]; xs[2];xs[3];xs[4]]
+    inv(deepmat(A)) *  xss
+    W * xs
+    @test norm(deepvec2state(inv(deepmat(A)) *  xss) - W * deepvec2state(xss))<10^(-10)
 end
