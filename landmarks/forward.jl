@@ -1,5 +1,4 @@
 # reminder, to type H*, do H\^+
-#cd("/Users/Frank/.julia/dev/Bridge")
 #outdir="output/landmarks/"
 cd("/Users/Frank/.julia/dev/Bridge/landmarks")
 
@@ -14,30 +13,28 @@ using RCall
 using Base.Iterators
 using SparseArrays
 
-
 models = [:ms, :ahs]
 model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[2]
+discrmethod = discrmethods[1]
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
 
 const d = 2
 
-n = 40 # nr of landmarks
-ldim = 2n*d   # dimension of low-rank approximation to H\^+
+n = 50 # nr of landmarks
+ldim = 75#n*d   # dimension of low-rank approximation to H\^+
 
 cheat =  false#true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
-θ = 6π/40# π/6 0#π/5  # angle to rotate endpoint
+θ = 2π/n# π/6 0#π/5  # angle to rotate endpoint
 
-ϵ = 0.001   # parameter for initialising Hend⁺
-obsnoise = 0.001   # noise on observations
-
+ϵ = 0.01   # parameter for initialising Hend⁺
+σobs = 0.001   # noise on observations
 
 
 println(model)
@@ -45,7 +42,7 @@ println(discrmethod)
 println(obsscheme)
 
 T = 0.5#1.0#0.5
-t = 0.0:0.005:T  # time grid
+t = 0.0:0.01:T  # time grid
 
 #Random.seed!(5)
 
@@ -53,41 +50,43 @@ t = 0.0:0.005:T  # time grid
 include("state.jl")
 include("msmodel.jl")
 include("ahsmodel.jl")
+include("bothmodels.jl")
 include("patches.jl")
 include("guiding.jl")
-#include("lyap.jl")
 include("LowrankRiccati.jl")
 using .LowrankRiccati
 
 
 ### Specify landmarks models
-a = 1.0 ; λ = 0.5; #= not the lambda of noise fields  =# γ = 5.0
+
+a = 1.0 ; λ = 0.0; #= not the lambda of noise fields  =# γ = 5.0
 
 Pms = MarslandShardlow(a, γ, λ, n)
 
 if true
+    db = 2.0 # domainbound
     # specify locations noisefields
-    r1 = (-2.0:0.5:2.0) #+ 0.1rand(5)
-    r2 = (-2.0:0.5:2.0) #+ 0.1rand(5)
+    r1 = (-db:0.8:db) #+ 0.1rand(5)
+    r2 = (-db:0.8:db) #+ 0.1rand(5)
     nfloc = Point.(collect(product(r1, r2)))[:]
     # scaling parameter of noisefields
     nfscales = [0.1Point(1.0, 1.0) for x in nfloc]
     nfstd = 2.05 # tau , variance of noisefields
 else
+    db = 5.0 # domainbound
     # specify locations noisefields
-    r1 = (-2.0:0.5:2.0) #+ 0.1rand(5)
-    r2 = (-2.0:0.5:2.0) #+ 0.1rand(5)
+    r1 = (-db:0.5:db) #+ 0.1rand(5)
+    r2 = (-db:0.5:db) #+ 0.1rand(5)
     nfloc = Point.(collect(product(r1, r2)))[:]
     # scaling parameter of noisefields
-    nfscales = [2.5Point(1.0, 1.0) for x in nfloc]
-    nfstd = 1.0 # tau , variance of noisefields
+    nfscales = [.3Point(1.0, 1.0) for x in nfloc]
+    nfstd = 4.0 # tau , variance of noisefields
 end
 
 nfs = [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
 
 Pahs = Landmarks(a, λ, n, nfs)
 ###
-
 
 if model == :ms
     dwiener = n
@@ -107,7 +106,7 @@ sample!(W, Wiener{Vector{StateW}}())
 q0 = [Point(cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
 p_ = 5*Point(0.1, 0.1)
 p0 = [p_ for i in 1:n]  #
-p0 = [randn(Point) for i in 1:n]
+#p0 = [randn(Point) for i in 1:n]
 x0 = State(q0, p0)
 
 
@@ -145,6 +144,14 @@ if TEST
 end
 
 
+# observe positions without noise
+v0 = q(X.yy[1])
+rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
+vT = [rot * q(X.yy[end])[i] for i in 1:P.n ]
+#vT = q(X.yy[end])
+
+
+
 out = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
 df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))
 #Any["X.tt[$i]", ["X.yy[$i][CartesianIndex($c, $k)][$l]" for l in 1:d, k in 1:n, c in 1:2]...]
@@ -156,13 +163,20 @@ else
 end
 titel = titel * string(n)*" landmarks"
 
+dfT = DataFrame(pos1=extractcomp(vT,1), pos2=extractcomp(vT,2))
+df0= DataFrame(pos1=extractcomp(v0,1), pos2=extractcomp(v0,2))
+
 @rput titel
 @rput df
+@rput dfT
+@rput df0
 R"""
 library(tidyverse)
-df %>% dplyr::select(time,pos1,pos2,pointID) %>%
-     ggplot(aes(x=pos1,pos2,group=pointID,colour=time)) +
-      geom_path() +
+#df %>% dplyr::select(time,pos1,pos2,pointID) %>%
+     ggplot() +
+      geom_path(data=df,aes(x=pos1,pos2,group=pointID,colour=time)) +
+      geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
+      geom_point(data=df0, mapping=aes(x=pos1,y=pos2),colour='black',size=0.7)+
       theme_minimal() + xlab('horizontal position') +
       ylab('vertical position') + ggtitle(titel)
 """
@@ -174,17 +188,14 @@ df %>% dplyr::select(time,mom1,mom2,pointID) %>%
      facet_wrap(~pointID) + theme_minimal()
 """
 
-# observe positions without noise
-v0 = q(X.yy[1])
-rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-vT = [rot * q(X.yy[end])[i] for i in 1:P.n ]
-#vT = q(X.yy[end])
 
 
 
 #dtimp = 0.01 # mesh width for imputation
 tc(t,T) = t.*(2-t/T)
 tt_ =  t#tc(t,T)# 0:dtimp:(T)
+
+#tt_ = 0.0:0.001:T
 
 ####################
 # solve backward recursion on [0,T]
@@ -194,7 +205,7 @@ tt_ =  t#tc(t,T)# 0:dtimp:(T)
 
 if obsscheme==:partial
   L = deepmat( [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n])
-  Σ = Diagonal(obsnoise*ones(n*d))
+  Σ = Diagonal(σobs^2*ones(n*d))
   Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
   if cheat
       Pahsaux = LandmarksAux(Pahs, X.yy[end])
@@ -208,7 +219,7 @@ if obsscheme==:partial
 end
 if obsscheme==:full
   L = deepmat( [(i==j)*one(Unc) for i in 1:2n, j in 1:2n])
-  Σ = Diagonal(obsnoise*ones(2n*d))
+  Σ = Diagonal(σobs^2*ones(2n*d))
   Pmsaux = MarslandShardlowAux(Pms,X.yy[end])
   Pahsaux = LandmarksAux(Pahs, X.yy[end])
   v0 = vec(X.yy[1])
@@ -236,38 +247,27 @@ if discrmethod==:lowrank
     largest = sortperm(M0.values)[end-ldim+1:end]
     Send = Matrix(Diagonal(M0.values[largest]))
     Uend = M0.vectors[:,largest]
-#    println(deepmat(Hend⁺)-Uend*Send*Uend')
     St = [copy(Send) for s in tt_]
     Ut = [copy(Uend) for s in tt_]
     @time νend, (Send, Uend) = bucybackwards!(LRR(), t, νt, (St, Ut), Paux, νend, (Send, Uend))
     Hend⁺ = deepmat2unc(Uend * Send * Uend')
-    #map(x->isposdef(x),St)
-#    Ht = map((S,U) -> LowRank(cholesky(Hermitian(S)),U),St,Ut)
-     Ht = map((S,U) -> LowRank(S,U), St,Ut)
+    Ht = map((S,U) -> LowRank(S,U), St,Ut)
 end
 if discrmethod==:ralston
     H⁺t = [copy(Hend⁺) for s in tt_]
     @time νend , Hend⁺ = bucybackwards!(Bridge.R3!(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
-    println(map(x->isposdef(deepmat(x)),H⁺t))
     Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
 end
 if discrmethod==:psd
     H⁺t = [copy(Hend⁺) for s in tt_]
     @time νend , Hend⁺ = bucybackwards!(Lyap(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
-    println(map(x->isposdef(deepmat(x)),H⁺t))
-    #Ht = map(H⁺ -> InverseCholesky(lchol(Hermitian(H⁺))),H⁺t)
+#    println(map(x->isposdef(deepmat(x)),H⁺t))
     Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
-    #map(H⁺ -> lchol(Hermitian(H⁺)),H⁺t)
 end
-
-
-
 
 Q = GuidedProposal!(P, Paux, tt_, νt, Ht)
 
 νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, v0)
-#νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, q(XX.yy[1]))
-
 xinit = cheat ? x0 : νstart  # or xinit ~ N(νstart, Hstart⁺)
 winit = zeros(StateW, dwiener)
 XX = SamplePath(tt_, [copy(xinit) for s in tt_])
@@ -303,8 +303,8 @@ titel = titel * string(n)*" landmarks"
 @rput T
 R"""
 library(tidyverse)
-T_ <- T-0.0001
-#T_ <- 0.8
+T_ <- T#-0.0001
+T_ <- T + 0.05
 dfsub <- df %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
 dfsubg <- dfg %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
 
