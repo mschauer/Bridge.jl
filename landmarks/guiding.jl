@@ -14,21 +14,31 @@ function gpupdate(ν, P, Σ, L, v)
     end
 end
 
+
+"""
+(ν, P) are the values just to the right of time T,
+(Σ, L, v) are the noise covariance, observations matrix L and observation at time T
+"""
 function gpupdate(ν2::State, P2, Σ, L, v2::Vector{Point})
     ν = deepvec(ν2)
     P = deepmat(P2)
     v = reinterpret(Float64,v2)
-    if all(diag(P) .== Inf)
-        P_ = inv(L' * inv(Σ) * L)
-        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+    if false #all(diag(P) .== Inf)
+        #P_ = inv(L' * inv(Σ) * L)
+        #V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        P_ = inv(L' * inv(Σ) * L + 10^(-6)*I)
+        V_ = P_ * L' * inv(Σ) * v
         return deepvec2state(V_), deepmat2unc(P_)
     else
-        Z = I - P*L'*inv(Σ + L*P*L')*L
-        return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
+       #  Z = I - P*L'*inv(Σ + L*P*L')*L
+       # return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
+
+        P_ = inv(L' * inv(Σ) * L + P)
+        V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
+        return deepvec2state(V_), deepmat2unc(P_)
+
     end
 end
-
-
 
 struct Arg4Closure{B,T}
     f::B
@@ -126,18 +136,17 @@ end
 
 σ!(t, x, dw, out, P::GuidedProposal!) = σ!(t, x, dw, out, P.target)
 
-
 function _r!((i,t), x, out, P::GuidedProposal!)
     out .= (P.H[i]*(P.ν[i] - x))
     out
 end
 
+#H((i,t), x, P::GuidedProposal!) = P.H[i]
 
 target(P::GuidedProposal!) = P.target
 auxiliary(P::GuidedProposal!) = P.aux
 
 constdiff(P::GuidedProposal!) = constdiff(target(P)) && constdiff(auxiliary(P))
-
 
 function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0)
     tt = Xcirc.tt

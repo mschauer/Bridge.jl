@@ -47,7 +47,7 @@ function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
     end
     sparse(I, I, X, 2P.n, 2P.n)
 end
-Bridge.a(t, x, P::Union{MarslandShardlow, MarslandShardlowAux}) = Bridge.a(t, P::Union{MarslandShardlow, MarslandShardlowAux})
-
+#Bridge.a(t, x, P::Union{MarslandShardlow, MarslandShardlowAux}) = Bridge.a(t, P::Union{MarslandShardlow, MarslandShardlowAux})
+Bridge.a(t, x, P::Union{MarslandShardlow, MarslandShardlowAux}) = Bridge.a(t, P)
 
 Bridge.constdiff(::Union{MarslandShardlow, MarslandShardlowAux}) = true

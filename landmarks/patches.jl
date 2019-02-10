@@ -98,7 +98,7 @@ A
 conj!(B)
 """
 function conj!(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
-    if !(size(A,1)==size(A,2)) error("conj! only correctly defined for square matrices") end
+#    if !(size(A,1)==size(A,2)) error("conj! only correctly defined for square matrices") end
     for i in 1:size(A,1)
         A[i,i] = A[i,i]'
         for j in (i+1):size(A,2)
@@ -106,4 +106,21 @@ function conj!(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
         end
     end
     A
+end
+
+function conj2(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
+#    if !(size(A,1)==size(A,2)) error("conj! only correctly defined for square matrices") end
+    At =  Matrix{Unc}(undef,size(A,2),size(A,1))
+    for i in 1:size(A,2)
+        for j in 1:size(A,1)
+            At[i,j] = A[j,i]'
+        end
+    end
+    At
+end
+
+if TEST
+        A = reshape(rand(Unc,15),5,3)
+        B = conj2(A)
+        @test norm(deepmat(A)'-deepmat(B))<10^(-10)
 end

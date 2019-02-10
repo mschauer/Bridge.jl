@@ -18,6 +18,8 @@ p(x::State, i) = x.p[i]
 q(i::Int) = 2i - 1
 p(i::Int) = 2i
 
+zero!(v) = v[:] = fill!(v, zero(eltype(v)))
+
 iterate(x::State) = (x.q, true)
 iterate(x::State, s) = s ? (x.p, false) : nothing
 copy(x::State) = State(copy(x.q), copy(x.p))
