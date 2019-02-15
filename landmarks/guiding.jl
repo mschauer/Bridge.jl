@@ -30,12 +30,12 @@ function gpupdate(ν2::State, P2, Σ, L, v2::Vector{Point})
         V_ = P_ * L' * inv(Σ) * v
         return deepvec2state(V_), deepmat2unc(P_)
     else
-       #  Z = I - P*L'*inv(Σ + L*P*L')*L
-       # return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
+        Z = I - P*L'*inv(Σ + L*P*L')*L
+       return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
 
-        P_ = inv(L' * inv(Σ) * L + P)
-        V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
-        return deepvec2state(V_), deepmat2unc(P_)
+        # P_ = inv(L' * inv(Σ) * L + P)
+        # V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
+        # return deepvec2state(V_), deepmat2unc(P_)
 
     end
 end

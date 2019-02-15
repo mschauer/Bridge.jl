@@ -18,23 +18,24 @@ model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[3]
+discrmethod = discrmethods[2]
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
 
 const d = 2
+const itostrat=false
 
-n = 40 # nr of landmarks
-ldim = 2n*d   # dimension of low-rank approximation to H\^+
+n = 60 # nr of landmarks
+ldim = 50#n*d   # dimension of low-rank approximation to H\^+
 
 cheat =  false#true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
-θ = 10π/n# π/6 0#π/5  # angle to rotate endpoint
+θ = π/10# π/6 0#π/5  # angle to rotate endpoint
 
-ϵ = 10^(-6)   # parameter for initialising Hend⁺
-σobs = 10^(-4)   # noise on observations
+ϵ = 10^(-4)   # parameter for initialising Hend⁺
+σobs = 10^(-3)   # noise on observations
 
 println(model)
 println(discrmethod)
@@ -44,12 +45,8 @@ T = 0.4#1.0#0.5
 t = 0.0:0.01:T  # time grid
 
 #Random.seed!(5)
-
-
 include("state.jl")
-include("msmodel.jl")
-include("ahsmodel.jl")
-include("bothmodels.jl")
+include("models.jl")
 include("patches.jl")
 include("guiding.jl")
 include("LowrankRiccati.jl")
@@ -57,30 +54,21 @@ using .LowrankRiccati
 
 
 ### Specify landmarks models
-
-a = 2.0 ; λ = 0.0; #= not the lambda of noise fields  =# γ = 5.0
+a = 3.0 # the larger, the stronger landmarks behave similarly
+λ = 0.0; #= not the lambda of noise fields  =# γ = 8.0
 
 Pms = MarslandShardlow(a, γ, λ, n)
 
-if false
-    db = 5.0 # domainbound
-    # specify locations noisefields
-    r1 = (-db:0.8:db) #+ 0.1rand(5)
-    r2 = (-db:0.8:db) #+ 0.1rand(5)
-    nfloc = Point.(collect(product(r1, r2)))[:]
-    # scaling parameter of noisefields
-    nfscales = [0.3Point(1.0, 1.0) for x in nfloc]
-    nfstd = 2.05 # tau , variance of noisefields
-else
-    db = 5.0 # domainbound
-    # specify locations noisefields
-    r1 = (-db:0.5:db) #+ 0.1rand(5)
-    r2 = (-db:0.5:db) #+ 0.1rand(5)
-    nfloc = Point.(collect(product(r1, r2)))[:]
-    # scaling parameter of noisefields
-    nfscales = [.3Point(1.0, 1.0) for x in nfloc]
-    nfstd = 4.0 # tau , variance of noisefields
-end
+db = 2.0 # domainbound
+r1 = repeat(collect((-db:.5:db)))
+r2 = repeat(collect((-db:.5:db)))
+nfloc1 = Point.(collect(product(r1, r2)))[:]
+nfscales_hor = [.05Point(1.0, 0.0) for x in nfloc1]  # intensity
+nfscales_ver = [.05Point(0.0, 1.0) for x in nfloc1]  # intensity
+nfscales = vcat(nfscales_hor, nfscales_ver)
+nfloc = vcat(nfloc1,nfloc1)
+nfstd = .5 # tau , widht of noisefields
+
 
 nfs = [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
 
@@ -171,7 +159,7 @@ df0= DataFrame(pos1=extractcomp(v0,1), pos2=extractcomp(v0,2))
 @rput df0
 R"""
 library(tidyverse)
-#df %>% dplyr::select(time,pos1,pos2,pointID) %>%
+df %>% dplyr::select(time,pos1,pos2,pointID) %>%
      ggplot() +
       geom_path(data=df,aes(x=pos1,pos2,group=pointID,colour=time)) +
       geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
@@ -305,7 +293,7 @@ titel = titel * string(n)*" landmarks"
 R"""
 library(tidyverse)
 T_ <- T#-0.0001
-#T_ <-  0.15
+#T_ <-  0.05
 dfsub <- df %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
 dfsubg <- dfg %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
 
@@ -316,7 +304,7 @@ g <- ggplot() +
       geom_path(data=sub, mapping=aes(x=pos1,pos2,group=pointID,colour=time)) +
       geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
       geom_point(data=df0, mapping=aes(x=pos1,y=pos2),colour='black',size=0.7)+
-      facet_wrap(~fg) +
+      facet_wrap(~fg,scales="free") +
       theme_minimal() + xlab('horizontal position') +
       ylab('vertical position') + ggtitle(titel)
 show(g)
