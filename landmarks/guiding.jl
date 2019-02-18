@@ -23,20 +23,18 @@ function gpupdate(ν2::State, P2, Σ, L, v2::Vector{Point})
     ν = deepvec(ν2)
     P = deepmat(P2)
     v = reinterpret(Float64,v2)
-    if false #all(diag(P) .== Inf)
-        #P_ = inv(L' * inv(Σ) * L)
-        #V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
-        P_ = inv(L' * inv(Σ) * L + 10^(-6)*I)
-        V_ = P_ * L' * inv(Σ) * v
+    if all(diag(P) .== Inf)
+        P_ = inv(L' * inv(Σ) * L)
+        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        # P_ = inv(L' * inv(Σ) * L + 10^(-6)*I)
+        # V_ = P_ * L' * inv(Σ) * v
         return deepvec2state(V_), deepmat2unc(P_)
     else
-        Z = I - P*L'*inv(Σ + L*P*L')*L
-       return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
-
-        # P_ = inv(L' * inv(Σ) * L + P)
-        # V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
-        # return deepvec2state(V_), deepmat2unc(P_)
-
+         Z = I - P*L'*inv(Σ + L*P*L')*L
+        return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
+         # P_ = inv(L' * inv(Σ) * L + inv(P))
+         # V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
+         # return deepvec2state(V_), deepmat2unc(P_)
     end
 end
 
@@ -90,6 +88,7 @@ function bucybackwards!(scheme::LRR, t, νt, (St, Ut), Paux, νend, (Send, Uend)
         dt = t[i] - t[i+1]
         kernelr3!(Arg4Closure(Bridge.b!, Paux), t[i+1], νt[i+1], wsν, νt[i], dt)
         lowrankriccati!(t[i], t[i+1], -B̃, ã , (St[i+1], Ut[i+1]), (St[i], Ut[i]))
+
     end
     νt[1], (St[1], Ut[1])
 end
@@ -102,10 +101,12 @@ function bucybackwards!(::Lyap, t, νt, H⁺t, Paux, νend, Hend⁺)
     H⁺t[end] = Hend⁺
     νt[end] = νend
     wsν = Bridge.workspace(R3!(), νend)
+    B̃ = Matrix(Bridge.B(0.0, Paux))
+    ã = Bridge.a(0.0, Paux)
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
         kernelr3!(Arg4Closure(Bridge.b!, Paux), t[i+1], νt[i+1], wsν, νt[i], dt)
-        lyapunovpsdbackward_step!(t[i+1], -dt, Paux, H⁺t[i+1], H⁺t[i]) # maybe with -dt
+        lyapunovpsdbackward_step!(t[i+1], -dt, Paux, H⁺t[i+1], H⁺t[i], B̃, ã) # maybe with -dt
     end
     νt[1], H⁺t[1]
 end
@@ -141,6 +142,8 @@ function _r!((i,t), x, out, P::GuidedProposal!)
     out
 end
 
+
+
 #H((i,t), x, P::GuidedProposal!) = P.H[i]
 
 target(P::GuidedProposal!) = P.target
@@ -167,10 +170,15 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0
         som += dot(bout-btout, rout) * dt
 
         if !constdiff(Q)
-            H = H((i,s), x, Q)
-            Δa =  a((i,s), x, target(Q)) - a((i,s), x, auxiliary(Q))
-            som -= 0.5*tr(Δa*H) * dt
-            som += 0.5*(rout'*Δa*rout) * dt
+            #Δa =  a((i,s), x, target(Q)) - a((i,s), x, auxiliary(Q))
+            # H = H((i,s), x, auxiliary(Q))
+            # som -= 0.5*tr(Δa*H) * dt
+            # som += 0.5*(rout'*Δa*rout) * dt
+
+            Δa =  Bridge.a(s, x, target(Q)) - Bridge.a(s, x, auxiliary(Q))
+            # H = H((i,s), x, auxiliary(Q))
+            # som -= 0.5*tr(Δa*H) * dt
+             som += 0.5*dot(rout,Δa*rout) * dt
         end
     end
     som

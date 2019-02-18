@@ -18,31 +18,31 @@ model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[2]
+discrmethod = discrmethods[3]
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
 
 const d = 2
-const itostrat=false
+const itostrat=true
 
-n = 60 # nr of landmarks
-ldim = 50#n*d   # dimension of low-rank approximation to H\^+
+n = 70 # nr of landmarks
+ldim = 2n*d   # dimension of low-rank approximation to H\^+
 
 cheat =  false#true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
-θ = π/10# π/6 0#π/5  # angle to rotate endpoint
+θ = -π/6# π/6 0#π/5  # angle to rotate endpoint
 
-ϵ = 10^(-4)   # parameter for initialising Hend⁺
+ϵ = 10^(-8)   # parameter for initialising Hend⁺
 σobs = 10^(-3)   # noise on observations
 
 println(model)
 println(discrmethod)
 println(obsscheme)
 
-T = 0.4#1.0#0.5
-t = 0.0:0.01:T  # time grid
+T = 0.3#1.0#0.5
+t = 0.0:0.005:T  # time grid
 
 #Random.seed!(5)
 include("state.jl")
@@ -56,140 +56,57 @@ using .LowrankRiccati
 ### Specify landmarks models
 a = 3.0 # the larger, the stronger landmarks behave similarly
 λ = 0.0; #= not the lambda of noise fields  =# γ = 8.0
-
-Pms = MarslandShardlow(a, γ, λ, n)
-
-db = 2.0 # domainbound
-r1 = repeat(collect((-db:.5:db)))
-r2 = repeat(collect((-db:.5:db)))
-nfloc1 = Point.(collect(product(r1, r2)))[:]
-nfscales_hor = [.05Point(1.0, 0.0) for x in nfloc1]  # intensity
-nfscales_ver = [.05Point(0.0, 1.0) for x in nfloc1]  # intensity
-nfscales = vcat(nfscales_hor, nfscales_ver)
-nfloc = vcat(nfloc1,nfloc1)
+db = 3.0 # domainbound
 nfstd = .5 # tau , widht of noisefields
-
+r1 = -db:nfstd:db
+r2 = -db:nfstd:db
+nfloc = Point.(collect(product(r1, r2)))[:]
+nfscales = [.1Point(1.0, 1.0) for x in nfloc]  # intensity
 
 nfs = [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
-
+Pms = MarslandShardlow(a, γ, λ, n)
 Pahs = Landmarks(a, λ, n, nfs)
 ###
 
+StateW = Point
 if model == :ms
     dwiener = n
-    StateW = Point
     P = Pms
 else
     dwiener = length(nfloc)
-    StateW = Float64
     P = Pahs
 end
 
-w0 = zeros(StateW, dwiener)
-W = SamplePath(t, [copy(w0) for s in t])
-sample!(W, Wiener{Vector{StateW}}())
-
 # specify initial landmarks configuration
-q0 = [Point(1.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+q0 = [Point(2.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
 p_ = 5*Point(0.1, 0.1)
 p0 = [p_ for i in 1:n]  #
 #p0 = [randn(Point) for i in 1:n]
 x0 = State(q0, p0)
 
-
 #Random.seed!(1234)
-
+w0 = zeros(StateW, dwiener)
+W = SamplePath(t, [copy(w0) for s in t])
 X = SamplePath(t, [copy(x0) for s in t])
-if model == :ms
-    @time solve!(EulerMaruyama!(), X, x0, W, P)
-else
-    @time solve!(EulerMaruyama!(), X, x0, W, P)
-    # still needs to be implemented
-    #@time solve!(StratonovichHeun!(), X, x0, W, P)
-end
-extractcomp(v,i) = map(x->x[i], v)
+sample!(W, Wiener{Vector{StateW}}())
+println("Sample forward process:")
+@time solve!(EulerMaruyama!(), X, x0, W, P)
+#@time solve!(StratonovichHeun!(), X, x0, W, P)
 
-if TEST
-    ####### extracting components
-    X.tt   # gives all times
-    X.yy   # gives an array of States (the state at each time)
-    X.yy[1] # gives the state at first time
+# compute Hamiltonian along path
+ham = [hamiltonian(X.yy[i],Pms) for i in 1:length(t)]
 
-    q(X.yy[1]) # gives the array of positions of all points
-    X.yy[1].q # equivalent
-
-    p(X.yy[1]) # gives the array of momenta of all points
-    X.yy[1].p # equivalent
-
-    p(X.yy[1],10)   # at first time, extract momentum vector of landmark nr 10
-    q(X.yy[23],10)  # extract position at time 23, for landmark nr 10
-
-    map(x->norm(x), X.yy[1].q) # verifies that all points are on the unit circle
-    ham = [hamiltonian(X.yy[i],Pms) for i in 1:length(t)]
-    print(ham)
-    #############
-end
+tc(t,T) = t.*(2-t/T)
+tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 
 
 # observe positions without noise
-v0 = q(X.yy[1])
+v0 = q(X.yy[1])  + σobs * randn(Point,n)
 rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-vT = [rot * X.yy[end].q[i] for i in 1:P.n ]
-#vT = q(X.yy[end])
+vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
 
-
-
-out = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
-df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))
-#Any["X.tt[$i]", ["X.yy[$i][CartesianIndex($c, $k)][$l]" for l in 1:d, k in 1:n, c in 1:2]...]
-
-if model == :ms
-    titel = "Marsland-Shardlow model, "
-else
-    titel = "Arnaudon-Holm-Sommer model, "
-end
-titel = titel * string(n)*" landmarks"
-
-dfT = DataFrame(pos1=extractcomp(vT,1), pos2=extractcomp(vT,2))
-df0= DataFrame(pos1=extractcomp(v0,1), pos2=extractcomp(v0,2))
-
-@rput titel
-@rput df
-@rput dfT
-@rput df0
-R"""
-library(tidyverse)
-df %>% dplyr::select(time,pos1,pos2,pointID) %>%
-     ggplot() +
-      geom_path(data=df,aes(x=pos1,pos2,group=pointID,colour=time)) +
-      geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
-      geom_point(data=df0, mapping=aes(x=pos1,y=pos2),colour='black',size=0.7)+
-      theme_minimal() + xlab('horizontal position') +
-      ylab('vertical position') + ggtitle(titel)
-"""
-
-R"""
-df %>% dplyr::select(time,mom1,mom2,pointID) %>%
-    filter(pointID %in% c("point1","point2","point3","point40","point41","point42")) %>%
-     ggplot(aes(x=mom1,mom2,group=pointID,colour=time)) + geom_path() +
-     facet_wrap(~pointID) + theme_minimal()
-"""
-
-
-
-
-#dtimp = 0.01 # mesh width for imputation
-tc(t,T) = t.*(2-t/T)
-tt_ =  t#tc(t,T)# 0:dtimp:(T)
-
-#tt_ = 0.0:0.001:T
 
 ####################
-# solve backward recursion on [0,T]
-
-
-
-
 if obsscheme==:partial
   L = deepmat( [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n])
   Σ = Diagonal(σobs^2*ones(n*d))
@@ -199,9 +116,6 @@ if obsscheme==:partial
   else
       Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
       #Pahsaux = LandmarksAux(Pahs, State(vT, rand(Point,Pahs.n)))
-      #Pahsaux = LandmarksAux(Pahs, State(vT,  [Point(1,1) for i in 1:Pahs.n]))
-      #Pahsaux = LandmarksAux(Pahs, X.yy[end])
-      #Pahsaux = LandmarksAux(Pahs, State(vT, 0.0*X.yy[end].p))
   end
 end
 if obsscheme==:full
@@ -213,24 +127,33 @@ if obsscheme==:full
   vT = vec(X.yy[end])
 end
 
+#Paux = (model==:ms) ? Pmsaux : Pahsaux
 if model == :ms
     Paux = Pmsaux
 else
     Paux = Pahsaux
 end
 
-Hend⁺ = [(i==j)*one(Unc)*ϵ for i in 1:2n, j in 1:2n]  # this is the precison
+
+
+# solve backward recursion on [0,T]
+# "old" choice (wrong)
+#νend = State(zero(vT), zero(vT))
+#Hend⁺ = [(i==j)*one(Unc)/ϵ for i in 1:2n, j in 1:2n]  # this is the precison
+# "right" choice
+νend = State(vT, zero(vT))
+Hend⁺ = reshape(zeros(Unc,4n^2),2n,2n)
+for i in 1:n
+    Hend⁺[2i-1,2i-1] = one(Unc)/ϵ  # high precision on positions
+    Hend⁺[2i,2i] = one(Unc)*ϵ
+end
 #### perform gpupdate step
-νend = State(zero(vT), zero(vT))
-#νend = Paux.xT
 νend , Hend⁺ = gpupdate(νend,Hend⁺, Σ, L, vT)
 # L, and Σ are ordinary matrices, vT an array of Points
 # νend is a state , Hend⁺ a  UncMat
 
-# initialise νt
 νt =  [copy(νend) for s in tt_]
-
-
+println("Compute guiding term:")
 if discrmethod==:lowrank
     M0 = eigen(deepmat(Hend⁺))
     largest = sortperm(M0.values)[end-ldim+1:end]
@@ -239,8 +162,8 @@ if discrmethod==:lowrank
     St = [copy(Send) for s in tt_]
     Ut = [copy(Uend) for s in tt_]
     @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
-    Hend⁺ = deepmat2unc(Uend * Send * Uend')
-    Ht = map((S,U) -> LowRank(S,U), St,Ut)
+    Ht =map((S,U) -> deepmat2unc(U * inv(S) * U'), St,Ut)  # directly compute Mt
+    #Ht = map((S,U) -> LowRank(S,U), St,Ut)
 end
 if discrmethod==:ralston
     H⁺t = [copy(Hend⁺) for s in tt_]
@@ -263,70 +186,11 @@ XX = SamplePath(tt_, [copy(xinit) for s in tt_])
 WW = SamplePath(tt_, [copy(winit) for s in tt_])
 sample!(WW, Wiener{Vector{StateW}}())
 
-Bridge.solve!(EulerMaruyama!(), XX, xinit, WW, Q)
+println("Sample guided bridge proposal:")
+@time Bridge.solve!(EulerMaruyama!(), XX, xinit, WW, Q)
 
-hcat(mean(X.yy[end].p), mean(XX.yy[end].p))
-# redo with Paux.xT = XX.yy[end]
- hcat(X.yy[end].p, XX.yy[end].p, Paux.xT.p)
+include("plotlandmarks.jl")
 
-#### plotting
-outg = [Any[XX.tt[i], [XX.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(XX.tt) ][:]
-dfg = DataFrame(time=extractcomp(outg,1),pos1=extractcomp(outg,2),pos2=extractcomp(outg,3),mom1=extractcomp(outg,4),mom2=extractcomp(outg,5),pointID=extractcomp(outg,6))
-#Any["X.tt[$i]", ["X.yy[$i][CartesianIndex($c, $k)][$l]" for l in 1:d, k in 1:n, c in 1:2]...]
-
-dfT = DataFrame(pos1=extractcomp(vT,1), pos2=extractcomp(vT,2))
-df0= DataFrame(pos1=extractcomp(v0,1), pos2=extractcomp(v0,2))
-
-
-if model == :ms
-    titel = "Marsland-Shardlow model, "
-else
-    titel = "Arnaudon-Holm-Sommer model, "
+if model==:ms
+    @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
 end
-titel = titel * string(n)*" landmarks"
-
-@rput titel
-@rput dfg
-@rput dfT
-@rput df0
-@rput T
-R"""
-library(tidyverse)
-T_ <- T#-0.0001
-#T_ <-  0.05
-dfsub <- df %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
-dfsubg <- dfg %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<T_)
-
-sub <- rbind(dfsub,dfsubg)
-sub$fg <- rep(c("forward","guided"),each=nrow(dfsub))
-
-g <- ggplot() +
-      geom_path(data=sub, mapping=aes(x=pos1,pos2,group=pointID,colour=time)) +
-      geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
-      geom_point(data=df0, mapping=aes(x=pos1,y=pos2),colour='black',size=0.7)+
-      facet_wrap(~fg,scales="free") +
-      theme_minimal() + xlab('horizontal position') +
-      ylab('vertical position') + ggtitle(titel)
-show(g)
-"""
-
-
-if false
-    R"""
-    library(tidyverse)
-    dfsub <- df %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<0.99)
-    dfsubg <- dfg %>% dplyr::select(time,pos1,pos2,pointID) %>% filter(time<0.99)
-
-    sub <- rbind(dfsub,dfsubg)
-    sub$fg <- rep(c("forward","guided"),each=nrow(dfsub))
-
-    ggplot() +
-          geom_path(data=sub, mapping=aes(x=pos1,pos2,group=pointID,colour=fg)) +
-          geom_point(data=dfT, mapping=aes(x=pos1,y=pos2),colour='orange',size=0.7) +
-          geom_point(data=df0, mapping=aes(x=pos1,y=pos2),colour='black',size=0.7)+
-          #facet_wrap(~fg) +
-          theme_minimal() + xlab('horizontal position') +
-          ylab('vertical position') + ggtitle(titel)
-    """
-end
-@time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet

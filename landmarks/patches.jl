@@ -90,6 +90,17 @@ function lyapunovpsdbackward_step!(t, dt, Paux,Hend⁺,H⁺)
 end
 
 """
+Version where B̃ and ã do not depend on try
+"""
+function lyapunovpsdbackward_step!(t, dt, Paux,Hend⁺,H⁺,B̃, ã)
+    ϕ = (I + 1/2*dt*B̃)\(I - 1/2*dt*B̃)
+    #Ht .= ϕ *(Hend⁺ + 1/2*dt*Bridge.a(t - dt, Paux))* ϕ' + 1/2*dt*Bridge.a(t, Paux)
+    H⁺ .= ϕ *(Hend⁺ + 1/2*dt*ã)* conj!(copy(ϕ)) + 1/2*dt*ã
+    H⁺
+end
+
+
+"""
 Compute transpose of square matrix of Unc matrices
 
 A = reshape([Unc(1:4), Unc(5:8), Unc(9:12), Unc(13:16)],2,2)

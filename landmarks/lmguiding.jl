@@ -6,7 +6,7 @@ import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
-struct GuidedProposal!{T,Ttarget,Taux,TL,TM,Tμ,Txobs,F} <: ContinuousTimeProcess{T}
+struct GuidedProposall!{T,Ttarget,Taux,TL,TM,Tμ,Txobs,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
@@ -16,7 +16,7 @@ struct GuidedProposal!{T,Ttarget,Taux,TL,TM,Tμ,Txobs,F} <: ContinuousTimeProces
     xobs::Txobs
     endpoint::F
 
-    function GuidedProposal!(target, aux, tt_, L, M, μ, xobs, endpoint=Bridge.endpoint)
+    function GuidedProposall!(target, aux, tt_, L, M, μ, xobs, endpoint=Bridge.endpoint)
         tt = collect(tt_)
         new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(L),eltype(M),eltype(μt),typeof(xobs),typeof(endpoint)}(target, aux, tt, L, M, μ, xobs, endpoint)
     end
@@ -39,33 +39,33 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (Lend, Mend⁺, μen
     (Lt[1], Mt⁺[1], μt[1])
 end
 
-target(Q::GuidedProposal!) = Q.target
-auxiliary(Q::GuidedProposal!) = Q.aux
+target(Q::GuidedProposall!) = Q.target
+auxiliary(Q::GuidedProposall!) = Q.aux
 
-constdiff(Q::GuidedProposal!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
+constdiff(Q::GuidedProposall!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
 
 
-function Bridge._b!((i,t), x::State, out::State, Q::GuidedProposal!)
+function Bridge._b!((i,t), x::State, out::State, Q::GuidedProposall!)
     Bridge.b!(t, x, out, Q.target)
-    out .+= amul(t,x,Q.Lt[i]' * Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x)),Q.target)
+    out .+= amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
     out
 end
 
-σ!(t, x, dw, out, Q::GuidedProposal!) = σ!(t, x, dw, out, Q.target)
+σ!(t, x, dw, out, Q::GuidedProposall!) = σ!(t, x, dw, out, Q.target)
 
 # in following x is of type state
-function _r!((i,t), x::State, out::State, Q::GuidedProposal!)
-    out .= vecofpoints2state(Q.Lt[i]' * Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x)))
+function _r!((i,t), x::State, out::State, Q::GuidedProposall!)
+    out .= vecofpoints2state(Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))))
     out
 end
 
-function guidingterm((i,t),x::State,Q::GuidedProposal!)
-    Bridge.b(t,x,Q.target) + amul(t,x,Q.Lt[i]' * Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x)),Q.target)
+function guidingterm((i,t),x::State,Q::GuidedProposall!)
+    Bridge.b(t,x,Q.target) + amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
 end
 """
 Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
 """
-function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::GuidedProposal!)
+function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::GuidedProposall!)
     out = State[]
     for i in 1:length(X.tt)
         push!(out, guidingterm((i,X.tt[i]),X.yy[i],Q))
@@ -74,7 +74,7 @@ function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::Guid
 end
 
 
-function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0)
+function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposall!; skip = 0)
     tt = Xcirc.tt
     xx = Xcirc.yy
 

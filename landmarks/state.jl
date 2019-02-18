@@ -116,6 +116,12 @@ function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
     C
 end
 
+function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},x::State)
+    vecofpoints2state(A*vec(x))
+end
+
+
+
 if TEST
     A = reshape(rand(Unc,6),3,2)
     B = reshape(rand(Unc,8),2,4)
@@ -127,6 +133,8 @@ if TEST
     A1=reshape(rand(Unc,9),3,3)
     B1=reshape(rand(Unc,9),3,3)
     @test norm(deepmat(A1\B1) - deepmat(A1)\deepmat(B1))<10^(-10)
+
+
 end
 
 
