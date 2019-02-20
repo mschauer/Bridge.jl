@@ -14,7 +14,7 @@ using Base.Iterators
 using SparseArrays
 
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 TEST = false#true
 partialobs = true
 
@@ -102,7 +102,7 @@ if partialobs==true
     xobs = vT
     Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
     Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
-    Pahsaux = LandmarksAux(Pahs, State(vT, rand(Point,Pahs.n)))
+    #Pahsaux = LandmarksAux(Pahs, State(vT, 10*rand(Point,Pahs.n)))
 else
     # full observation case
     L = [(i==j)*one(Unc) for i in 1:2n, j in 1:2n]

@@ -87,7 +87,7 @@ function bucybackwards!(scheme::LRR, t, νt, (St, Ut), Paux, νend, (Send, Uend)
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
         kernelr3!(Arg4Closure(Bridge.b!, Paux), t[i+1], νt[i+1], wsν, νt[i], dt)
-        lowrankriccati!(t[i], t[i+1], -B̃, ã , (St[i+1], Ut[i+1]), (St[i], Ut[i]))
+        LowrankRiccati.lowrankriccati!(t[i], t[i+1], -B̃, ã , (St[i+1], Ut[i+1]), (St[i], Ut[i]))
 
     end
     νt[1], (St[1], Ut[1])
@@ -175,8 +175,8 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0
             # som -= 0.5*tr(Δa*H) * dt
             # som += 0.5*(rout'*Δa*rout) * dt
 
-            Δa =  Bridge.a(s, x, target(Q)) - Bridge.a(s, x, auxiliary(Q))
-            # H = H((i,s), x, auxiliary(Q))
+            Δa =  Bridge.a(s, x, target(Q)) - Bridge.a(s,  auxiliary(Q))
+            H = Bridge.H((i,s), x, auxiliary(Q))
             # som -= 0.5*tr(Δa*H) * dt
              som += 0.5*dot(rout,Δa*rout) * dt
         end

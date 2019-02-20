@@ -18,7 +18,7 @@ model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[3]
+discrmethod = discrmethods[2]
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
@@ -26,23 +26,23 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 70 # nr of landmarks
-ldim = 2n*d   # dimension of low-rank approximation to H\^+
+n = 60 # nr of landmarks
+ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat =  false#true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
 θ = -π/6# π/6 0#π/5  # angle to rotate endpoint
 
-ϵ = 10^(-8)   # parameter for initialising Hend⁺
-σobs = 10^(-3)   # noise on observations
+ϵ = 10.0^(-4)   # parameter for initialising Hend⁺
+σobs = 10.0^(-3)   # noise on observations
 
 println(model)
 println(discrmethod)
 println(obsscheme)
 
-T = 0.3#1.0#0.5
-t = 0.0:0.005:T  # time grid
+T = 0.2#1.0#0.5
+t = 0.0:0.01:T  # time grid
 
 #Random.seed!(5)
 include("state.jl")
@@ -96,20 +96,21 @@ println("Sample forward process:")
 # compute Hamiltonian along path
 ham = [hamiltonian(X.yy[i],Pms) for i in 1:length(t)]
 
-tc(t,T) = t.*(2-t/T)
+tc(t,T) = t.*(2 .-t/T)
 tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 
-
-# observe positions without noise
-v0 = q(X.yy[1])  + σobs * randn(Point,n)
-rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
 
 
 ####################
 if obsscheme==:partial
   L = deepmat( [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n])
   Σ = Diagonal(σobs^2*ones(n*d))
+
+  # observe positions
+  v0 = q(X.yy[1])  + σobs * randn(Point,n)
+  rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
+  vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
+
   Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
   if cheat
       Pahsaux = LandmarksAux(Pahs, X.yy[end])
@@ -128,11 +129,6 @@ if obsscheme==:full
 end
 
 #Paux = (model==:ms) ? Pmsaux : Pahsaux
-if model == :ms
-    Paux = Pmsaux
-else
-    Paux = Pahsaux
-end
 
 
 
@@ -141,14 +137,36 @@ end
 #νend = State(zero(vT), zero(vT))
 #Hend⁺ = [(i==j)*one(Unc)/ϵ for i in 1:2n, j in 1:2n]  # this is the precison
 # "right" choice
-νend = State(vT, zero(vT))
-Hend⁺ = reshape(zeros(Unc,4n^2),2n,2n)
+if obsscheme==:partial
+    #νendT = State(zero(vT), zero(vT))
+    νendT = State(randn(Point,Pahs.n), randn(Point,Pahs.n))
+end
+if obsscheme==:full
+    νendT = X.yy[end]
+end
+HendT⁺ = reshape(zeros(Unc,4n^2),2n,2n)
 for i in 1:n
-    Hend⁺[2i-1,2i-1] = one(Unc)/ϵ  # high precision on positions
-    Hend⁺[2i,2i] = one(Unc)*ϵ
+    HendT⁺[2i-1,2i-1] = one(Unc)/ϵ  # high variance on positions
+    if discrmethod==:lowrank
+        HendT⁺[2i,2i] = one(Unc)*10^(-4) # still need to figure out why
+    else
+        HendT⁺[2i,2i] = one(Unc)/10^(-4)
+    end
 end
 #### perform gpupdate step
-νend , Hend⁺ = gpupdate(νend,Hend⁺, Σ, L, vT)
+νendT , HendT⁺ = gpupdate(νendT,HendT⁺, Σ, L, vT)
+νend = copy(νendT)
+Hend⁺  = copy(HendT⁺)
+Pahsaux = LandmarksAux(Pahs, copy(νend))   # this might be a good idea
+Pmsaux = MarslandShardlowAux(Pms, copy(νend))   # this might be a good idea
+
+if model == :ms
+    Paux = Pmsaux
+else
+    Paux = Pahsaux
+end
+
+
 # L, and Σ are ordinary matrices, vT an array of Points
 # νend is a state , Hend⁺ a  UncMat
 
@@ -162,6 +180,7 @@ if discrmethod==:lowrank
     St = [copy(Send) for s in tt_]
     Ut = [copy(Uend) for s in tt_]
     @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
+    Hend⁺ = deepmat2unc(Uend * Send * Uend')
     Ht =map((S,U) -> deepmat2unc(U * inv(S) * U'), St,Ut)  # directly compute Mt
     #Ht = map((S,U) -> LowRank(S,U), St,Ut)
 end
@@ -191,6 +210,6 @@ println("Sample guided bridge proposal:")
 
 include("plotlandmarks.jl")
 
-if model==:ms
-    @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
-end
+#if model==:ms
+#    @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
+#end

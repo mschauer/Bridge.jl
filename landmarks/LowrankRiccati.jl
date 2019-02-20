@@ -49,7 +49,7 @@ function lowrankriccati!(s, t, A, Q, (S,U), (Sout, Uout))
     # step 5c (gives new S)
     L = Ŝ * Uᴬ' +  Uout' * (τ * Q)
     Sout .= L * Uout
-    
+
     Sout, Uout
 end
 lowrankriccati(s, t, A, Q, (S, U)) = lowrankriccati!(s, t, A, Q, (S, U), (copy(S), copy(U)))

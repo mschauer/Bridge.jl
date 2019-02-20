@@ -108,8 +108,7 @@ B = copy(A)
 A
 conj!(B)
 """
-function conj!(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
-#    if !(size(A,1)==size(A,2)) error("conj! only correctly defined for square matrices") end
+function conj!(A::Array{Unc,2})
     for i in 1:size(A,1)
         A[i,i] = A[i,i]'
         for j in (i+1):size(A,2)
@@ -119,8 +118,7 @@ function conj!(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
     A
 end
 
-function conj2(A::Array{StaticArrays.SArray{Tuple{2,2},Float64,2,4},2})
-#    if !(size(A,1)==size(A,2)) error("conj! only correctly defined for square matrices") end
+function conj2(A::Array{Unc,2})
     At =  Matrix{Unc}(undef,size(A,2),size(A,1))
     for i in 1:size(A,2)
         for j in 1:size(A,1)

@@ -90,8 +90,7 @@ deepvec(x::State{P}) where {P} = vec([x[J][K] for K in eachindex(x.p[1]), J in e
 
 
 # matrix multiplication of mat of Uncs
-function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
-    B::Array{SArray{Tuple{2,2},Float64,2,4},2})
+function Base.:*(A::AbstractArray{Unc,2},B::AbstractArray{Unc,2})
     C = zeros(Unc,size(A,1), size(B,2))
     for i in 1:size(A,1)
         for j in 1:size(B,2)
@@ -103,20 +102,33 @@ function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
     C
 end
 
-function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},
-    B::Adjoint{Array{SArray{Tuple{2,2},Float64,2,4},2}})
-    C = zeros(Unc,size(A,1), size(B,1))
-    for i in 1:size(A,1)
-        for j in 1:size(B,1)
-            for k in 1:size(A,2)
-               C[i,j] += A[i,k] * B[j,k]
-            end
-        end
-    end
-    C
-end
+# function Base.:*(A::Array{Unc,2},B::Adjoint{Unc,Array{Unc,2}})
+#     C = zeros(Unc,size(A,1), size(B,2))
+#     for i in 1:size(A,1)
+#         for j in 1:size(B,2)
+#             for k in 1:size(A,2)
+#                C[i,j] += A[i,k] * B[k,j]
+#             end
+#         end
+#     end
+#     C
+# end
+#
+# #new
+# function Base.:*(A::Adjoint{Unc,Array{Unc,2}},B::Array{Unc,2})
+#     C = zeros(Unc,size(A,1), size(B,2))
+#     for i in 1:size(A,1)
+#         for j in 1:size(B,2)
+#             for k in 1:size(A,2)
+#                C[i,j] += A[i,k] * B[k,j]
+#             end
+#         end
+#     end
+#     C
+# end
 
-function Base.:*(A::Array{SArray{Tuple{2,2},Float64,2,4},2},x::State)
+
+function Base.:*(A::Array{Unc,2},x::State)
     vecofpoints2state(A*vec(x))
 end
 
@@ -128,6 +140,12 @@ if TEST
     C = B'
     @test norm(deepmat(A*B) - deepmat(A) * deepmat(B))<10^(-8)
     @test norm(deepmat(A*C') - deepmat(A) * deepmat(C'))<10^(-8)
+    BB = reshape(rand(Unc,8),4,2)
+    @test (A*BB')' == BB*A'
+
+    D = reshape(rand(Unc,6),3,2)
+    E = reshape(rand(Unc,12),3,4)
+    @test D'*E == (E'*D)'
 
     # backsolving matrix equation A X = using lu
     A1=reshape(rand(Unc,9),3,3)
