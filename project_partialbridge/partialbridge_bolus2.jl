@@ -11,23 +11,23 @@ using DataFrames
 using CSV
 using RCall
 
-sk = 0 # skipped in evaluating loglikelihoodν
+sk = 1 # skipped in evaluating loglikelihoodν
 
 νHparam = true
 simlongpath = true
 obs_scheme =["full","firstcomponent"][2]
 
 # settings in case of νH - parametrisation
-ϵ = 10^(-3)
-Σdiagel = 10^(-5)
+ϵ = 10^(-1)
+Σdiagel = 0.5
 
 
 # settings sampler
-iterations = 5
-skip_it = 1# 1000
+iterations = 15000
+skip_it = 1000
 subsamples = 0:skip_it:iterations
 
-ρ = 0.0#95
+ρ = 0.95
 
 L = @SMatrix [.5 .5 ]
 #L = @SMatrix [1. 0. ; 0.0 1.0]
@@ -186,10 +186,10 @@ H⁺i[1] = Hend⁺
 ####################### MH algorithm ###################
 
 # Initialisation, forward simulate on [0,T] a bridge
-xstart = νend #+ √(Hend⁺) * randn(d)  # note that this is really ν(0)
+xstart = zero(νend)#+ √(Hend⁺) * randn(d)  # note that this is really ν(0)
 for i in 1:segnum
     tt = Po[i].tt
-    WW[i] = sample(tt,Wiener{tW}())
+    WW[i] = sample(tt, Wiener{tW}())
     Bridge.solve!(Euler(), XX[i], xstart, WW[i], Po[i])
     xstart = XX[i].yy[end] # starting point for next segment
 end
@@ -200,26 +200,30 @@ initpath = [Any[XXinit.tt[j], d, XXinit.yy[j][d]] for d in 1:2, j in 1:5:length(
 obs = [Any[V.tt[j], dind, V.yy[j][dind]] for dind in 1:1, j in 1:length(V) ][:]
 obsDf = DataFrame(time=map(x->x[1],obs), component = map(x->x[2],obs),value=map(x->x[3],obs) )
 longpathDf = DataFrame(time=map(x->x[1],longpath), component = map(x->x[2],longpath),value=map(x->x[3],longpath) )
-initpathDf = DataFrame(time=map(x->x[1],initpath), component = map(x->x[2],initpath),value=map(x->x[3],initpath) )
+initpathDf3 = DataFrame(time=map(x->x[1],initpath), component = map(x->x[2],initpath),value=map(x->x[3],initpath) )
 
 
 @rput obsDf
 @rput longpathDf
 @rput initpathDf
+@rput initpathDf2
+@rput initpathDf3
 
 
 R"""
-library(ggplot2)
-library(tidyverse)
+    library(ggplot2)
+    library(tidyverse)
 
-longpathDf$component <- as.factor(longpathDf$component)
-p <- ggplot() +
-  ylab("") + geom_path(aes(x=time,y=value,colour=as.factor(component)),data=initpathDf)+
-   geom_point(aes(x=time,y=value),data=obsDf,colour="red")+
-  geom_path(aes(x=time,y=value,colour=component),data=longpathDf)+theme_minimal()+
-  theme(legend.position="bottom")
-  #facet_wrap(~component,ncol=1,scales='free_y') +
-
+    longpathDf$component <- as.factor(longpathDf$component)
+    p <- ggplot() +
+      ylab("") +
+      geom_path(aes(x=time,y=value, colour=as.factor(component)),size=0.2, data=initpathDf)+
+      geom_path(aes(x=time,y=value, colour=as.factor(component)),size=0.2, data=initpathDf2)+
+      geom_path(aes(x=time,y=value, colour=as.factor(component)),size=0.2, data=initpathDf3)+
+      geom_point(aes(x=time,y=value),data=obsDf,colour="red")+
+     # geom_path(aes(x=time,y=value,colour=component), size=1., data=longpathDf)+
+      theme_minimal() +
+      theme(legend.position="none")# + facet_wrap(~component,ncol=1,scales='free_y')
 """
 
 
@@ -257,7 +261,7 @@ for iter in 1:iterations
 
     xstart = XX[1].yy[1]
     xstarto = xstart
-    updateparams =  false#
+    updateparams = false
     while !finished
         # update a block
 
@@ -318,6 +322,7 @@ for iter in 1:iterations
                 xstart = XX[1].yy[1]
                 u = randn()
                 xstarto = xstart + 0.1 * ℝ{2}(u, -u)
+                xstart = xstarto = zero(ℝ{2})
             else
                 xstarto = xstart = XX[i-1].yy[end]
             end

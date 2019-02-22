@@ -80,6 +80,9 @@ struct PartialBridgeνH{T,TP,TPt,Tν,TH} <: ContinuousTimeProcess{T}
     end
 end
 # 5 arg
+"""
+    partialbridgeνH(tt_, P, Pt, νend, Hend⁺) -> PartialBridgeνH(P, Pt, tt, νt, Ht), ν, H⁺
+"""
 function partialbridgeνH(tt_, P, Pt, νend::Tv, Hend⁺::TH) where {Tv,TH}
     tt = collect(tt_)
     N = length(tt)
@@ -121,4 +124,27 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridgeνH; skip =
         end
     end
     som
+end
+
+#### Time change and scaling
+struct TimeChange{T}
+    P::T
+    T1::Float64
+    T2::Float64
+end
+timeunchange(s, P::TimeChange) = P.T1 + (s - P.T1)*(2.0 - (s - P.T1)/(P.T2 - P.T1))
+timechange(t, P::TimeChange) = P.T2 - sqrt((P.T2 - P.T1)*(P.T2 - t))
+
+# nb: second parameter is scaled time
+unscale((i,s), u, PU) = PU.P.ν(i) - (PU.T2 - s)*u
+scale((i,s), x, PU::TimeChange) = (PU.P.ν[i] - x)/(PU.T2 - s)
+orig((i,s), u, PU) = timeunchange(s, PU), unscale((i,s), u, PU), PU.P
+
+function _b((i,s)::IndexedTime, u, PU::TimeChange{PartialBridgeνH})
+    t, x, P = orig((i,s), u, PU)
+    -2/(PU.T2 - PU.T1)*b(t, x, P) + a(t, x, P)*(P.H[i]*(P.ν[i] - x))
+end
+function _σ((i,s)::IndexedTime, u, PU::TimeChange{PartialBridgeνH})
+    t, x, P = orig((i,s), u, PU)
+     (-sqrt(2.0/((PU.T2 - PU.T1)*(PU.T2 - s))))*σ(t, x, P)
 end

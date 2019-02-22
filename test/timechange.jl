@@ -1,192 +1,87 @@
-using Bridge, Distributions
-using Test, LinearAlgebra
+using Bridge
+using Bridge: TimeChange, outer, timechange, timeunchange, scale, unscale
+using Distributions, StaticArrays
+using Test, Statistics, Random, LinearAlgebra
+using Bridge.Models
 
-h = 1e-7
-n, m = 50, 10000
-T1 = 1.
-T2 = 2.
-T = T2-T1
-ss = range(T1, stop=T2, length=n)
-tt = Bridge.tofs(ss, T1, T2)
-
-u = 0.5
-v = 0.3
-a = .7
-a2 = 0.4
-P = LinPro(-0.8, 0.0, sqrt(a))
-P2 = LinPro(-0.8, 0.0, sqrt(a2))
-
-la = 1
-cs = Bridge.CSpline(T1, T2, la*P.B*u, la*P.B*v)
-Po = BridgeProp(P, tt, (u, v), a, cs)
-Pt = Bridge.ptilde(Po)
-
-cs2 = Bridge.CSpline(T1, T2, P2.B*u, P2.B*v)
-Po2 = BridgeProp(P2, tt, (u, v), a2, cs)
-Pt2 = Bridge.ptilde(Po2)
+using Makie, Colors
+Makie.convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{<:Real}) = Makie.convert_arguments(P, X.tt, X.yy)
+Makie.convert_arguments(P::Type{<:Union{Lines,Scatter}}, X::SamplePath{ℝ{2}}) = Makie.convert_arguments(P, first.(X.yy), last.(X.yy))
+viridis(X, alpha = 0.9f0, maxviri = 200) = map(x->RGBA(Float32.(x)..., alpha), Bridge._viridis[round.(Int, range(1, stop=maxviri, length=length(X)))])
 
 
+T1, T2 = 1.0, 2.0
+dt = 1/5000
 
-s = ss[div(n,2)]
-t = tt[div(n,2)]
-@test Bridge.V(t, T2, v, Pt) ≈ Bridge.Vs(s, T1, T2, v, Pt)
-@test Bridge.dotV(t, T2, v, Pt) ≈ Bridge.dotVs(s, T1, T2, v, Pt)
-@test abs((Bridge.V(t+h, T2, v, Pt) - Bridge.V(t, T2, v, Pt))/h - Bridge.dotV(t, T2, v, Pt)) < h
 
-@test tt[1] == T1
-@test tt[end] == T2
-@test (Bridge.V(T1, T2, v, Pt) - u)/T ≈ Bridge.uofx(T1, Po.v[1], T1, T2, v, Pt) #
-@test [T1, u] ≈ [Bridge.txofsu(T1, Bridge.uofx(T1, Po.v[1], T1, T2, v, Pt), T1, T2, v, Pt)...]
-@test norm(Bridge.soft(Bridge.tofs(1:0.1:2, 1, 2), 1,2 ) .- (1:0.1:2)) < sqrt(eps())
-
-if la == 1
-    @test norm(Bridge.b(T1, u, P) - Bridge.b(T1, u, Pt)) + norm(Bridge.b(T2, v, P) - Bridge.b(T2, v,Pt)) < sqrt(eps())
+t = T1:dt:T2
+struct IntegratedDiffusion <: ContinuousTimeProcess{ℝ{2}}
+    γ::Float64
+end
+struct IntegratedDiffusionAux <: ContinuousTimeProcess{ℝ{2}}
+    γ::Float64
 end
 
-X = Bridge.solve(EulerMaruyama(), sample(ss, Wiener{Float64}()), Po)
-Y = Bridge.solve(EulerMaruyama(), Bridge.innovations(EulerMaruyama(), X, Po), Po)
-@test Y.tt ≈ X.tt
-@test Y.yy ≈ X.yy
-
-X = ubridge(sample(ss, Wiener{Float64}()), Po)
-@test X.tt ≈ tt
-Y = ubridge(Bridge.uinnovations(X, Po), Po)
-@test Y.tt ≈ X.tt
-@test Y.yy ≈ X.yy
+PorPtilde = Union{IntegratedDiffusion, IntegratedDiffusionAux}
 
 
-X = Bridge.solve(Bridge.Mdb(), sample(ss, Wiener{Float64}()), Po)
-Y = Bridge.solve(Bridge.Mdb(), innovations(Bridge.Mdb(), X, Po), Po)
-@test Y.tt ≈ X.tt
-@test Y.yy ≈ X.yy
+βu(t, x::Float64, P::IntegratedDiffusion) = - (x + 1sin(x)) + 1/2
+βu(t, x::Float64, P::IntegratedDiffusionAux) = -x + 1/2
+# not really a 'beta'
 
-p = pdf(transitionprob(T1, u, T2, P), v)
-pt = exp(lptilde(Po))
+Bridge.b(t::Float64, x, P::PorPtilde) = ℝ{2}(x[2], βu(t, x[2], P))
+Bridge.σ(t, x, P::PorPtilde) = ℝ{2}(0.0, P.γ)
 
-C = []
-Co = []
-Cnames = []
-push!(Cnames, "Euler")
-z = Float64[
-    let
-        X = solve(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
-         Bridge.llikelihoodleft(X, Po)
-    end
-    for i in 1:m]
+Bridge.a(t, P::PorPtilde) = @SArray [0.0 0.0; 0.0 P.γ^2]
+Bridge.a(t, x, P::PorPtilde) = Bridge.a(t, P::PorPtilde)
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+Bridge.constdiff(::PorPtilde) = true
 
+Bridge.B(t, P::IntegratedDiffusionAux) = @SMatrix [0.0 1.0; 0.0 -1.0]
+Bridge.β(t, P::IntegratedDiffusionAux) = ℝ{2}(0, 1/2)
 
-push!(Cnames, "Euler + Trapez")
-z = Float64[
-    let
-        X = solve(EulerMaruyama(), sample(tt, Wiener{Float64}()), Po)
-         Bridge.llikelihoodtrapez(X, Po)
-    end
-    for i in 1:m]
+# Generate Data
+Random.seed!(1)
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+P = IntegratedDiffusion(0.7)
+Pt = IntegratedDiffusionAux(0.7)
 
-push!(Cnames, "MDGP+Left")
-z = Float64[
-    let
-        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
-        Bridge.llikelihoodleft(X, Po)
-    end
-    for i in 1:m]
+W = sample(t, Wiener())
+xstart = ℝ{2}(2.0, 1.0)
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
-
-push!(Cnames, "MDGP+Trapez")
-z = Float64[
-    let
-        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po)
-        Bridge.llikelihoodtrapez(X, Po)
-    end
-    for i in 1:m]
-
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+X = solve(EulerMaruyama(), xstart, W, P)
 
 
-push!(Cnames, "TCSGP")
-z = Float64[
-    let
-        X = ubridge(sample(ss, Wiener{Float64}()), Po)
-        Bridge.llikelihoodleft(X, Po)
-    end
-    for i in 1:m]
+νend = xend = X.yy[end]
+Hend = outer(ℝ{2}(0,0))
+Po, _ = Bridge.partialbridgeνH(t, P, Pt, νend, Hend)
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+W = sample(t, Wiener())
+Xo = solve(EulerMaruyama(), xstart, W, Po)
 
+scene = lines(X, color=viridis(t))
+lines!(scene, Xo, color=viridis(t))
+display(scene)
 
-push!(Cnames, "TCSGP + Trapez")
-z = Float64[
-    let
-        X = ubridge(sample(ss, Wiener{Float64}()), Po)
-        Bridge.llikelihoodtrapez(X, Po)
-    end
-    for i in 1:m]
-
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+PU = TimeChange(Po, T1, T2)
+@test norm(timeunchange.(timechange.(t, PU), PU) - t) < 1e-13
 
 
-push!(Cnames, "TCSGPLL")
-z = Float64[
-    let
-        X = ubridge(sample(ss, Wiener{Float64}()), Po)
-        ullikelihood(X, Po)
-    end
-    for i in 1:m]
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
 
-push!(Cnames, "TCSGPLL + Trapez")
-z = Float64[
-    let
-        X = ubridge(sample(ss, Wiener{Float64}()), Po)
-        Bridge.ullikelihoodtrapez(X, Po)
-    end
-    for i in 1:m]
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+s = T1:dt:T2
+t = timeunchange.(s, PU)
+Po, _ = Bridge.partialbridgeνH(t, P, Pt, νT, HT)
 
-push!(Cnames, "TCSGP + Inno + Update")
-z = Float64[
-                  let
-                      X = ubridge(sample(ss, Wiener{Float64}()), Po2)
-                      Z = Bridge.uinnovations(X, Po2)
-                      Z2 = sample(Z.tt, Wiener{Float64}())
-                      Z.yy[:] = sqrt(.8)*Z.yy + sqrt(0.2)*Z2.yy
-                      Z.yy[end]
-                      X = ubridge(Z, Po)
-                      Bridge.llikelihoodleft(X, Po)
-                  end
-                  for i in 1:m]
+W = sample(t, Wiener())
+Xo = solve(EulerMaruyama(), xstart, W, Po)
+scene = lines(Xo, color=viridis(t))
+scatter!(scene, [xstart, xend], markersize=0.001)
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+U = SamplePath(s[1:end-1], ((Po.ν .- Xo.yy)./(T2 .- s))[1:end-1])
 
-push!(Cnames, "TCSGPLL + Inno Mix")
-z = Float64[
-           let
-               W = sample(ss, Wiener{Float64}())
-               X = ubridge(W, Po2)
-               Z = Bridge.innovations(EulerMaruyama(), X, Po2)
-               X = solve(EulerMaruyama(), Z, Po)
-               Bridge.llikelihoodtrapez(X, Po)
-           end
-           for i in 1:m]
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
+scene = lines(U, color=viridis(U.tt))
 
-push!(Cnames, "MDGP + Trapez + Inno")
-z = Float64[
-    let
-        X = solve(Bridge.Mdb(), sample(tt, Wiener{Float64}()), Po2)
-        W = innovations(EulerMaruyama(), X, Po2)
-        X = solve(EulerMaruyama(), W, Po)
-        Bridge.llikelihoodtrapez(X, Po)
-    end
-    for i in 1:m]
+scene = lines(U.tt, last.(U.yy))
 
-o = mean(exp.(z)*pt/p); push!(Co, o); push!(C, abs(o - 1)*sqrt(m)/std(exp.(z)*pt/p))
-
-display([Cnames C Co])
-println("\n  Method                   rel error  mean")
-println("Remark: Change of measure is successfull if mean is close to 1")
+PU = TimeChange(Po, T1, T2)
+@test norm(U.yy - [Bridge.scale((i,s), Xo.yy[i], PU) for (i,s) in enumerate(s)][1:end-1]) < 1e-12

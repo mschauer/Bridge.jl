@@ -73,9 +73,9 @@ function b!
 end
 
 """
-    σ!(t, y, Δw, tmp2, P)
+    σ!(t, y, Δw, tmp, P)
 
-Compute stochastic increment at `y`, ``σ Δw``, modifying `tmp2`.
+Compute stochastic increment at `y`, ``σ Δw``, modifying `tmp`.
 """
 function σ!
 end
@@ -101,9 +101,10 @@ include("misc.jl")
 #_b!((i,s)::IndexedTime, x, tmp, P) = b!(s, x, tmp, P)
 _b((i,s), x, P) = b(s, x, P)
 _b!((i,s), x, tmp, P) = b!(s, x, tmp, P)
-
+_σ((i,s), x, P) = σ(s, x, P)
+_σ!((i,s), x, Δw, tmp, P) = σ!(s, x, Δw, tmp, P)
 #btilde((i,s)::IndexedTime, x, P) = btilde(s, x, P)
-#a((i,s)::IndexedTime, x, P) = a(s, x, P)
+a((i,s)::IndexedTime, x, P) = a(s, x, P)
 r((i,s)::IndexedTime, x, P) = r(s, x, P)
 H((i,s)::IndexedTime, x, P) = H(s, x, P)
 

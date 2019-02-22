@@ -73,7 +73,7 @@ function solve!(::StochasticHeun, Y, u, W::SamplePath, P::ProcessOrCoefficients)
         yy[.., i] = y
         B = _b((i,tt[i]), y, P)
         y2 = y + B*(tt[i+1]-tt[i])
-        y = y + 0.5*(_b((i+1,tt[i+1]), y2, P) + B)*(tt[i+1]-tt[i]) + σ(tt[i], y, P)*(ww[.., i+1]-ww[..,i])
+        y = y + 0.5*(_b((i+1,tt[i+1]), y2, P) + B)*(tt[i+1]-tt[i]) + _σ((i,tt[i]), y, P)*(ww[.., i+1]-ww[..,i])
     end
     yy[.., N-1] = endpoint(y, P)
     Y
@@ -137,7 +137,7 @@ function solve!(::EulerMaruyama, Y, u::T, W::SamplePath, P::ProcessOrCoefficient
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), _σ((i,tt[i]), y, P))
     end
     yy[.., N] = endpoint(y, P)
     Y
@@ -208,7 +208,7 @@ function solve!(::Euler, Y, u, W::SamplePath, P::Union{GuidedBridge,PartialBridg
     end
     for i in 1:N-1
         yy[.., i] = y
-        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), _σ((i,tt[i]), y, P))
     end
     yy[.., N] = endpoint(y, P)
     yy[.., N]
@@ -241,7 +241,7 @@ function solve!(::Mdb, Y, u, W::SamplePath, P::ContinuousTimeProcess{T}) where {
 
     for i in 1:N-1
         yy[.., i] = y
-        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), σ(tt[i], y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
+        y = y + _b((i, tt[i]), y, P)*(tt[i+1]-tt[i]) + _scale((ww[.., i+1]-ww[..,i]), _σ((i,tt[i]), y, P)*sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i])))
     end
     yy[.., N] = endpoint(y, P)
     Y
@@ -264,7 +264,7 @@ function solve!(::StochasticRungeKutta, Y, u::T, W::SamplePath, P::ProcessOrCoef
         delta = tt[i+1]-tt[i]
         sqdelta = sqrt(delta)
         B = _b((i,tt[i]), y, P)
-        S = σ(tt[i], y, P)
+        S = _σ((i,tt[i]), y, P)
         dw = ww[.., i+1]-ww[..,i]
         y = y + B*delta + S*dw
         ups = y + B*delta + S*sqdelta
@@ -290,7 +290,7 @@ function innovations!(::EulerMaruyama, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
+        w = w + inv(_σ((i,tt[i]), yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W
@@ -310,7 +310,7 @@ function innovations!(::Mdb, W, Y::SamplePath, P)
 
     for i in 1:N-1
         ww[.., i] = w
-        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(σ(tt[i], yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
+        w = w + sqrt((tt[end]-tt[i+1])/(tt[end]-tt[i]))\inv(_σ((i,tt[i]), yy[.., i], P))*(yy[.., i+1] - yy[.., i] - _b((i,tt[i]), yy[.., i], P)*(tt[i+1]-tt[i]))
     end
     ww[.., N] = w
     W
