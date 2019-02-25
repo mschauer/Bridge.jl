@@ -183,11 +183,13 @@ function deepmat(H::AbstractMatrix{S}) where {S}
 end
 #@test  outer(deepvec(x0)) == deepmat(outer(vec(x0)))
 
+
 function deepmat2unc(A::Matrix)  # d is the dimension of the square subblocks
-  k =size(A,1)
-  m = div(k,d)
-  [Unc(A[(i-1)*d+1:i*d,(j-1)*d+1:j*d]) for i in 1:m, j in 1:m]
+  m = div(size(A,1),d)
+  n = div(size(A,2),d)
+  [Unc(A[(i-1)*d+1:i*d,(j-1)*d+1:j*d]) for i in 1:m, j in 1:n]
 end
+
 
 function outer(x::State, y::State)
     [outer(x[i],y[j]) for i in eachindex(x), j in eachindex(y)]
