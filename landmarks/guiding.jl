@@ -1,7 +1,9 @@
 # compute guiding term: backward ode
 # compute likelihood of guided proposal
+using LinearAlgebra
 
-import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B!, σ!, b!
+import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B!, σ!, b!, σ, b
+
 
 function gpupdate(ν, P, Σ, L, v)
     if all(diag(P) .== Inf)
@@ -19,7 +21,7 @@ end
 (ν, P) are the values just to the right of time T,
 (Σ, L, v) are the noise covariance, observations matrix L and observation at time T
 """
-function gpupdate(ν2::State, P2, Σ, L, v2::Vector{Point})
+function gpupdate(ν2::State, P2, Σ, L, v2::Vector{<:Point})
     ν = deepvec(ν2)
     P = deepmat(P2)
     v = reinterpret(Float64,v2)
@@ -135,7 +137,16 @@ function Bridge._b!((i,t), x, out, P::GuidedProposal!)
     out
 end
 
-σ!(t, x, dw, out, P::GuidedProposal!) = σ!(t, x, dw, out, P.target)
+function Bridge._b((i,t), x, P::GuidedProposal!)
+    out = Bridge.b(t, x, P.target)
+    out .+= amul(t,x,P.H[i]*(P.ν[i] - x),P.target)
+    out
+end
+
+Bridge.σ!(t, x, dw, out, P::GuidedProposal!) = σ!(t, x, dw, out, P.target)
+
+Bridge.σ(t, x, dw, P::GuidedProposal!) = σ(t, x, dw, P.target)
+
 
 function _r!((i,t), x, out, P::GuidedProposal!)
     out .= (P.H[i]*(P.ν[i] - x))
@@ -151,12 +162,19 @@ auxiliary(P::GuidedProposal!) = P.aux
 
 constdiff(P::GuidedProposal!) = constdiff(target(P)) && constdiff(auxiliary(P))
 
-function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0)
+function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposal!; skip = 0) where {Pnt}
     tt = Xcirc.tt
     xx = Xcirc.yy
 
-    som::Float64 = 0.
+    som::eltype(xx[1]) = 0.
     rout = copy(xx[1])
+
+    if !constdiff(Q) # use sizetypes?
+        srout = zeros(Pnt, length(P.nfs))
+        strout = zeros(Pnt, length(P.nfs))
+    end
+
+
     bout = copy(rout)
     btout = copy(rout)
     for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
@@ -167,6 +185,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0
         _b!((i,s), x, btout, auxiliary(Q))
 #        btitilde!((s,i), x, btout, Q)
         dt = tt[i+1]-tt[i]
+        #dump(som)
         som += dot(bout-btout, rout) * dt
 
         if !constdiff(Q)
@@ -175,10 +194,15 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposal!; skip = 0
             # som -= 0.5*tr(Δa*H) * dt
             # som += 0.5*(rout'*Δa*rout) * dt
 
-            Δa =  Bridge.a(s, x, target(Q)) - Bridge.a(s,  auxiliary(Q))
-            H = Bridge.H((i,s), x, auxiliary(Q))
+            σt!(s, x, rout, srout, target(Q))
+            σt!(s, x, rout, strout, auxiliary(Q))
+
+            #Δa = Bridge.a(s, x, target(Q)) - Bridge.a(s,  auxiliary(Q))
+            #H = Bridge.H((i,s), x, auxiliary(Q))
             # som -= 0.5*tr(Δa*H) * dt
-             som += 0.5*dot(rout,Δa*rout) * dt
+             #som += 0.5*dot(rout,Δa*rout) * dt
+             som += 0.5*Bridge.inner(srout) * dt
+             som -= 0.5*Bridge.inner(strout) * dt
         end
     end
     som

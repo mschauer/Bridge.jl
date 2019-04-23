@@ -15,6 +15,50 @@ function Bridge.sample!(W::SamplePath{Vector{T}}, P::Wiener{Vector{T}}, y1 = W.y
 end
 
 
+function Bridge.solve(solver::EulerMaruyama!, u, W::SamplePath, P::Bridge.ProcessOrCoefficients)
+    N = length(W)
+
+    tt = W.tt
+    yy = [copy(u)]
+
+    i = 1
+    dw = W.yy[i+1] - W.yy[i]
+    t¯ = tt[i]
+    dt = tt[i+1] - t¯
+
+    tmp1 = Bridge._b!((i,t¯), u, 0*u, P)
+    tmp2 = Bridge.σ(t¯, u, dw, P)
+
+    y = u + tmp1*dt + tmp2
+
+    #dump(y)
+    #error("here")
+
+
+    for i in 2:N-1
+        t¯ = tt[i]
+        dt = tt[i+1] - t¯
+        push!(yy, y)
+        if dw isa Number
+            dw = W.yy[i+1] - W.yy[i]
+        else
+            for k in eachindex(dw)
+                dw[k] = W.yy[i+1][k] - W.yy[i][k]
+            end
+        end
+
+        Bridge._b!((i,t¯), y, tmp1, P)
+        Bridge.σ!(t¯, y, dw, tmp2, P)
+
+        for k in eachindex(y)
+            y[k] = y[k] + tmp1[k]*dt + tmp2[k]
+        end
+    end
+    copyto!(yy[end], Bridge.endpoint(y, P))
+    SamplePath(tt, yy)
+end
+
+
 struct StratonovichHeun! <: Bridge.SDESolver
 end
 

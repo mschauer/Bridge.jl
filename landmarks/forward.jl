@@ -1,6 +1,8 @@
 # reminder, to type H*, do H\^+
 #outdir="output/landmarks/"
-cd("/Users/Frank/.julia/dev/Bridge/landmarks")
+#cd("/Users/Frank/.julia/dev/Bridge/landmarks")
+#cd("landmarks")
+
 
 using Bridge, StaticArrays, Distributions
 using Bridge:logpdfnormal
@@ -14,11 +16,11 @@ using Base.Iterators
 using SparseArrays
 
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[2]
+discrmethod = discrmethods[1]
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
@@ -26,10 +28,10 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 60 # nr of landmarks
+n = 4 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
-cheat =  false#true#false # if cheat is true, then we initialise at x0 (true value) and
+cheat = true #true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
 θ = -π/6# π/6 0#π/5  # angle to rotate endpoint
@@ -60,15 +62,15 @@ db = 3.0 # domainbound
 nfstd = .5 # tau , widht of noisefields
 r1 = -db:nfstd:db
 r2 = -db:nfstd:db
-nfloc = Point.(collect(product(r1, r2)))[:]
-nfscales = [.1Point(1.0, 1.0) for x in nfloc]  # intensity
+nfloc = PointF.(collect(product(r1, r2)))[:]
+nfscales = [.1PointF(1.0, 1.0) for x in nfloc]  # intensity
 
 nfs = [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
 Pms = MarslandShardlow(a, γ, λ, n)
 Pahs = Landmarks(a, λ, n, nfs)
 ###
 
-StateW = Point
+StateW = PointF
 if model == :ms
     dwiener = n
     P = Pms
@@ -78,10 +80,10 @@ else
 end
 
 # specify initial landmarks configuration
-q0 = [Point(2.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-p_ = 5*Point(0.1, 0.1)
+q0 = [PointF(2.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+p_ = 5*PointF(0.1, 0.1)
 p0 = [p_ for i in 1:n]  #
-#p0 = [randn(Point) for i in 1:n]
+#p0 = [randn(PointF) for i in 1:n]
 x0 = State(q0, p0)
 
 #Random.seed!(1234)
@@ -107,7 +109,7 @@ if obsscheme==:partial
   Σ = Diagonal(σobs^2*ones(n*d))
 
   # observe positions
-  v0 = q(X.yy[1])  + σobs * randn(Point,n)
+  v0 = q(X.yy[1])  + σobs * randn(PointF,n)
   rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
   vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
 
@@ -116,7 +118,7 @@ if obsscheme==:partial
       Pahsaux = LandmarksAux(Pahs, X.yy[end])
   else
       Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
-      #Pahsaux = LandmarksAux(Pahs, State(vT, rand(Point,Pahs.n)))
+      #Pahsaux = LandmarksAux(Pahs, State(vT, rand(PointF,Pahs.n)))
   end
 end
 if obsscheme==:full
@@ -139,7 +141,7 @@ end
 # "right" choice
 if obsscheme==:partial
     #νendT = State(zero(vT), zero(vT))
-    νendT = State(randn(Point,Pahs.n), randn(Point,Pahs.n))
+    νendT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
 end
 if obsscheme==:full
     νendT = X.yy[end]
@@ -181,7 +183,7 @@ if discrmethod==:lowrank
     Ut = [copy(Uend) for s in tt_]
     @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
     Hend⁺ = deepmat2unc(Uend * Send * Uend')
-    Ht =map((S,U) -> deepmat2unc(U * inv(S) * U'), St,Ut)  # directly compute Mt
+    Ht = map((S,U) -> deepmat2unc(U * inv(S) * U'), St, Ut)  # directly compute Mt
     #Ht = map((S,U) -> LowRank(S,U), St,Ut)
 end
 if discrmethod==:ralston
@@ -197,7 +199,7 @@ if discrmethod==:psd
 end
 
 Q = GuidedProposal!(P, Paux, tt_, νt, Ht)
-
+# careful, not a state
 νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, v0)
 xinit = cheat ? x0 : νstart  # or xinit ~ N(νstart, Hstart⁺)
 winit = zeros(StateW, dwiener)
@@ -210,6 +212,47 @@ println("Sample guided bridge proposal:")
 
 include("plotlandmarks.jl")
 
-#if model==:ms
-#    @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
-#end
+if model==:ms
+    @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
+end
+
+using ForwardDiff
+dual(x, i, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(i))
+dual(x, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(0))
+
+#using Flux
+xinitv = deepvec(xinit)
+
+xinitv = map(i->dual(xinitv[i], i <= 2 ? i : 0, 2), 1:length(xinitv))
+
+xinitnew = deepvec2state(xinitv)
+x = copy(xinitnew)
+
+#lux.Tracker.gradient(x -> Bridge._b!((1,0.0), deepvec2state(x), deepvec2state(x), P), deepvec(xinit))
+Bridge.b!(0.0, x, copy(x), P)
+
+import Bridge;
+
+#include(joinpath(dirname(pathof(Bridge)), "..", "landmarks/patches.jl"))
+#include(joinpath(dirname(pathof(Bridge)), "..", "landmarks/models.jl"))
+
+XX = Bridge.solve(EulerMaruyama!(), xinitnew, WW, P)
+
+
+
+function obj(xinitv)
+    xinit = deepvec2state(xinitv)
+    sample!(WW, Wiener{Vector{StateW}}())
+    XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
+    llikelihood(LeftRule(), XXᵒ, Q; skip = 0)
+end
+
+let
+    x = deepvec(xinit)
+    ϵ = 1e-7
+    for i in 1:1000
+        ∇x = ForwardDiff.gradient(obj, x)
+        x .+= ϵ*∇x
+        println(deepvec2state(x))
+    end
+end
