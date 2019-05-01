@@ -115,9 +115,9 @@ F, H, C = Bridge.updateFHC(L, Σ, v, zero(Ft[end]), zero(Ht[end]), ϵ)
 
 Ft, Ht, C = Bridge.partialbridgeodeHνH!(Bridge.R3(), tt, Ft, Ht, Pt, (F, H, C))
 
-@test abs(C - Po2.C) < 0.02
-@test maximum(norm.(Ht .- Po2.H)) < 1e-5
-@test maximum(norm.(Po2.H .* Po2.ν .- Ft)) < 0.01 #not very precise, update if cond number becomes better
+@test abs(C - Po2.C) < 0.03
+@test maximum(norm.(Ht .- Po2.H)./norm(Ht)) < 1e-5
+@test maximum(norm.(Po2.H .* Po2.ν .- Ft)) < 0.015 #not very precise, update if cond number becomes better
 @test_broken cond(Ht[1]) < 1.e7 #
 
 #LP2 = -0.5*(x0'*Po2.H[1]*x0 - 2*x0'*Po2.F)[] - Po2.C

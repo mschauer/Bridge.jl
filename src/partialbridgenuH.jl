@@ -32,7 +32,9 @@ function partialbridgeodeνH!(::R3, t, νt, Ht, P, (ν, H⁺, C))
     #C += m/2*log(2pi) + 0.5*log(abs(det(Σ))) # Q, use logabsdet, actually
     #ν, H⁺ = zero(νt[end]), zero(Ht[end])
     #H⁺, ν = gpupdate(H⁺, ν, L, Σ, v)
-    H = inv(H⁺)
+    Ht[end] = H = inv(H⁺)
+    νt[end] = ν
+
     #C = updateC(L, Σ, v, C)
 
     b̃(t, y, P) = B(t, P)*y + β(t, P)
