@@ -108,7 +108,7 @@ Ht = copy(Po2.H)
 ν, H⁺, C_ = Bridge.updateνH⁺C(L, Σ, v, ϵ)
 
 F, H, C = Bridge.updateFHC(L, Σ, v, zero(Ft[end]), zero(Ht[end]), ϵ)
-@test C ≈ C2
+@test C ≈ C_
 @test F ≈ H*ν
 @test H⁺ ≈ inv(H)
 
