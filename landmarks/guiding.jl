@@ -104,8 +104,8 @@ function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, Paux, ν, H⁺, C)
         kernelr3!(dP!, t[i+1], H⁺t[i+1], wsH⁺, H⁺t[i], dt)
         Ht[i] = InverseCholesky(lchol(H⁺t[i]))
         F = Ht[i+1]*νt[i+1]
-        C += -dot(Bridge.β(t, Paux),F)*dt
-        C += - 0.5*dot(F, Bridge.a(t, Paux)*F)*dt
+        C += dot(Bridge.β(t, Paux),F)*dt
+        C += 0.5*dot(F, Bridge.a(t, Paux)*F)*dt
         C += -0.5*tr(tr(Ht[i+1]*Matrix(Bridge.a(t, Paux))))*dt
         # FIXME converting to full
     end
@@ -166,7 +166,8 @@ struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,TC,F} <: ContinuousTimeProcess{T}
         new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, C, endpoint)
     end
 end
-Bridge.lptilde(x, Po::GuidedProposal!) = -0.5*dot(x0, Po.H[1]*x0) - 2dot(x0, Po.H[1]*Po.ν[1]) - Po.C
+
+Bridge.lptilde(x, Po::GuidedProposal!) = -0.5*(dot(x, Po.H[1]*x) - 2dot(x, Po.H[1]*Po.ν[1])) - Po.C
 
 
 function Bridge._b!((i,t), x, out, P::GuidedProposal!)
@@ -221,7 +222,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
         _r!((i,s), x, rout, Q)
         b!(s, x, bout, target(Q))
         _b!((i,s), x, btout, auxiliary(Q))
-#        btitilde!((s,i), x, btout, Q)
+
         dt = tt[i+1]-tt[i]
         #dump(som)
         som += dot(bout-btout, rout) * dt

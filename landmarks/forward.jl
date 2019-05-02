@@ -45,8 +45,8 @@ println(model)
 println(discrmethod)
 println(obsscheme)
 
-T = 0.2#1.0#0.5
-t = 0.0:0.01:T  # time grid
+T = 0.8#1.0#0.5
+t = 0.0:0.003:T  # time grid
 
 #Random.seed!(5)
 include("state.jl")
@@ -297,11 +297,13 @@ let
     x = deepvec(xinit)
     # only optimize momenta
     mask = deepvec(State( 0*xinit.q, 1 .- 0*(xinit.q)))
-    ϵ = 1.5
-
+    ϵ = 0.5
+    o =  obj(x)
     for i in 1:1000
+        i % 10 == 0 && (o =  obj(x))
         ∇x = ForwardDiff.gradient(obj, x)
         x .+= ϵ*mask.*∇x
-        println(deepvec2state(x-deepvec(X.yy[1])))
+        display(deepvec2state(x-deepvec(X.yy[1])).p)
+        println(o)
     end
 end
