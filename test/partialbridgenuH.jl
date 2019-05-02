@@ -126,6 +126,14 @@ LP2 = -0.5*(x0'*Po2.H[1]*x0 - 2*x0'*Po2.H[1]*Po2.ν[1])[] - Po2.C
 @show LP, LP2
 @test abs(LP - LP2) < 0.01
 
+# no epsilon
+F, H, C = Bridge.updateFHC(L, Σ, v, zero(Ft[end]), zero(Ht[end]), 0.0)
+Ft, Ht, C = Bridge.partialbridgeodeHνH!(Bridge.R3(), tt, Ft, Ht, Pt, (F, H, C))
+LP3 = -0.5*(x0'*Ht[1]*x0  - 2*x0'*Ft[1])[] - C
+@test abs(LP - LP2) < 0.01
+
+
+
 Xo2 = copy(X2)
 solve!(Euler(), Xo2, x0, W2, Po2)
 

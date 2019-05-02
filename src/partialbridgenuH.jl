@@ -17,47 +17,38 @@ function updateνH⁺C(L, Σ, v, ϵ)
 end
 
 
+
 function partialbridgeodeνH!(::R3, t, νt, Ht, P, (ν, H⁺, C))
     #m, d = size(L)
     #@assert m == length(v)
-    # print(typeof(H⁺t))
-    # print(typeof(νt))
-    # print(typeof(inv(L' * inv(Σ) * L + ϵ * I)   ))
-    #Ht[end] = H = (L' * inv(Σ) * L + ϵ * I)
-    #H⁺ = inv(H)
-    #νt[end] = H⁺ * L' * inv(Σ) * v
-    #F = L' * inv(Σ) * v
-    #ν = νt[end]
-    #C += 0.5 * v' * inv(Σ) * v # 0.5 c
-    #C += m/2*log(2pi) + 0.5*log(abs(det(Σ))) # Q, use logabsdet, actually
-    #ν, H⁺ = zero(νt[end]), zero(Ht[end])
-    #H⁺, ν = gpupdate(H⁺, ν, L, Σ, v)
     Ht[end] = H = inv(H⁺)
     νt[end] = ν
 
-    #C = updateC(L, Σ, v, C)
-
     b̃(t, y, P) = B(t, P)*y + β(t, P)
-    dH⁺(t, y, P) = B(t, P)*y + y * B(t,P)' - a(t, P)
+    dH⁺(t, y, P) = B(t, P)*y + (B(t, P)*y)' - a(t, P)
 #    dH(t, y, P) = - B(t, P)'*y - y * B(t,P) + y*a(t, P)*y'
 #    dF(t, y, (H,P)) = -B(t, P)'*y + H*a(t, P)*y  + H*β(t, P)
+    dC(t, (F, H), P) = dot(β(t, P), F)  + 0.5*dot(F, a(t, P)*F) - 0.5*tr(H*a(t, P))
+#    function dS(t, (ν, H⁺, C), P)
+#        H = inv(H⁺)
+#        b̃(t, ν, P), dH⁺(t, H⁺, P), dC(t, (H*ν, H), P)
+#    end
+
 
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
-        ν = kernelr3(b̃, t[i+1], ν, dt, P)
         H⁺ = kernelr3(dH⁺, t[i+1], H⁺, dt, P)
         #H = kernelr3(dH, t[i+1], H, dt, P)
-
-
-
         #F = kernelr3(dF, t[i+1], F, dt, (H,P))
-        F = Ht[i+1]*νt[i+1]
-        #@show F , Ht[i+1]*νt[i+1]
-        C += β(t[i+1], P)'*F*dt  + 0.5*F'*a(t[i+1], P)*F*dt - 0.5*tr(H*a(t[i+1], P))*dt
+        #ν, H⁺, C = kernelr3dot(dS, t[i+1], (ν, H⁺, C), dt, P)
 
-        νt[i] = ν
-        #@show H, inv(H⁺)
+        F = H*ν
+        C += dC(t[i+1], (F, H), P)*dt
+
+
+        νt[i] = ν = kernelr3(b̃, t[i+1], ν, dt, P)
         Ht[i] = H = inv(H⁺)
+
     end
 
     νt, Ht, C
