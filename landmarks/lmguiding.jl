@@ -1,6 +1,15 @@
 # compute guiding term: backward ode
 # compute likelihood of guided proposal
 
+# not sure about this
+function lmgpupdate(Lt, Mt, μt, Σ, L, v)
+    Lt = [Lt; L]
+    Mt = [Σ 0I; 0I Mt]
+    μt = [zero(size(L,2)); μt]
+end
+
+
+
 import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B!, σ!, b!
 
 """
@@ -26,10 +35,10 @@ end
 struct Lm  end
 
 function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (Lend, Mend⁺, μend))
-    Mt⁺[end], Lt[end] = Σ, L
-    BB = Matrix(Bridge.B(0, Paux)) # does not depend on time
-    aa = Matrix(Bridge.a(0, Paux)) # does not depend on time
-    β = vec(Bridge.β(0,Paux)) # does not depend on time
+    Mt⁺[end], Lt[end], μt[end] = Σend, Lend, μend
+    BB = deepmat(Bridge.B(0, Paux)) # does not depend on time
+    aa = deepmat(Bridge.a(0, Paux)) # does not depend on time
+    β = deepvec(Bridge.β(0,Paux)) # does not depend on time
     for i in length(t)-1:-1:1
         dt = t[i+1]-t[i]
         Lt[i] .=  Lt[i+1] * (I + BB * dt)

@@ -65,18 +65,39 @@ Computes solutions to backwards filtering odes for ν and H⁺ an an interval, s
 Initialisations for the odes on the right are given by νend and Hend⁺
 Writes ν and H⁺ into νt and H⁺t (for all elements in t) and returns ν and H⁺ at S+
 """
-function bucybackwards!(S::R3!, t, νt, H⁺t, Paux, νend, Hend⁺)
+function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, C, Paux, νend, Hend⁺)
     H⁺t[end] = Hend⁺
+    Ht[end] = InverseCholesky(lchol(H⁺))
     νt[end] = νend
     wsν = Bridge.workspace(S, νend)
     wsH⁺ = Bridge.workspace(S, Hend⁺)
+    b! = Arg4Closure(Bridge.b!, Paux)
+    dP! = Arg4Closure(Bridge.dP!, Paux)
     for i in length(t)-1:-1:1
         dt = t[i] - t[i+1]
-        kernelr3!(Arg4Closure(Bridge.b!, Paux), t[i+1], νt[i+1], wsν, νt[i], dt)
-        kernelr3!(Arg4Closure(Bridge.dP!, Paux), t[i+1], H⁺t[i+1], wsH⁺, H⁺t[i], dt)
+        kernelr3!(b!, t[i+1], νt[i+1], wsν, νt[i], dt)
+        kernelr3!(dP!, t[i+1], H⁺t[i+1], wsH⁺, H⁺t[i], dt)
+        Ht[i] = InverseCholesky(lchol(H⁺t[i]))
+        F = Ht[i+1]*νt[i+1]
+        C += -β(t, P)'*F*dt - 0.5*F'*a(t, P)*F*dt  -0.5*tr(Ht[i+1]*a(t, P)))*dt
     end
-    νt[1], H⁺t[1]
+    νt[1], H⁺t[1], Ht[1], C
 end
+#=
+
+struct MarcinRec! end
+
+function bucybackwards!(S::MarcinRec!, t, V, Vend)
+    V[end] .= V
+    ws = Bridge.workspace(S, V)
+
+    for i in length(t)-1:-1:1
+        dt = t[i] - t[i+1]
+        kernelr3!(marcinrec!, t[i+1], V[i+1], ws, V[i], dt)
+    end
+    V[1]
+end
+=#
 
 struct LRR end  # identifier to call Bucy backwards for low rank riccati
 

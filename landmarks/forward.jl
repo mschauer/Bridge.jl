@@ -16,11 +16,12 @@ using Base.Iterators
 using SparseArrays
 
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 TEST = false#true
 
-discrmethods = [:ralston, :lowrank, :psd]
-discrmethod = discrmethods[1]
+discrmethods = [:ralston, :lowrank, :psd, :lm, :marcin] # not a good name anymore
+discrmethod = discrmethods[5]
+LM = discrmethod == :lm
 
 obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
@@ -28,7 +29,7 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 4 # nr of landmarks
+n = 20 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = true #true#false # if cheat is true, then we initialise at x0 (true value) and
@@ -50,7 +51,11 @@ t = 0.0:0.01:T  # time grid
 include("state.jl")
 include("models.jl")
 include("patches.jl")
-include("guiding.jl")
+if discrmethod == :lm
+    include("lmguiding.jl")
+else
+    include("guiding.jl")
+end
 include("LowrankRiccati.jl")
 using .LowrankRiccati
 
@@ -105,62 +110,74 @@ tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 
 ####################
 if obsscheme==:partial
-  L = deepmat( [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n])
-  Σ = Diagonal(σobs^2*ones(n*d))
+    L = deepmat( [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n])
+    Σ = Diagonal(σobs^2*ones(n*d))
 
-  # observe positions
-  v0 = q(X.yy[1])  + σobs * randn(PointF,n)
-  rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-  vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
+    # observe positions
+    v0 = q(X.yy[1])  + σobs * randn(PointF,n)
+    rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
+    vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
 
-  Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
-  if cheat
-      Pahsaux = LandmarksAux(Pahs, X.yy[end])
-  else
-      Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
-      #Pahsaux = LandmarksAux(Pahs, State(vT, rand(PointF,Pahs.n)))
-  end
-end
-if obsscheme==:full
-  L = deepmat( [(i==j)*one(Unc) for i in 1:2n, j in 1:2n])
-  Σ = Diagonal(σobs^2*ones(2n*d))
-  Pmsaux = MarslandShardlowAux(Pms,X.yy[end])
-  Pahsaux = LandmarksAux(Pahs, X.yy[end])
-  v0 = vec(X.yy[1])
-  vT = vec(X.yy[end])
+    Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
+    if cheat
+        Pahsaux = LandmarksAux(Pahs, X.yy[end])
+    else
+        Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
+    #Pahsaux = LandmarksAux(Pahs, State(vT, rand(PointF,Pahs.n)))
+    end
+elseif obsscheme==:full
+    L = deepmat( [(i==j)*one(Unc) for i in 1:2n, j in 1:2n])
+    Σ = Diagonal(σobs^2*ones(2n*d))
+    Pmsaux = MarslandShardlowAux(Pms,X.yy[end])
+    Pahsaux = LandmarksAux(Pahs, X.yy[end])
+    v0 = vec(X.yy[1])
+    vT = vec(X.yy[end])
 end
 
 #Paux = (model==:ms) ? Pmsaux : Pahsaux
-
-
-
 # solve backward recursion on [0,T]
-# "old" choice (wrong)
-#νend = State(zero(vT), zero(vT))
-#Hend⁺ = [(i==j)*one(Unc)/ϵ for i in 1:2n, j in 1:2n]  # this is the precison
-# "right" choice
-if obsscheme==:partial
-    #νendT = State(zero(vT), zero(vT))
-    νendT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
-end
-if obsscheme==:full
-    νendT = X.yy[end]
-end
-HendT⁺ = reshape(zeros(Unc,4n^2),2n,2n)
-for i in 1:n
-    HendT⁺[2i-1,2i-1] = one(Unc)/ϵ  # high variance on positions
-    if discrmethod==:lowrank
-        HendT⁺[2i,2i] = one(Unc)*10^(-4) # still need to figure out why
+if LM
+
+    if obsscheme == :partial
+        Lend = L
+        Σend = Σ
+        μend = deepvec(zeros(PointF, n))
+        xobs = vT
+#        Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
+#        Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
     else
-        HendT⁺[2i,2i] = one(Unc)/10^(-4)
+        # full observation case
+#        L = [(i==j)*one(Unc) for i in 1:2n, j in 1:2n]
+#        Σ = [(i==j)*σobs^2*one(Unc) for i in 1:2n, j in 1:2n]
+        μend = zeros(PointF, 2n)
+#        xobs = vec(X.yy[end])
+#        Pahsaux = LandmarksAux(Pahs, X.yy[end])
+#        Pmsaux = MarslandShardlowAux(Pms, X.yy[end])
     end
+else
+
+    if obsscheme == :partial
+        #νendT = State(zero(vT), zero(vT))
+        νendT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
+    elseif obsscheme == :full
+        νendT = X.yy[end]
+    end
+    HendT⁺ = reshape(zeros(Unc,4n^2),2n,2n)
+    for i in 1:n
+        HendT⁺[2i-1,2i-1] = one(Unc)/ϵ  # high variance on positions
+        if discrmethod==:lowrank
+            HendT⁺[2i,2i] = one(Unc)*10^(-4) # still need to figure out why
+        else
+            HendT⁺[2i,2i] = one(Unc)/10^(-4)
+        end
+    end
+    #### perform gpupdate step
+    νendT , HendT⁺ = gpupdate(νendT,HendT⁺, Σ, L, vT)
+    νend = copy(νendT)
+    Hend⁺  = copy(HendT⁺)
+    Pahsaux = LandmarksAux(Pahs, copy(νend))   # this might be a good idea
+    Pmsaux = MarslandShardlowAux(Pms, copy(νend))   # this might be a good idea
 end
-#### perform gpupdate step
-νendT , HendT⁺ = gpupdate(νendT,HendT⁺, Σ, L, vT)
-νend = copy(νendT)
-Hend⁺  = copy(HendT⁺)
-Pahsaux = LandmarksAux(Pahs, copy(νend))   # this might be a good idea
-Pmsaux = MarslandShardlowAux(Pms, copy(νend))   # this might be a good idea
 
 if model == :ms
     Paux = Pmsaux
@@ -171,37 +188,57 @@ end
 
 # L, and Σ are ordinary matrices, vT an array of Points
 # νend is a state , Hend⁺ a  UncMat
+if LM
 
-νt =  [copy(νend) for s in tt_]
-println("Compute guiding term:")
-if discrmethod==:lowrank
-    M0 = eigen(deepmat(Hend⁺))
-    largest = sortperm(M0.values)[end-ldim+1:end]
-    Send = Matrix(Diagonal(M0.values[largest]))
-    Uend = M0.vectors[:,largest]
-    St = [copy(Send) for s in tt_]
-    Ut = [copy(Uend) for s in tt_]
-    @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
-    Hend⁺ = deepmat2unc(Uend * Send * Uend')
-    Ht = map((S,U) -> deepmat2unc(U * inv(S) * U'), St, Ut)  # directly compute Mt
-    #Ht = map((S,U) -> LowRank(S,U), St,Ut)
-end
-if discrmethod==:ralston
-    H⁺t = [copy(Hend⁺) for s in tt_]
-    @time νend , Hend⁺ = bucybackwards!(Bridge.R3!(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
-    Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
-end
-if discrmethod==:psd
-    H⁺t = [copy(Hend⁺) for s in tt_]
-    @time νend , Hend⁺ = bucybackwards!(Lyap(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
-#    println(map(x->isposdef(deepmat(x)),H⁺t))
-    Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
-end
+    # initialise Lt and M⁺t
+    Lt =  [copy(Lend) for s in tt_]
+    Mt⁺ = [Matrix(Σend) for s in tt_]
+    μt = [copy(μend) for s in tt_]
+    println("compute guiding term:")
+    @time (Lend, Mend⁺, μend) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (L, Σ, μend))
 
-Q = GuidedProposal!(P, Paux, tt_, νt, Ht)
+    # issymmetric(deepmat(Bridge.a(0,Paux)))
+    # isposdef(deepmat(Bridge.a(0,Paux)))
+    # map(x->minimum(eigen(deepmat(x)).values),Mt⁺)
+    #Mt = map(X -> deepmat2unc(inv(deepmat(X))),Mt⁺)
+    println("Compute Cholesky for Mt⁺:")
+    @time Mt = map(X -> InverseCholesky(lchol(X)),Mt⁺)
+
+    Q = GuidedProposall!(P, Paux, tt_, Lt, Mt, μt, xobs)
+    (Lstart, Mstart⁺, μstart) = lmgpupdate(Lend, Mend⁺, μend, Σ, L, v0)
+    xinit = x0
+
+else
+    νt =  [copy(νend) for s in tt_]
+    println("Compute guiding term:")
+    if discrmethod==:lowrank
+        M0 = eigen(deepmat(Hend⁺))
+        largest = sortperm(M0.values)[end-ldim+1:end]
+        Send = Matrix(Diagonal(M0.values[largest]))
+        Uend = M0.vectors[:,largest]
+        St = [copy(Send) for s in tt_]
+        Ut = [copy(Uend) for s in tt_]
+        @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
+        Hend⁺ = deepmat2unc(Uend * Send * Uend')
+        Ht = map((S,U) -> deepmat2unc(U * inv(S) * U'), St, Ut)  # directly compute Mt
+        #Ht = map((S,U) -> LowRank(S,U), St,Ut)
+    elseif discrmethod==:ralston
+        H⁺t = [copy(Hend⁺) for s in tt_]
+        @time νend , Hend⁺ = bucybackwards!(Bridge.R3!(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
+        Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
+    elseif discrmethod==:psd
+        H⁺t = [copy(Hend⁺) for s in tt_]
+        @time νend , Hend⁺ = bucybackwards!(Lyap(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
+    #    println(map(x->isposdef(deepmat(x)),H⁺t))
+        Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
+    end
+
+    Q = GuidedProposal!(P, Paux, tt_, νt, Ht)
+
 # careful, not a state
-νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, v0)
-xinit = cheat ? x0 : νstart  # or xinit ~ N(νstart, Hstart⁺)
+    νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, v0)
+    xinit = cheat ? x0 : νstart  # or xinit ~ N(νstart, Hstart⁺)
+end
 winit = zeros(StateW, dwiener)
 XX = SamplePath(tt_, [copy(xinit) for s in tt_])
 WW = SamplePath(tt_, [copy(winit) for s in tt_])
@@ -215,6 +252,7 @@ include("plotlandmarks.jl")
 if model==:ms
     @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
 end
+error("STOP")
 
 using ForwardDiff
 dual(x, i, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(i))

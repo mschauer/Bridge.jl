@@ -76,7 +76,7 @@ end
 
 # kernel for noisefields
 function K̄(q,τ)
-     exp(-norm(q)^2/(2*τ^2))# (2*π*τ^2)^(-d/2)*exp(-norm(x)^2/(2*τ^2))
+     exp(-Bridge.inner(q)/(2*τ^2))# (2*π*τ^2)^(-d/2)*exp(-norm(x)^2/(2*τ^2))
 end
 # gradient of kernel for noisefields
 function ∇K̄(q,τ)
