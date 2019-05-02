@@ -9,7 +9,7 @@ end
 function updateC(L, Σ, v, C = 0.0)
     m, d = size(L)
     C += 0.5 * dot(v, Σ\v)
-    C += length(m)/2*log(2pi) + 0.5*logdet(Σ)
+    C += m/2*log(2pi) + 0.5*logdet(Σ)
     C
 end
 function updateνH⁺C(L, Σ, v, ϵ)
