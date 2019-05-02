@@ -16,7 +16,7 @@ using Base.Iterators
 using SparseArrays
 
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd, :lm, :marcin] # not a good name anymore
@@ -29,16 +29,17 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 10 # nr of landmarks
+n = 20 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
-θ = -π/6# π/6 0#π/5  # angle to rotate endpoint
+θ = 0.0 #-π/6# π/6 0#π/5  # angle to rotate endpoint
+
 
 ϵ = 10.0^(-4)   # parameter for initialising Hend⁺
-σobs = 10.0^(-3)   # noise on observations
+σobs = 10.0^(-2)   # noise on observations
 
 println(model)
 println(discrmethod)
@@ -294,10 +295,13 @@ end
 
 let
     x = deepvec(xinit)
-    ϵ = 1e-5
-    for i in 1:100
+    # only optimize momenta
+    mask = deepvec(State( 0*xinit.q, 1 .- 0*(xinit.q)))
+    ϵ = 1.5
+
+    for i in 1:1000
         ∇x = ForwardDiff.gradient(obj, x)
-        x .+= ϵ*∇x
+        x .+= ϵ*mask.*∇x
         println(deepvec2state(x-deepvec(X.yy[1])))
     end
 end

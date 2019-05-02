@@ -106,7 +106,8 @@ function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, Paux, ν, H⁺, C)
         F = Ht[i+1]*νt[i+1]
         C += -dot(Bridge.β(t, Paux),F)*dt
         C += - 0.5*dot(F, Bridge.a(t, Paux)*F)*dt
-        C += -0.5*tr(tr(Ht[i+1]*Bridge.a(t, Paux)))*dt
+        C += -0.5*tr(tr(Ht[i+1]*Matrix(Bridge.a(t, Paux))))*dt
+        # FIXME converting to full
     end
     νt[1], H⁺t[1], Ht[1], C
 end
@@ -233,7 +234,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
 
             σt!(s, x, rout, srout, target(Q))
             σt!(s, x, rout, strout, auxiliary(Q))
-
+            error("NOT IMPLEMENTED YET")
             #Δa = Bridge.a(s, x, target(Q)) - Bridge.a(s,  auxiliary(Q))
             #H = Bridge.H((i,s), x, auxiliary(Q))
             # som -= 0.5*tr(Δa*H) * dt

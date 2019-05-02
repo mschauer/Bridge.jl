@@ -98,8 +98,8 @@ deepvec(x::Vector) = collect(flatten(x))
 
 
 # matrix multiplication of mat of Uncs
-function Base.:*(A::AbstractArray{Unc,2},B::AbstractArray{Unc,2})
-    C = zeros(Unc,size(A,1), size(B,2))
+function Base.:*(A::AbstractArray{Unc{T},2},B::AbstractArray{Unc{T},2}) where {T}
+    C = zeros(Unc{T},size(A,1), size(B,2))
     for i in 1:size(A,1)
         for j in 1:size(B,2)
             for k in 1:size(A,2)
@@ -136,11 +136,16 @@ end
 # end
 
 
-function Base.:*(A::Array{<:Unc,2}, x::State)
+function Base.:*(A::AbstractArray{<:Unc,2}, x::State)
     vecofpoints2state(A*vec(x))
 end
-
-
+function Base.:*(A::SparseMatrixCSC, x_::State)
+    #vecofpoints2state(Array(A)*vec(x))
+    x = vec(x_)
+    vecofpoints2state(mul!(similar(x, A.m), A, x, true, false))
+end
+#mul!(similar(x, Tx, A.m), A, x, true, false)
+#Base.setindex!(A::SparseMatrixCSC{T}, _v::T, _i::Integer, _j::Integer) where {T} = SparseArrays._setindex_scalar!(A, _v, _i, _j)
 
 if TEST
     A = reshape(rand(Unc,6),3,2)

@@ -142,7 +142,7 @@ function Bridge.b!(t, x, out, P::Landmarks)
             out.p[i] +=  -dot(p(x,i), p(x,j)) * ∇kernel(q(x,i) - q(x,j), P)
         end
         if itostrat
-            global ui = zero(Unc)
+            global ui = zero(Unc{Float64})
             for k in 1:length(P.nfs)
                 nf = P.nfs[k]
                 ui += 0.5 * nf.τ^(-2) * diagm(0 =>nf.λ.^2) * K̄(q(x,i)-nf.δ,nf.τ)^2
@@ -183,7 +183,7 @@ function Bridge.b!(t, x, out, Paux::LandmarksAux)
             # out.p[i] +=   -P.λ*0.5*p(x,j)*kernel(q(P.xT,i) - q(P.xT,j), P)
             #     -0.5* dot(p(P.xT,i), p(P.xT,j)) * ∇kernel(q(x,i) - q(x,j),q(P.xT,i) - q(P.xT,j), P)
         if itostrat
-            global ui = zero(Unc)
+            global ui = zero(Unc{Float64})
             for k in 1:length(P.nfs)
                 nf = P.nfs[k]
                 ui = 0.5 * nf.τ^(-2) * diagm(0 =>nf.λ.^2) * K̄(q(Paux.xT,i)-nf.δ,nf.τ)^2
@@ -202,17 +202,17 @@ Compute tildeB(t) for landmarks auxiliary process
 function Bridge.B(t, Paux::MarslandShardlowAux)
     Iind = Int[]
     Jind = Int[]
-    X = Unc[]
+    X = Unc{Float64}[]
     for i in 1:Paux.n
         for j in 1:Paux.n
             # terms for out.q[i]
             push!(Iind, 2i - 1)
             push!(Jind, 2j)
-            push!(X, kernel(q(Paux.xT,i) - q(Paux.xT,j), P)*one(Unc))
+            push!(X, kernel(q(Paux.xT,i) - q(Paux.xT,j), P)*one(Unc{Float64}))
 
             push!(Iind,2i)
             push!(Jind,2j)
-            push!(X,  -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc))
+            push!(X,  -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc{Float64}))
         end
     end
     sparse(Iind, Jind, X, 2Paux.n, 2Paux.n)
@@ -224,19 +224,19 @@ Compute tildeB(t) for landmarks auxiliary process
 function Bridge.B(t, Paux::LandmarksAux)
     Iind = Int[]
     Jind = Int[]
-    X = Unc[]
+    X = Unc{Float64}[]
     for i in 1:Paux.n
         for j in 1:Paux.n
             # terms for out.q[i]
             push!(Iind, 2i - 1)
             push!(Jind, 2j)
-            push!(X, kernel(q(Paux.xT,i) - q(Paux.xT,j), P)*one(Unc))
+            push!(X, kernel(q(Paux.xT,i) - q(Paux.xT,j), P)*one(Unc{Float64}))
 
             if itostrat
-                global out1 = zero(Unc)
+                global out1 = zero(Unc{Float64})
                 for k in 1:length(Paux.nfs)
                     nf = P.nfs[k]
-                    out1 -= 0.5 * nf.τ^(-2) * Unc(diagm(0 =>nf.λ.^2)) *  K̄(q(Paux.xT,i)-nf.δ,nf.τ)^2
+                    out1 -= 0.5 * nf.τ^(-2) * Unc{Float64}(diagm(0 =>nf.λ.^2)) *  K̄(q(Paux.xT,i)-nf.δ,nf.τ)^2
                 end
                 push!(Iind, 2i - 1)
                 push!(Jind, 2j - 1)
@@ -270,7 +270,7 @@ function Bridge.B!(t,X,out, Paux::MarslandShardlowAux)
         for k in 1:2Paux.n # loop over all columns
             for j in 1:Paux.n
                  out[2i-1,k] += kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*X[p(j), k] #*one(Unc)
-                 out[2i,k] += -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc)*X[p(j), k] #*one(Unc)
+                 out[2i,k] += -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(Unc{Float64})*X[p(j), k] #*one(Unc)
                 # if j==i
                 #    out[2i,k] +=  X[q(j),k] *sum([1/(2*Paux.a) * dot(p(Paux.xT,i), p(Paux.xT,j)) *
                 #                         kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)  for j in setdiff(1:Paux.n,i)])*one(Unc)
@@ -398,11 +398,11 @@ Returns matrix a(t) for Marsland-Shardlow model
 """
 function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
     I = Int[]
-    X = Unc[]
+    X = Unc{Float64}[]
     γ2 = P.γ^2
     for i in 1:P.n
             push!(I, 2i)
-            push!(X, γ2*one(Unc))
+            push!(X, γ2*one(Unc{Float64}))
     end
     sparse(I, I, X, 2P.n, 2P.n)
 end
