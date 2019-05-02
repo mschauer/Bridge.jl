@@ -20,7 +20,7 @@ model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd, :lm, :marcin] # not a good name anymore
-discrmethod = discrmethods[5]
+discrmethod = discrmethods[1]
 LM = discrmethod == :lm
 
 obsschemes =[:full, :partial]
@@ -29,10 +29,10 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 20 # nr of landmarks
+n = 10 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
-cheat = true #true#false # if cheat is true, then we initialise at x0 (true value) and
+cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
 # construct the guiding term based on xT (true value)
 
 θ = -π/6# π/6 0#π/5  # angle to rotate endpoint
@@ -62,7 +62,8 @@ using .LowrankRiccati
 
 ### Specify landmarks models
 a = 3.0 # the larger, the stronger landmarks behave similarly
-λ = 0.0; #= not the lambda of noise fields  =# γ = 8.0
+λ = 0.0; #= not the lambda of noise fields  =#
+γ = 8.0
 db = 3.0 # domainbound
 nfstd = .5 # tau , widht of noisefields
 r1 = -db:nfstd:db
@@ -157,26 +158,27 @@ if LM
 else
 
     if obsscheme == :partial
-        #νendT = State(zero(vT), zero(vT))
-        νendT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
+        #νT = State(zero(vT), zero(vT))
+        νT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
     elseif obsscheme == :full
-        νendT = X.yy[end]
+        νT = X.yy[end]
     end
-    HendT⁺ = reshape(zeros(Unc,4n^2),2n,2n)
+    HT⁺ = reshape(zeros(Unc,4n^2),2n,2n)
     for i in 1:n
-        HendT⁺[2i-1,2i-1] = one(Unc)/ϵ  # high variance on positions
+        HT⁺[2i-1,2i-1] = one(Unc)/ϵ  # high variance on positions
         if discrmethod==:lowrank
-            HendT⁺[2i,2i] = one(Unc)*10^(-4) # still need to figure out why
+            HT⁺[2i,2i] = one(Unc)*10^(-4) # still need to figure out why
         else
-            HendT⁺[2i,2i] = one(Unc)/10^(-4)
+            HT⁺[2i,2i] = one(Unc)/10^(-4)
         end
     end
     #### perform gpupdate step
-    νendT , HendT⁺ = gpupdate(νendT,HendT⁺, Σ, L, vT)
-    νend = copy(νendT)
-    Hend⁺  = copy(HendT⁺)
-    Pahsaux = LandmarksAux(Pahs, copy(νend))   # this might be a good idea
-    Pmsaux = MarslandShardlowAux(Pms, copy(νend))   # this might be a good idea
+    νT , HT⁺, CT = gpupdate(νT, HT⁺, 0.0, Σ, L, vT)
+    C = CT
+    ν = copy(νT)
+    H⁺  = copy(HT⁺)
+    Pahsaux = LandmarksAux(Pahs, copy(ν))   # this might be a good idea
+    Pmsaux = MarslandShardlowAux(Pms, copy(ν))   # this might be a good idea
 end
 
 if model == :ms
@@ -187,7 +189,7 @@ end
 
 
 # L, and Σ are ordinary matrices, vT an array of Points
-# νend is a state , Hend⁺ a  UncMat
+# ν is a state , H⁺ a  UncMat
 if LM
 
     # initialise Lt and M⁺t
@@ -209,35 +211,41 @@ if LM
     xinit = x0
 
 else
-    νt =  [copy(νend) for s in tt_]
+    νt =  [copy(ν) for s in tt_]
     println("Compute guiding term:")
     if discrmethod==:lowrank
-        M0 = eigen(deepmat(Hend⁺))
+        M0 = eigen(deepmat(H⁺))
         largest = sortperm(M0.values)[end-ldim+1:end]
-        Send = Matrix(Diagonal(M0.values[largest]))
-        Uend = M0.vectors[:,largest]
-        St = [copy(Send) for s in tt_]
-        Ut = [copy(Uend) for s in tt_]
-        @time νend, (Send, Uend) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, νend, (Send, Uend))
-        Hend⁺ = deepmat2unc(Uend * Send * Uend')
+        S = Matrix(Diagonal(M0.values[largest]))
+        U = M0.vectors[:,largest]
+        St = [copy(S) for s in tt_]
+        Ut = [copy(U) for s in tt_]
+        @time ν, (S, U) = bucybackwards!(LRR(), tt_, νt, (St, Ut), Paux, ν, (S, U))
+        H⁺ = deepmat2unc(U * S * U')
         Ht = map((S,U) -> deepmat2unc(U * inv(S) * U'), St, Ut)  # directly compute Mt
         #Ht = map((S,U) -> LowRank(S,U), St,Ut)
     elseif discrmethod==:ralston
-        H⁺t = [copy(Hend⁺) for s in tt_]
-        @time νend , Hend⁺ = bucybackwards!(Bridge.R3!(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
-        Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
+        H⁺t = [copy(H⁺) for s in tt_]
+        Ht = map(H⁺ -> InverseCholesky(lchol(H⁺ + I)), H⁺t)
+        @time ν , H⁺, H, C = bucybackwards!(Bridge.R3!(), tt_, νt, H⁺t, Ht, Paux, ν, H⁺, C)
+#        Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
     elseif discrmethod==:psd
-        H⁺t = [copy(Hend⁺) for s in tt_]
-        @time νend , Hend⁺ = bucybackwards!(Lyap(), tt_, νt, H⁺t, Paux, νend, Hend⁺)
+        H⁺t = [copy(H⁺) for s in tt_]
+        @time ν , H⁺, C = bucybackwards!(Lyap(), tt_, νt, H⁺t, Paux, ν, H⁺)
     #    println(map(x->isposdef(deepmat(x)),H⁺t))
         Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
     end
 
-    Q = GuidedProposal!(P, Paux, tt_, νt, Ht)
 
 # careful, not a state
-    νstart , Hstart⁺ = gpupdate(νend , Hend⁺, Σ, L, v0)
-    xinit = cheat ? x0 : νstart  # or xinit ~ N(νstart, Hstart⁺)
+    νstart , Hstart⁺, C = gpupdate(ν , H⁺, C, Σ, L, v0)
+
+    #also update C??
+
+    Q = GuidedProposal!(P, Paux, tt_, νt, Ht, C)
+
+    xinit = cheat ? x0 : State(νstart.q, 0νstart.q)#νstart  # or xinit ~ N(νstart, Hstart⁺)
+
 end
 winit = zeros(StateW, dwiener)
 XX = SamplePath(tt_, [copy(xinit) for s in tt_])
@@ -252,12 +260,11 @@ include("plotlandmarks.jl")
 if model==:ms
     @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
 end
-error("STOP")
 
 using ForwardDiff
 dual(x, i, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(i))
 dual(x, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(0))
-
+#=
 #using Flux
 xinitv = deepvec(xinit)
 
@@ -275,22 +282,22 @@ import Bridge;
 #include(joinpath(dirname(pathof(Bridge)), "..", "landmarks/models.jl"))
 
 XX = Bridge.solve(EulerMaruyama!(), xinitnew, WW, P)
-
+=#
 
 
 function obj(xinitv)
     xinit = deepvec2state(xinitv)
     sample!(WW, Wiener{Vector{StateW}}())
     XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
-    llikelihood(LeftRule(), XXᵒ, Q; skip = 0)
+    lptilde(xinit, Q) + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
 end
 
 let
     x = deepvec(xinit)
-    ϵ = 1e-7
-    for i in 1:1000
+    ϵ = 1e-5
+    for i in 1:100
         ∇x = ForwardDiff.gradient(obj, x)
         x .+= ϵ*∇x
-        println(deepvec2state(x))
+        println(deepvec2state(x-deepvec(X.yy[1])))
     end
 end

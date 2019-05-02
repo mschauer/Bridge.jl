@@ -16,24 +16,49 @@ function gpupdate(ν, P, Σ, L, v)
     end
 end
 
+function gpupdate(ν, P, C, Σ, L, v)
+    m, d = size(L)
+    @assert m == length(v)
+    if all(diag(P) .== Inf)
+        P_ = inv(L' * inv(Σ) * L)
+        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        C += 0.5 * dot(v, Σ\v)
+        C += length(v)/2*log(2π) + 0.5*logdet(Σ)
+        return V_, P_, C
+    else
+        Z = I - P*L'*inv(Σ + L*P*L')*L
+        C += 0.5 * dot(v, Σ\v)
+        C += length(v)/2*log(2π) + 0.5*logdet(Σ)
+        return Z*P*L'*inv(Σ)*v + Z*ν, Z*P, C
+
+    end
+end
+
 
 """
 (ν, P) are the values just to the right of time T,
 (Σ, L, v) are the noise covariance, observations matrix L and observation at time T
 """
-function gpupdate(ν2::State, P2, Σ, L, v2::Vector{<:Point})
+function gpupdate(ν2::State, P2, C, Σ, L, v2::Vector{<:Point})
+
     ν = deepvec(ν2)
     P = deepmat(P2)
     v = reinterpret(Float64,v2)
     if all(diag(P) .== Inf)
         P_ = inv(L' * inv(Σ) * L)
-        V_ = (L' * inv(Σ) * L)\(L' * inv(Σ) *  v)
+        Σᴵv = inv(Σ) * v
+        V_ = (L' * inv(Σ) * L)\(L' * Σᴵv)
         # P_ = inv(L' * inv(Σ) * L + 10^(-6)*I)
         # V_ = P_ * L' * inv(Σ) * v
-        return deepvec2state(V_), deepmat2unc(P_)
+        C += 0.5 * dot(v, Σᴵv)
+        C += length(v)/2*log(2π) + 0.5*logdet(Σ)
+        return deepvec2state(V_), deepmat2unc(P_), C
     else
-         Z = I - P*L'*inv(Σ + L*P*L')*L
-        return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P)
+        Z = I - P*L'*inv(Σ + L*P*L')*L
+        C += 0.5 * dot(v, Σ\v)
+        C += length(v)/2*log(2π) + 0.5*logdet(Σ)
+
+        return deepvec2state(Z*P*L'*inv(Σ)*v + Z*ν), deepmat2unc(Z*P), C
          # P_ = inv(L' * inv(Σ) * L + inv(P))
          # V_ = P_ * L' * inv(Σ) * v + P_ * inv(P) * ν
          # return deepvec2state(V_), deepmat2unc(P_)
@@ -61,16 +86,16 @@ end
 # Bridge.workspace(::Bridge.R3!, y) = (copy(y), copy(y), copy(y), copy(y))
 
 """
-Computes solutions to backwards filtering odes for ν and H⁺ an an interval, say (S,T].
-Initialisations for the odes on the right are given by νend and Hend⁺
-Writes ν and H⁺ into νt and H⁺t (for all elements in t) and returns ν and H⁺ at S+
+Computes solutions to backwards filtering odes for ν and H⁺ and an interval, say (S,T].
+Initialisations for the odes on the right are given by arguments ν, H⁺, C
+Writes ν and H⁺ into νt and H⁺t (for all elements in t) and returns ν, H⁺, H, C at S+
 """
-function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, C, Paux, νend, Hend⁺)
-    H⁺t[end] = Hend⁺
+function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, Paux, ν, H⁺, C)
+    H⁺t[end] = H⁺
     Ht[end] = InverseCholesky(lchol(H⁺))
-    νt[end] = νend
-    wsν = Bridge.workspace(S, νend)
-    wsH⁺ = Bridge.workspace(S, Hend⁺)
+    νt[end] = ν
+    wsν = Bridge.workspace(S, ν)
+    wsH⁺ = Bridge.workspace(S, H⁺)
     b! = Arg4Closure(Bridge.b!, Paux)
     dP! = Arg4Closure(Bridge.dP!, Paux)
     for i in length(t)-1:-1:1
@@ -79,25 +104,13 @@ function bucybackwards!(S::R3!, t, νt, H⁺t, Ht, C, Paux, νend, Hend⁺)
         kernelr3!(dP!, t[i+1], H⁺t[i+1], wsH⁺, H⁺t[i], dt)
         Ht[i] = InverseCholesky(lchol(H⁺t[i]))
         F = Ht[i+1]*νt[i+1]
-        C += -β(t, P)'*F*dt - 0.5*F'*a(t, P)*F*dt  -0.5*tr(Ht[i+1]*a(t, P)))*dt
+        C += -dot(Bridge.β(t, Paux),F)*dt
+        C += - 0.5*dot(F, Bridge.a(t, Paux)*F)*dt
+        C += -0.5*tr(tr(Ht[i+1]*Bridge.a(t, Paux)))*dt
     end
     νt[1], H⁺t[1], Ht[1], C
 end
-#=
 
-struct MarcinRec! end
-
-function bucybackwards!(S::MarcinRec!, t, V, Vend)
-    V[end] .= V
-    ws = Bridge.workspace(S, V)
-
-    for i in length(t)-1:-1:1
-        dt = t[i] - t[i+1]
-        kernelr3!(marcinrec!, t[i+1], V[i+1], ws, V[i], dt)
-    end
-    V[1]
-end
-=#
 
 struct LRR end  # identifier to call Bucy backwards for low rank riccati
 
@@ -138,19 +151,22 @@ end
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
-struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,F} <: ContinuousTimeProcess{T}
+struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,TC,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
     ν::Vector{Tν}
     H::Vector{TH}
+    C::TC
     endpoint::F
 
-    function GuidedProposal!(target, aux, tt_, ν, H, endpoint=Bridge.endpoint)
+    function GuidedProposal!(target, aux, tt_, ν, H, C, endpoint=Bridge.endpoint)
         tt = collect(tt_)
-        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(endpoint)}(target, aux, tt, ν, H, endpoint)
+        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, C, endpoint)
     end
 end
+Bridge.lptilde(x, Po::GuidedProposal!) = -0.5*dot(x0, Po.H[1]*x0) - 2dot(x0, Po.H[1]*Po.ν[1]) - Po.C
+
 
 function Bridge._b!((i,t), x, out, P::GuidedProposal!)
     Bridge.b!(t, x, out, P.target)

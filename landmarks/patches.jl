@@ -125,6 +125,68 @@ function LinearAlgebra.naivesub!(At::Adjoint{<:Any,<:LowerTriangular}, b::Abstra
     x
 end
 
+function LinearAlgebra.naivesub!(At::Adjoint{<:Any,<:LowerTriangular}, B::AbstractMatrix, X::AbstractMatrix = B)
+    A = At.parent
+    n = size(A, 2)
+    if !(n == size(B,1) == size(B,2) == size(X,1) == size(X,2))
+        throw(DimensionMismatch())
+    end
+    @inbounds for k in 1:n
+        for j in n:-1:1
+            iszero(A.data[j,j]) && throw(SingularException(j))
+            xjk = X[j,k] = A.data[j,j] \ B[j,k]
+            for i in j-1:-1:1 # counterintuitively 1:j-1 performs slightly better
+                B[i,k] -= A.data[j,i] * xjk
+            end
+        end
+    end
+    X
+end
+
+function LinearAlgebra.naivesub!(A::LowerTriangular, B::AbstractMatrix, X::AbstractMatrix = B)
+    n = size(A,2)
+    if !(n == size(B,1) == size(X,1))
+        throw(DimensionMismatch())
+    end
+    if !(size(B,2) == size(X,2))
+        throw(DimensionMismatch())
+    end
+
+
+    @inbounds for k in 1:size(B,2)
+        for j in 1:n
+            iszero(A.data[j,j]) && throw(SingularException(j))
+            xjk = X[j,k] = A.data[j,j] \ B[j,k]
+            for i in j+1:n
+                B[i,k] -= A.data[i,j] * xjk
+            end
+        end
+    end
+    X
+end
+
+
+function LinearAlgebra.naivesub!(A::UpperTriangular, B::AbstractMatrix, X::AbstractMatrix = B)
+    n = size(A, 2)
+    if !(n == size(B,1) == size(X,1))
+        throw(DimensionMismatch())
+    end
+    if !(size(B,2) == size(X,2))
+        throw(DimensionMismatch())
+    end
+
+    @inbounds for k in 1:size(B, 2)
+        for j in n:-1:1
+            iszero(A.data[j,j]) && throw(SingularException(j))
+            xjk = X[j,k] = A.data[j,j] \ B[j,k]
+            for i in j-1:-1:1 # counterintuitively 1:j-1 performs slightly better
+                B[i,k] -= A.data[i,j] * xjk
+            end
+        end
+    end
+    X
+end
+
 function lyapunovpsdbackward_step!(t, dt, Paux,Hend⁺,H⁺)
     B = Matrix(Bridge.B(t - dt/2, Paux))
     ϕ = (I + 1/2*dt*B)\(I - 1/2*dt*B)
