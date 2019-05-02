@@ -29,7 +29,7 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 10 # nr of landmarks
+n = 40 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
@@ -45,10 +45,10 @@ println(model)
 println(discrmethod)
 println(obsscheme)
 
-T = 0.8#1.0#0.5
-t = 0.0:0.003:T  # time grid
+T = 0.4#1.0#0.5
+t = 0.0:0.01:T  # time grid
 
-#Random.seed!(5)
+Random.seed!(5)
 include("state.jl")
 include("models.jl")
 include("patches.jl")
@@ -239,11 +239,11 @@ else
 
 
 # careful, not a state
-    νstart , Hstart⁺, C = gpupdate(ν , H⁺, C, Σ, L, v0)
+    νstart , Hstart⁺, Cstart = gpupdate(ν , H⁺, C, Σ, L, v0)
 
     #also update C??
 
-    Q = GuidedProposal!(P, Paux, tt_, νt, Ht, C)
+    Q = GuidedProposal!(P, Paux, tt_, νt, Ht, νstart, InverseCholesky(lchol(Hstart⁺)), Cstart)
 
     xinit = cheat ? x0 : State(νstart.q, 0νstart.q)#νstart  # or xinit ~ N(νstart, Hstart⁺)
 
@@ -292,19 +292,37 @@ function obj(xinitv)
     XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
     lptilde(xinit, Q) + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
 end
-
+using Makie, Random
+Random.seed!(2)
 let
     x = deepvec(x0)
-    x = x .* (1 .+ 0.2*randn(length(x)))
+    #x = deepvec(State(x0.q, 0.5 * x0.p))
+    x = x .* (1 .+ 1*randn(length(x)))
+    s = deepvec2state(x)
+
+    n = Node(s.q)
+    n2 = Node(s.p)
+    sc = scatter(x0.q, color=:red)
+
+    scatter!(sc, n2)
+    scatter!(sc, n, color=:blue)
+    display(sc)
+
     # only optimize momenta
-    mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.q)))
-    ϵ = 1.2e-4
+    mask = deepvec(State(1 .- 0*xinit.q, 20 .- 0*(xinit.p)))
+    ϵ = 6.e-6
     o =  obj(x)
-    for i in 1:1000
-        i % 10 == 0 && (o =  obj(x))
-        ∇x = ForwardDiff.gradient(obj, x)
-        x .+= ϵ*mask.*∇x
-        display(deepvec2state(x-deepvec(x0)))
-        println("d(x,xtrue) = ", norm(deepvec(x0)-x), " ", o)
+    #for i in 1:1000
+    record(sc, "output/gradientdescent.mp4", 1:100) do i
+        #i % 10 == 0 && (o =  obj(x))
+        for k in 1:4
+            ∇x = ForwardDiff.gradient(obj, x)
+            x .+= ϵ*mask.*∇x
+        end
+        s = deepvec2state(x)
+        n[] = s.q
+        n2[] = s.p
+        display(s-x0)
+        println("$i d(x,xtrue) = ", norm(deepvec(x0)-x))#, " ", o)
     end
 end

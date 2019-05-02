@@ -79,7 +79,7 @@ function dP!(t, p, out, P::Union{LandmarksAux, MarslandShardlowAux})
     out .= out .+ out' - a(t, P)
     out
 end
-    
+
 # """
 # Make a 4-tuple where each tuple contains a copy of y
 # """
@@ -158,16 +158,18 @@ struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,TC,F} <: ContinuousTimeProcess{T}
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
     ν::Vector{Tν}
     H::Vector{TH}
-    C::TC
+    ν0::Tν
+    H0::TH
+    C0::TC
     endpoint::F
 
-    function GuidedProposal!(target, aux, tt_, ν, H, C, endpoint=Bridge.endpoint)
+    function GuidedProposal!(target, aux, tt_, ν, H, ν0, H0, C0, endpoint=Bridge.endpoint)
         tt = collect(tt_)
-        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, C, endpoint)
+        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, ν0, H0, C0, endpoint)
     end
 end
 
-Bridge.lptilde(x, Po::GuidedProposal!) = -0.5*(dot(x, Po.H[1]*x) - 2dot(x, Po.H[1]*Po.ν[1])) - Po.C
+Bridge.lptilde(x, Po::GuidedProposal!) = -0.5*(dot(x, Po.H0*x) - 2dot(x, Po.H0*Po.ν0)) - Po.C0
 
 
 function Bridge._b!((i,t), x, out, P::GuidedProposal!)
