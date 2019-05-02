@@ -79,7 +79,7 @@ function dP!(t, p, out, P::Union{LandmarksAux, MarslandShardlowAux})
     out .= out .+ out' - a(t, P)
     out
 end
-
+    
 # """
 # Make a 4-tuple where each tuple contains a copy of y
 # """

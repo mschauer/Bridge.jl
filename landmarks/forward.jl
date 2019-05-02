@@ -29,7 +29,7 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 20 # nr of landmarks
+n = 10 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
@@ -294,16 +294,17 @@ function obj(xinitv)
 end
 
 let
-    x = deepvec(xinit)
+    x = deepvec(x0)
+    x = x .* (1 .+ 0.2*randn(length(x)))
     # only optimize momenta
-    mask = deepvec(State( 0*xinit.q, 1 .- 0*(xinit.q)))
-    ϵ = 0.5
+    mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.q)))
+    ϵ = 1.2e-4
     o =  obj(x)
     for i in 1:1000
         i % 10 == 0 && (o =  obj(x))
         ∇x = ForwardDiff.gradient(obj, x)
         x .+= ϵ*mask.*∇x
-        display(deepvec2state(x-deepvec(X.yy[1])).p)
-        println(o)
+        display(deepvec2state(x-deepvec(x0)))
+        println("d(x,xtrue) = ", norm(deepvec(x0)-x), " ", o)
     end
 end
