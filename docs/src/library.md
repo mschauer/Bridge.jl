@@ -55,6 +55,7 @@ Bridge.NoDrift
 Bridge.R3!
 Bridge.σ!
 Bridge.b!
+Bridge.kernelr3!
 ```
 
 ## Levy processes
