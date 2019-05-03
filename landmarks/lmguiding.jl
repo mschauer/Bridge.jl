@@ -26,14 +26,26 @@ end
 struct Lm  end
 
 function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (Lend, Mend⁺, μend))
-    Mt⁺[end], Lt[end] = Σ, L
+    Mt⁺[end] .= Σ
+    Lt[end] .= L
     BB = Matrix(Bridge.B(0, Paux)) # does not depend on time
-    aa = Matrix(Bridge.a(0, Paux)) # does not depend on time
+    println("computing ã and its low rank approximation:")
+    # various ways to compute ã (which does not depend on time);
+    # low rank appoximation really makes sense here
+#   @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
+#   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
+#   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
+    @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-7)  # control accuracy of lr approx
+    println("Rank ",size(aalr[:vectors],2), " approximation to ã")
+    sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
+
     β = vec(Bridge.β(0,Paux)) # does not depend on time
     for i in length(t)-1:-1:1
         dt = t[i+1]-t[i]
-        Lt[i] .=  Lt[i+1] * (I + BB * dt)
-        Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
+#       Lt[i] .=  Lt[i+1] * (I + BB * dt)  # explicit
+        Lt[i] .= Lt[i+1]/(I - dt* BB)  # implicit, similar computational cost
+#       Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
+        Mt⁺[i] .= Mt⁺[i+1] + Bridge.outer(Lt[i+1] * sqrt_aalr) * dt
         μt[i] .=  μt[i+1] + Lt[i+1] * β * dt
     end
     (Lt[1], Mt⁺[1], μt[1])
@@ -45,7 +57,7 @@ auxiliary(Q::GuidedProposall!) = Q.aux
 constdiff(Q::GuidedProposall!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
 
 
-function Bridge._b!((i,t), x::State, out::State, Q::GuidedProposall!)
+function _b!((i,t), x::State, out::State, Q::GuidedProposall!)
     Bridge.b!(t, x, out, Q.target)
     out .+= amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
     out
@@ -60,7 +72,8 @@ function _r!((i,t), x::State, out::State, Q::GuidedProposall!)
 end
 
 function guidingterm((i,t),x::State,Q::GuidedProposall!)
-    Bridge.b(t,x,Q.target) + amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
+    #Bridge.b(t,x,Q.target) +
+    amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
 end
 """
 Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
