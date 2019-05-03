@@ -12,6 +12,7 @@ using CSV
 using RCall
 using Base.Iterators
 using SparseArrays
+using LowRankApprox
 
 models = [:ms, :ahs]
 model = models[2]
@@ -22,14 +23,14 @@ partialobs = true
 const d = 2
 const itostrat = false
 
-n = 75 # nr of landmarks
+n = 100 # nr of landmarks
 
-θ = π/3# π/6 0#π/5  # angle to rotate endpoint
+θ = 2π/5# π/6 0#π/5  # angle to rotate endpoint
 
-σobs = 10^(-3)   # noise on observations
+σobs = 10^(-2)   # noise on observations
 println(model)
 
-T = 0.3#1.0#0.5
+T = 0.75#1.0#0.5
 t = 0.0:0.01:T  # time grid
 
 #Random.seed!(5)
@@ -43,12 +44,12 @@ include("lmguiding.jl")
 ### Specify landmarks models
 a = 3.0 # the larger, the stronger landmarks behave similarly
 λ = 0.0; #= not the lambda of noise fields  =# γ = 8.0
-db = 3.0 # domainbound
-nfstd = 1.0 # tau , widht of noisefields
+db = 6.0 # domainbound
+nfstd = 2.0 # tau , widht of noisefields
 r1 = -db:nfstd:db
 r2 = -db:nfstd:db
 nfloc = Point.(collect(product(r1, r2)))[:]
-nfscales = [.05Point(1.0, 1.0) for x in nfloc]  # intensity
+nfscales = [.1Point(1.0, 1.0) for x in nfloc]  # intensity
 
 nfs = [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
 Pms = MarslandShardlow(a, γ, λ, n)
@@ -69,7 +70,7 @@ W = SamplePath(t, [copy(w0) for s in t])
 sample!(W, Wiener{Vector{StateW}}())
 
 # specify initial landmarks configuration
-q0 = [Point(2.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+q0 = [Point(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
 p_ = 2*Point(-0.1, 0.1)
 p0 = [p_ for i in 1:n]  #
 #p0 = [randn(Point) for i in 1:n]
@@ -81,17 +82,19 @@ println("Solve for forward provess:")
 @time solve!(EulerMaruyama!(), X, x0, W, P)
     #@time solve!(StratonovichHeun!(), X, x0, W, P)
 
-tc(t,T) = t.*(2-t/T)
+tc(t,T) = t.* (2 .-t/T)
 tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
-
+#tt_ = t
 
 # observe positions without noise
 v0 = q(X.yy[1])
-rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-vT = [rot * X.yy[end].q[i] for i in 1:P.n ]
+rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), 2*cos(θ))
+#vT = [rot * X.yy[end].q[i] for i in 1:P.n ]
+trans = SMatrix{2,2}(1.5, 1.0, 0.0, 1.0)
+vT = [rot * trans * X.yy[end].q[i] for i in 1:P.n ]
 
 
-#extractcomp(v,i) = map(x->x[i], v)
+
 ####################
 # solve backward recursion on [0,T]
 if partialobs==true
@@ -100,9 +103,9 @@ if partialobs==true
     #Σ = 10 * reshape(rand(Unc,n^2),n,n)
     μend = zeros(Point,P.n)
     xobs = vT
-    Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
-    Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
-    #Pahsaux = LandmarksAux(Pahs, State(vT, 10*rand(Point,Pahs.n)))
+    mT = zero(vT)#rand(Point, n)#
+    Pahsaux = LandmarksAux(Pahs, State(vT, mT))
+    Pmsaux = MarslandShardlowAux(Pms, State(vT, mT))
 else
     # full observation case
     L = [(i==j)*one(Unc) for i in 1:2n, j in 1:2n]
