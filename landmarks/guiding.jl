@@ -230,20 +230,34 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
         som += dot(bout-btout, rout) * dt
 
         if !constdiff(Q)
-            #Δa =  a((i,s), x, target(Q)) - a((i,s), x, auxiliary(Q))
-            # H = H((i,s), x, auxiliary(Q))
-            # som -= 0.5*tr(Δa*H) * dt
-            # som += 0.5*(rout'*Δa*rout) * dt
-
             σt!(s, x, rout, srout, target(Q))
             σt!(s, x, rout, strout, auxiliary(Q))
-            error("NOT IMPLEMENTED YET")
-            #Δa = Bridge.a(s, x, target(Q)) - Bridge.a(s,  auxiliary(Q))
-            #H = Bridge.H((i,s), x, auxiliary(Q))
-            # som -= 0.5*tr(Δa*H) * dt
-             #som += 0.5*dot(rout,Δa*rout) * dt
-             som += 0.5*Bridge.inner(srout) * dt
-             som -= 0.5*Bridge.inner(strout) * dt
+
+            som += 0.5*Bridge.inner(srout) * dt
+            som -= 0.5*Bridge.inner(strout) * dt
+
+            A = Bridge.a((i,s), x, target(Q))
+            At = Bridge.a((i,s), x, auxiliary(Q))
+            som -= 0.5*hadamtrace(A, Q.H[i]) * dt
+            som -= -0.5*hadamtrace(At, Q.H[i]) * dt
+
+        end
+    end
+    som
+end
+
+function hadamtrace(A, H::InverseCholesky)
+    tr(tr(H*A))
+end
+
+
+function hadamtrace(A, H)
+    @assert eachindex(A) == eachindex(H)
+    Trajectories.@unroll1 for i in eachindex(A)
+        if $first
+            som = A[i]*H[i]
+        else
+            som += A[i]*H[i]
         end
     end
     som

@@ -14,9 +14,10 @@ using CSV
 using RCall
 using Base.Iterators
 using SparseArrays
+using Trajectories
 
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 TEST = false#true
 
 discrmethods = [:ralston, :lowrank, :psd, :lm, :marcin] # not a good name anymore
@@ -29,7 +30,7 @@ obsscheme = obsschemes[2]
 const d = 2
 const itostrat=true
 
-n = 40 # nr of landmarks
+n = 5 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
@@ -63,8 +64,8 @@ using .LowrankRiccati
 
 ### Specify landmarks models
 a = 3.0 # the larger, the stronger landmarks behave similarly
-λ = 0.0; #= not the lambda of noise fields  =#
-γ = 8.0
+λ = 0.0 # not the lambda of noise fields, but the mean reversion
+γ = 1.0
 db = 3.0 # domainbound
 nfstd = .5 # tau , widht of noisefields
 r1 = -db:nfstd:db
@@ -88,7 +89,7 @@ end
 
 # specify initial landmarks configuration
 q0 = [PointF(2.5cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-p_ = 5*PointF(0.1, 0.1)
+p_ = 10*PointF(0.1, 0.1)
 p0 = [p_ for i in 1:n]  #
 #p0 = [randn(PointF) for i in 1:n]
 x0 = State(q0, p0)
@@ -118,7 +119,8 @@ if obsscheme==:partial
     # observe positions
     v0 = q(X.yy[1])  + σobs * randn(PointF,n)
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-    vT = [rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
+    shft = 0.
+    vT = [shft .+ rot * X.yy[end].q[i] + σobs * randn(d)    for i in 1:P.n ]
 
     Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
     if cheat
@@ -160,7 +162,7 @@ else
 
     if obsscheme == :partial
         #νT = State(zero(vT), zero(vT))
-        νT = State(randn(PointF,Pahs.n), randn(PointF,Pahs.n))
+        νT = State(randn(PointF,Pahs.n), 0randn(PointF,Pahs.n))
     elseif obsscheme == :full
         νT = X.yy[end]
     end
@@ -290,16 +292,20 @@ function obj(xinitv)
     xinit = deepvec2state(xinitv)
     sample!(WW, Wiener{Vector{StateW}}())
     XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
-    lptilde(xinit, Q) + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
+    (
+    (lptilde(xinit, Q) - lptilde(x0, Q))  + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
+    )
 end
 using Makie, Random
 Random.seed!(2)
 let
     x = deepvec(x0)
     #x = deepvec(State(x0.q, 0.5 * x0.p))
-    x = x .* (1 .+ 1*randn(length(x)))
-    s = deepvec2state(x)
+    x = x .* (1 .+ 0.2*randn(length(x)))
 
+    x = deepvec(State(x0.q, deepvec2state(x).p))
+
+    s = deepvec2state(x)
     n = Node(s.q)
     n2 = Node(s.p)
     sc = scatter(x0.q, color=:red)
@@ -309,13 +315,14 @@ let
     display(sc)
 
     # only optimize momenta
-    mask = deepvec(State(1 .- 0*xinit.q, 20 .- 0*(xinit.p)))
-    ϵ = 6.e-6
-    o =  obj(x)
-    #for i in 1:1000
-    record(sc, "output/gradientdescent.mp4", 1:100) do i
+    mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))
+    ϵ = 6.e-4
+    @show o =  obj(x)
+
+    for i in 1:1000
+    #record(sc, "output/gradientdescent.mp4", 1:100) do i
         #i % 10 == 0 && (o =  obj(x))
-        for k in 1:4
+        for k in 1:1
             ∇x = ForwardDiff.gradient(obj, x)
             x .+= ϵ*mask.*∇x
         end

@@ -42,7 +42,7 @@ include("chol.jl")
 using StaticArrays
 using Distributions
 using Colors
-
+using Trajectories
 
 
 

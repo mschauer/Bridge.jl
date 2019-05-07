@@ -416,15 +416,24 @@ function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
     else
         x = P.xT
     end
-    out = zeros(Unc{Float64}, 2P.n,2P.n)
+    out = zeros(Unc{deepeltype(x)}, 2P.n,2P.n)
     for i in 1:P.n
-        for k in 1:P.n
+        for k in i:P.n
             for j in 1:length(P.nfs)
-                out[2i-1,2k-1] += σq(q(x,i),P.nfs[j]) * σq(q(x, k),P.nfs[j])'
-                out[2i-1,2k] += σq(q(x,i),P.nfs[j]) * σp(q(x,k),p(x,k),P.nfs[j])'
-                out[2i,2k-1] += σp(q(x,i),p(x,i),P.nfs[j]) * σq(q(x,k),P.nfs[j])'
-                out[2i,2k] += σp(q(x,i),p(x,i),P.nfs[j]) * σp(q(x,k),p(x,k),P.nfs[j])'
+                a11 = σq(q(x,i),P.nfs[j])
+                a21 = σp(q(x,i),p(x,i),P.nfs[j])
+                a12 = σq(q(x,k),P.nfs[j])
+                a22 = σp(q(x,k),p(x,k),P.nfs[j])
+                out[2i-1,2k-1] += a11 * a12'
+                out[2i-1,2k] += a11 * a22'
+                out[2i,2k-1] += a21 * a12'
+                out[2i,2k] += a21 * a22'
             end
+        end
+    end
+    for i in 2:2P.n
+        for k in 1:i-1
+            out[i,k] = out[k,i]
         end
     end
     out

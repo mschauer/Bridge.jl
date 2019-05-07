@@ -41,7 +41,7 @@ function copyto!(x::State, y)
     end
     x
 end
-#eltype(::State{P}) = P
+deepeltype(::State{P}) where {P} = eltype(P)
 
 
 Base.broadcastable(x::State) = x
