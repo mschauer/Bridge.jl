@@ -1,6 +1,6 @@
 # reminder, to type H*, do H\^+
 #outdir="output/landmarks/"
-cd("/Users/Frank/.julia/dev/Bridge/landmarks")
+#cd("/Users/Frank/.julia/dev/Bridge/landmarks")
 
 using Bridge, StaticArrays, Distributions
 using Bridge:logpdfnormal
@@ -82,7 +82,7 @@ println("Solve for forward provess:")
     #@time solve!(StratonovichHeun!(), X, x0, W, P)
 
 tc(t,T) = t.*(2-t/T)
-tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
+tt_ =  tc.(t,T)#tc(t,T)# 0:dtimp:(T)
 
 
 # observe positions without noise
