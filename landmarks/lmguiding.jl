@@ -2,10 +2,13 @@
 # compute likelihood of guided proposal
 
 # not sure about this
-function lmgpupdate(Lt, Mt, μt, Σ, L, v)
-    Lt = [Lt; L]
+function lmgpupdate(Lt, Mt, μt, vt, Σ, L, v)
+    Lt = [L; Lt]
     Mt = [Σ 0I; 0I Mt]
-    μt = [zero(size(L,2)); μt]
+    μt = [0v; μt]
+    vt = [v; vt]
+
+    Lt, Mt, μt, vt
 end
 
 
@@ -97,11 +100,11 @@ function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::Guid
 end
 
 """
-xobs0 consists of all observation vectors stacked, so in case of two observations, it should be v0 and vT stacked
+v0 consists of all observation vectors stacked, so in case of two observations, it should be v0 and vT stacked
 """
-function Bridge.lptilde(xobs0, x, Po::GuidedProposal!)
-  y = xobs0 - Po.mu0 - Po.L0*x
-  -0.5*log(det(Po.Mdagger0)) -0.5 *dot(y, Po.Mdagger0*y)
+function Bridge.lptilde(x, L0, M0⁺, μ0, v0, Po::GuidedProposall!)
+  y = v0 - μ0 - L0*x
+  -0.5*log(det( M0⁺)) -0.5*dot(y, M0⁺*y)
 end
 
 function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposall!; skip = 0)

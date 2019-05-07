@@ -86,8 +86,8 @@ tc(t,T) = t.* (2 .-t/T)
 tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 #tt_ = t
 
-# observe positions without noise
-v0 = q(X.yy[1])
+# observe positions WITH noise
+v0 = q(X.yy[1]) + σobs * randn(PointF,n)
 rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), 2*cos(θ))
 #vT = [rot * X.yy[end].q[i] for i in 1:P.n ]
 trans = SMatrix{2,2}(1.5, 1.0, 0.0, 1.0)
@@ -127,8 +127,8 @@ Lt =  [copy(L) for s in tt_]
 Mt⁺ = [copy(Σ) for s in tt_]
 μt = [copy(μend) for s in tt_]
 println("compute guiding term:")
-@time (Lend, Mend⁺,μend) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (L, Σ, μend))
-
+@time (Lend, Mend⁺, μend) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (L, Σ, μend))
+(L0, M0⁺, μ0, V) = lmgpupdate(Lend, Mend⁺, μend, vT, Σ, L, v0)
 # issymmetric(deepmat(Bridge.a(0,Paux)))
 # isposdef(deepmat(Bridge.a(0,Paux)))
 # map(x->minimum(eigen(deepmat(x)).values),Mt⁺)
@@ -184,12 +184,13 @@ XX = Bridge.solve(EulerMaruyama!(), xinitnew, WW, P)
 =#
 
 
+
 function obj(xinitv)
     xinit = deepvec2state(xinitv)
     sample!(WW, Wiener{Vector{StateW}}())
     XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
     (
-    #(lptilde(xinit, Q) - lptilde(x0, Q))
+    (lptilde(xinit, Lend, Mend⁺, μend, V, Q) - lptilde(x0, Lend, Mend⁺, μend, V, Q))
      + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
     )
 end
