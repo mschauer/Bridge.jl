@@ -92,6 +92,7 @@ import Bridge: outer
 /(x::State, y) = State(x.q/y, x.p/y)
 
 vec(x::State) = vec([x[J] for J in eachindex(x)]) #
+
 deepvec(x::State{P}) where {P} = vec([x[J][K] for K in eachindex(x.p[1]), J in eachindex(x)])
 
 deepvec(x::Vector) = collect(flatten(x))

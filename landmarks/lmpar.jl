@@ -190,7 +190,7 @@ function obj(xinitv)
     sample!(WW, Wiener{Vector{StateW}}())
     XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
     (
-    (lptilde(xinit, Lend, Mend⁺, μend, V, Q) - lptilde(x0, Lend, Mend⁺, μend, V, Q))
+    (lptilde(vec(xinit), L0, M0⁺, μ0, V, Q) - lptilde(vec(x0), L0, M0⁺, μ0, V, Q))
      + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
     )
 end

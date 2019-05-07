@@ -4,7 +4,7 @@
 # not sure about this
 function lmgpupdate(Lt, Mt, μt, vt, Σ, L, v)
     Lt = [L; Lt]
-    Mt = [Σ 0I; 0I Mt]
+    Mt = [Σ 0Σ; 0Σ Mt]
     μt = [0v; μt]
     vt = [v; vt]
 
@@ -104,7 +104,7 @@ v0 consists of all observation vectors stacked, so in case of two observations, 
 """
 function Bridge.lptilde(x, L0, M0⁺, μ0, v0, Po::GuidedProposall!)
   y = v0 - μ0 - L0*x
-  -0.5*log(det( M0⁺)) -0.5*dot(y, M0⁺*y)
+  -0.5*logdet(deepmat(M0⁺)) -0.5*dot(y, M0⁺*y)
 end
 
 function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposall!; skip = 0)
