@@ -207,7 +207,7 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
     tt = Xcirc.tt
     xx = Xcirc.yy
 
-    som::eltype(xx[1]) = 0.
+    som::deepeltype(xx[1]) = 0.
     rout = copy(xx[1])
 
     if !constdiff(Q) # use sizetypes?

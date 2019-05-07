@@ -15,7 +15,7 @@ using SparseArrays
 using LowRankApprox
 
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 TEST = false#true
 partialobs = true
 
@@ -56,7 +56,7 @@ Pms = MarslandShardlow(a, γ, λ, n)
 Pahs = Landmarks(a, λ, n, nfs)
 ###
 
-StateW = Point
+StateW = Point{Float64}
 if model == :ms
     dwiener = n
     P = Pms
@@ -101,7 +101,7 @@ if partialobs==true
     L = [(i==j)*one(Unc) for i in 1:2:2n, j in 1:2n]
     Σ = [(i==j)*σobs^2*one(Unc) for i in 1:n, j in 1:n]
     #Σ = 10 * reshape(rand(Unc,n^2),n,n)
-    μend = zeros(Point,P.n)
+    μend = zeros(Point{Float64},P.n)
     xobs = vT
     mT = zero(vT)#rand(Point, n)#
     Pahsaux = LandmarksAux(Pahs, State(vT, mT))
@@ -110,7 +110,7 @@ else
     # full observation case
     L = [(i==j)*one(Unc) for i in 1:2n, j in 1:2n]
     Σ = [(i==j)*σobs^2*one(Unc) for i in 1:2n, j in 1:2n]
-    μend = zeros(Point,2P.n)
+    μend = zeros(Point{Float64}, 2P.n)
     xobs = vec(X.yy[end])
     Pahsaux = LandmarksAux(Pahs, X.yy[end])
     Pmsaux = MarslandShardlowAux(Pms, X.yy[end])
@@ -138,7 +138,7 @@ println("Compute Cholesky for Mt⁺:")
 
 Q = GuidedProposall!(P, Paux, tt_, Lt, Mt, μt, xobs)
 if partialobs
-    xinit = State(v0, rand(Point,P.n))
+    xinit = State(v0, rand(Point{Float64}, P.n))
 else
     xinit = x0
 end
@@ -156,4 +156,76 @@ include("plotlandmarks.jl")
 
 if model==:ms
     @time llikelihood(LeftRule(), XX, Q; skip = 0)  # won't work for AHS because matrix multilication for Htilde is not defined yet
+end
+
+
+
+using ForwardDiff
+dual(x, i, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(i))
+dual(x, n) = ForwardDiff.Dual(x, ForwardDiff.Chunk{n}(), Val(0))
+#=
+#using Flux
+xinitv = deepvec(xinit)
+
+xinitv = map(i->dual(xinitv[i], i <= 2 ? i : 0, 2), 1:length(xinitv))
+
+xinitnew = deepvec2state(xinitv)
+x = copy(xinitnew)
+
+#lux.Tracker.gradient(x -> Bridge._b!((1,0.0), deepvec2state(x), deepvec2state(x), P), deepvec(xinit))
+Bridge.b!(0.0, x, copy(x), P)
+
+import Bridge;
+
+#include(joinpath(dirname(pathof(Bridge)), "..", "landmarks/patches.jl"))
+#include(joinpath(dirname(pathof(Bridge)), "..", "landmarks/models.jl"))
+
+XX = Bridge.solve(EulerMaruyama!(), xinitnew, WW, P)
+=#
+
+
+function obj(xinitv)
+    xinit = deepvec2state(xinitv)
+    sample!(WW, Wiener{Vector{StateW}}())
+    XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
+    (
+    #(lptilde(xinit, Q) - lptilde(x0, Q))
+     + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
+    )
+end
+using Makie, Random
+Random.seed!(2)
+let
+    x = deepvec(x0)
+    x = x .* (1 .+ 0.2*randn(length(x)))
+
+    x = deepvec(State(x0.q, deepvec2state(x).p))
+
+    s = deepvec2state(x)
+    n = Node(s.q)
+    n2 = Node(s.p)
+    sc = scatter(x0.q, color=:red)
+
+    scatter!(sc, n2)
+    scatter!(sc, n, color=:blue)
+    display(sc)
+
+    # only optimize momenta
+    mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))
+    ϵ = 6.e-4
+    @show o =  obj(x)
+
+    for i in 1:1000
+    #record(sc, "output/gradientdescent.mp4", 1:100) do i
+        #i % 10 == 0 && (o =  obj(x))
+        for k in 1:1
+            ∇x = ForwardDiff.gradient(obj, x)
+            x .+= ϵ*mask.*∇x
+        end
+        s = deepvec2state(x)
+        n[] = s.q
+        n2[] = s.p
+        display(s-x0)
+        println("$i d(x,xtrue) = ", norm(deepvec(x0)-x))#, " ", o)
+    end
 end

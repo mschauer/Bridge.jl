@@ -88,19 +88,27 @@ end
 Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
 """
 function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::GuidedProposall!)
-    out = State[]
-    for i in 1:length(X.tt)
+    i = first(1:length(X.tt))
+    out = [guidingterm((i,X.tt[i]),X.yy[i],Q)]
+    for i in 2:length(X.tt)
         push!(out, guidingterm((i,X.tt[i]),X.yy[i],Q))
     end
     out
 end
 
+"""
+xobs0 consists of all observation vectors stacked, so in case of two observations, it should be v0 and vT stacked
+"""
+function Bridge.lptilde(xobs0, x, Po::GuidedProposal!)
+  y = xobs0 - Po.mu0 - Po.L0*x
+  -0.5*log(det(Po.Mdagger0)) -0.5 *dot(y, Po.Mdagger0*y)
+end
 
 function llikelihood(::LeftRule, Xcirc::SamplePath, Q::GuidedProposall!; skip = 0)
     tt = Xcirc.tt
     xx = Xcirc.yy
 
-    som::Float64 = 0.
+    som::deepeltype(xx[1])  = 0.
     rout = copy(xx[1])
     bout = copy(rout)
     btout = copy(rout)
