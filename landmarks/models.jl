@@ -410,6 +410,26 @@ end
 Bridge.a(t, x, P::Union{MarslandShardlow, MarslandShardlowAux}) = Bridge.a(t, P)
 
 
+# function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
+#     if P isa Landmarks
+#         x = x_
+#     else
+#         x = P.xT
+#     end
+#     out = zeros(Unc,2P.n,2P.n)
+#     for i in 1:P.n
+#         for k in 1:P.n
+#             for j in 1:length(P.nfs)
+#                 out[2i-1,2k-1] += σq(q(x,i),P.nfs[j]) * σq(q(x, k),P.nfs[j])'
+#                 out[2i-1,2k] += σq(q(x,i),P.nfs[j]) * σp(q(x,k),p(x,k),P.nfs[j])'
+#                 out[2i,2k-1] += σp(q(x,i),p(x,i),P.nfs[j]) * σq(q(x,k),P.nfs[j])'
+#                 out[2i,2k] += σp(q(x,i),p(x,i),P.nfs[j]) * σp(q(x,k),p(x,k),P.nfs[j])'
+#             end
+#         end
+#     end
+#     out
+# end
+
 function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
     if P isa Landmarks
         x = x_
@@ -429,6 +449,11 @@ function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
                 out[2i,2k-1] += a21 * a12'
                 out[2i,2k] += a21 * a22'
             end
+      end
+    end
+    for i in 2:2P.n
+        for k in 1:i-1
+            out[i,k] = out[k,i]
         end
     end
     for i in 2:2P.n
@@ -438,6 +463,7 @@ function Bridge.a(t, x_, P::Union{Landmarks,LandmarksAux})
     end
     out
 end
+
 
 Bridge.a(t, P::LandmarksAux) =  Bridge.a(t, 0, P)
 #Bridge.a(t, P::Union{Landmarks,LandmarksAux}) =  Bridge.a(t, P.xT, P::Union{Landmarks,LandmarksAux})
