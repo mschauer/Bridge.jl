@@ -47,6 +47,13 @@ function kernelr3(f, t, y, dt, P)
     k3 = f(t + 3/4*dt, y + 3/4*dt*k2, P)
     y + dt*(2/9*k1 + 1/3*k2 + 4/9*k3)
 end
+function kernelr3dot(f, t, y, dt, P)
+    k1 = f(t, y, P)
+    k2 = f(t + 1/2*dt, y .+ (1/2*dt).*k1, P)
+    k3 = f(t + 3/4*dt, y .+ (3/4*dt).*k2, P)
+    y .+ (dt*2/9).*k1 .+ (dt*1/3).*k2 .+ (dt*4/9).*k3
+end
+
 
 function kernelr3(t, y, dt, P)
     k1 = F(t, y, P)

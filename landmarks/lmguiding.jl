@@ -1,6 +1,15 @@
 # compute guiding term: backward ode
 # compute likelihood of guided proposal
 
+# not sure about this
+function lmgpupdate(Lt, Mt, μt, Σ, L, v)
+    Lt = [Lt; L]
+    Mt = [Σ 0I; 0I Mt]
+    μt = [zero(size(L,2)); μt]
+end
+
+
+
 import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B!, σ!, b!
 
 """
@@ -29,14 +38,14 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (Lend, Mend⁺, μen
     Mt⁺[end] .= Σ
     Lt[end] .= L
     BB = Matrix(Bridge.B(0, Paux)) # does not depend on time
-    println("computing ã and its low rank approximation:")
-    # various ways to compute ã (which does not depend on time);
+    println("computing ã and its low rank approximation:")
+    # various ways to compute ã (which does not depend on time);
     # low rank appoximation really makes sense here
 #   @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
 #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
 #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
     @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-7)  # control accuracy of lr approx
-    println("Rank ",size(aalr[:vectors],2), " approximation to ã")
+    println("Rank ",size(aalr[:vectors],2), " approximation to ã")
     sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
 
     β = vec(Bridge.β(0,Paux)) # does not depend on time

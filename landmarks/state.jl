@@ -1,7 +1,9 @@
 import Base:iterate, eltype, copy, copyto!, zero, eachindex, getindex, setindex!, size, vec
 
-const Point = SArray{Tuple{d},Float64,1,d}       # point in R2
-const Unc = SArray{Tuple{d,d},Float64,d,d*d}     # Matrix presenting uncertainty
+const Point{T} = SArray{Tuple{d},T,1,d}       # point in R2
+const Unc{T} = SArray{Tuple{d,d},T,d,d*d}     # Matrix presenting uncertainty
+
+const PointF = Point{Float64}
 
 abstract type UncMat end
 
@@ -14,6 +16,11 @@ q(x::State) = x.q
 p(x::State) = x.p
 q(x::State, i) = x.q[i]
 p(x::State, i) = x.p[i]
+
+q(x::State, i) = x.q[i]
+p(x::State, i) = x.p[i]
+
+
 
 q(i::Int) = 2i - 1
 p(i::Int) = 2i
@@ -34,7 +41,7 @@ function copyto!(x::State, y)
     end
     x
 end
-#eltype(::State{P}) = P
+deepeltype(::State{P}) where {P} = eltype(P)
 
 
 Base.broadcastable(x::State) = x
@@ -87,11 +94,12 @@ import Bridge: outer
 vec(x::State) = vec([x[J] for J in eachindex(x)]) #
 deepvec(x::State{P}) where {P} = vec([x[J][K] for K in eachindex(x.p[1]), J in eachindex(x)])
 
+deepvec(x::Vector) = collect(flatten(x))
 
 
 # matrix multiplication of mat of Uncs
-function Base.:*(A::AbstractArray{Unc,2},B::AbstractArray{Unc,2})
-    C = zeros(Unc,size(A,1), size(B,2))
+function Base.:*(A::AbstractArray{Unc{T},2},B::AbstractArray{Unc{T},2}) where {T}
+    C = zeros(Unc{T},size(A,1), size(B,2))
     for i in 1:size(A,1)
         for j in 1:size(B,2)
             for k in 1:size(A,2)
@@ -128,11 +136,16 @@ end
 # end
 
 
-function Base.:*(A::Array{Unc,2},x::State)
+function Base.:*(A::AbstractArray{<:Unc,2}, x::State)
     vecofpoints2state(A*vec(x))
 end
-
-
+function Base.:*(A::SparseMatrixCSC, x_::State)
+    #vecofpoints2state(Array(A)*vec(x))
+    x = vec(x_)
+    vecofpoints2state(mul!(similar(x, A.m), A, x, true, false))
+end
+#mul!(similar(x, Tx, A.m), A, x, true, false)
+#Base.setindex!(A::SparseMatrixCSC{T}, _v::T, _i::Integer, _j::Integer) where {T} = SparseArrays._setindex_scalar!(A, _v, _i, _j)
 
 if TEST
     A = reshape(rand(Unc,6),3,2)
@@ -164,18 +177,18 @@ Convert vector to State. it is assumed that x is ordered as follows
 - momentum landmark 2
 ...
 """
-function deepvec2state(x)
+function deepvec2state(x::AbstractVector{T}) where {T}
    m = div(length(x),2d)
-   q = Vector{Point}(undef,m)
-   p = Vector{Point}(undef,m)
+   q = Vector{Point{T}}(undef,m)
+   p = Vector{Point{T}}(undef,m)
    for i in 1:m
-       q[i] = Point(x[(i-1)*2d .+ (1:d)])
-       p[i] = Point(x[((i-1)*2d+d+1):(2i*d)])
+       q[i] = Point{T}(x[(i-1)*2d .+ (1:d)])
+       p[i] = Point{T}(x[((i-1)*2d+d+1):(2i*d)])
    end
    State(q,p)
 end
 
-vecofpoints2state(x::Vector{Point}) = State(x[1:d:end], x[d:d:end])
+vecofpoints2state(x::Vector{<:Point}) = State(x[1:d:end], x[d:d:end])
 
 function deepmat(H::AbstractMatrix{S}) where {S}
     d1, d2 = size(S)
@@ -240,7 +253,7 @@ function Base.:*(H::InverseCholesky, x::State)
     vecofpoints2state(y)
 end
 
-function Base.:*(H::InverseCholesky, x::Vector{Point})
+function Base.:*(H::InverseCholesky, x::Vector{<:Point})
     y = copy(x)
     cholinverse!(H.L,  y) # triangular backsolve
 end
@@ -296,7 +309,7 @@ Hinv = LU (LU decomposition)
 From LU y =x, it follows that we
 solve first z from  Lz=x, and next y from  Uy=z
 """
-function Base.:*(H::InverseLu, x::Vector{Point})
+function Base.:*(H::InverseLu, x::Vector{<:Point})
     LinearAlgebra.naivesub!(LowerTriangular(H.L), x)
     LinearAlgebra.naivesub!(UpperTriangular(H.U), x)
     x
@@ -335,7 +348,7 @@ if TEST
     L, U = lu(A)
     W = InverseLu(L,U)
 
-    xs= rand(Point,4)
+    xs= rand(PointF,4)
     xss = [xs[1]; xs[2];xs[3];xs[4]]
     inv(deepmat(A)) *  xss
     W * xs

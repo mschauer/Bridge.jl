@@ -136,9 +136,14 @@ function stack(args::SamplePath...)
     VSamplePath(args[1].tt, vcat((X.yy' for X in args)...))
 end
 
-# separate a Zip2
+# separate a zip of two Vectors
+if VERSION < v"1.1-"
 sep(Z::Base.Iterators.Zip2{Vector{T1},Vector{T2}}) where {T1,T2} =
     T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
+else
+sep(Z::Base.Iterators.Zip{Tuple{Vector{T1},Vector{T2}}}) where {T1,T2} =
+    T1[z[1] for z in Z], T2[z[2] for z in Z] # takes into account the minimum of length
+end
 
 
 copy(X::VSamplePath) = VSamplePath(copy(X.tt), copy(X.yy))

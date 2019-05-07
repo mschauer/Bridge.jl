@@ -3,7 +3,7 @@ using Bridge
 
 makedocs(
     modules = [Bridge],
-    format = :html,
+    format = Documenter.HTML(),
     sitename = "Bridge.jl",
     authors = "Moritz Schauer and contributors",
     pages = Any[ # Compat: `Any` for 0.4 compat
@@ -18,7 +18,6 @@ makedocs(
 # for more information.
 deploydocs(
     repo = "github.com/mschauer/Bridge.jl.git",
-    julia  = "0.7",
     target = "build",
     deps = nothing,
     make = nothing,

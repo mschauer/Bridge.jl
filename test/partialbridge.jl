@@ -3,10 +3,7 @@ using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
 
 
-T = 2.0
-dt = 1/100
-
-tt = 0.:dt:T
+include("partialparam.jl")
 struct IntegratedDiffusion <: ContinuousTimeProcess{ℝ{2}}
     γ::Float64
 end
@@ -35,16 +32,14 @@ Bridge.constdiff(::IntegratedDiffusionAux) = true
 # Generate Data
 Random.seed!(1)
 
-P = IntegratedDiffusion(0.7)
-Pt = IntegratedDiffusionAux(0.7)
+P = IntegratedDiffusion(γ)
+Pt = IntegratedDiffusionAux(γ)
 
 W = sample(tt, Wiener())
-x0 = ℝ{2}(2.0, 1.0)
+
 X = solve(Euler(), x0, W, P)
 
-L = @SMatrix [1. 0.]
-Σ = @SMatrix [0.0]
-v = ℝ{1}(2.5)
+
 
 # Solve Backward Recursion
 
@@ -64,15 +59,18 @@ j = 10
 @test norm((μt[j+1] - μt[j])/dt - (-Lt[j+1]*Bridge.β(tt[j+1], Pt))) < 0.01
 @test norm((inv(Mt[j+1]) - inv(Mt[j]))/dt - (-Lt[j+1]*Bridge.a(tt[j+1], Pt)*Lt[j+1]')) < 0.01
 
+
+
 Po = Bridge.PartialBridge(tt, P, Pt, L, v, Σ)
 
 @test Po.L == Lt
 
 W = sample(tt, Wiener())
-x0 = ℝ{2}(2.0, 1.0)
+
 Xo = copy(X)
 solve!(Euler(), Xo, x0, W, Po)
 
+@show LP = log(pdf(Normal(μt[1][1] + (Lt[1]*x0)[1], (Mt[1][1])^(-0.5)), v[1]))
 
 # Likelihood
 
