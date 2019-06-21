@@ -28,9 +28,9 @@ obsschemes =[:full, :partial]
 obsscheme = obsschemes[2]
 
 const d = 2
-const itostrat=true
+const itostrat = false
 
-n = 5 # nr of landmarks
+n = 15 # nr of landmarks
 ldim = 40   # dimension of low-rank approximation to H\^+
 
 cheat = false #true#false # if cheat is true, then we initialise at x0 (true value) and
@@ -46,11 +46,14 @@ println(model)
 println(discrmethod)
 println(obsscheme)
 
-T = 0.4#1.0#0.5
+T = 1.0#1.0#0.5
 t = 0.0:0.01:T  # time grid
 
 Random.seed!(5)
+#include("nstate.jl")
+include("ostate.jl")
 include("state.jl")
+
 include("models.jl")
 include("patches.jl")
 if discrmethod == :lm
@@ -67,7 +70,7 @@ a = 3.0 # the larger, the stronger landmarks behave similarly
 λ = 0.0 # not the lambda of noise fields, but the mean reversion
 γ = 1.0
 db = 3.0 # domainbound
-nfstd = .5 # tau , widht of noisefields
+nfstd = 1.0 # tau , width of noisefields
 r1 = -db:nfstd:db
 r2 = -db:nfstd:db
 nfloc = PointF.(collect(product(r1, r2)))[:]
@@ -104,7 +107,7 @@ println("Sample forward process:")
 #@time solve!(StratonovichHeun!(), X, x0, W, P)
 
 # compute Hamiltonian along path
-ham = [hamiltonian(X.yy[i],Pms) for i in 1:length(t)]
+ham = [hamiltonian(X.yy[i], Pms) for i in 1:length(t)]
 
 tc(t,T) = t.*(2 .-t/T)
 tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
@@ -257,7 +260,7 @@ sample!(WW, Wiener{Vector{StateW}}())
 
 println("Sample guided bridge proposal:")
 @time Bridge.solve!(EulerMaruyama!(), XX, xinit, WW, Q)
-
+#error("STOP EARLY")
 include("plotlandmarks.jl")
 
 if model==:ms
@@ -291,12 +294,21 @@ XX = Bridge.solve(EulerMaruyama!(), xinitnew, WW, P)
 function obj(xinitv)
     xinit = deepvec2state(xinitv)
     sample!(WW, Wiener{Vector{StateW}}())
-    XXᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
+    if !isdefined(Main, :XXᵒ_)
+        XXᵒ_ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
+    else
+        Bridge.solve!(EulerMaruyama!(), XXᵒ_, xinit, WW, Q)
+    end
     (
-    (lptilde(xinit, Q) - lptilde(x0, Q))  + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
+    (lptilde(xinit, Q) - lptilde(x0, Q))  + llikelihood(LeftRule(), XXᵒ_, Q; skip = 1)
     )
 end
-using Makie, Random
+
+MAKIE = false
+if MAKIE
+    using Makie
+end
+using Random, Profile
 Random.seed!(2)
 let
     x = deepvec(x0)
@@ -306,20 +318,30 @@ let
     x = deepvec(State(x0.q, deepvec2state(x).p))
 
     s = deepvec2state(x)
-    n = Node(s.q)
-    n2 = Node(s.p)
-    sc = scatter(x0.q, color=:red)
+    if MAKIE
+        n = Node(s.q)
+        n2 = Node(s.p)
+        sc = scatter(x0.q, color=:red)
 
-    scatter!(sc, n2)
-    scatter!(sc, n, color=:blue)
-    display(sc)
-
+        scatter!(sc, n2)
+        scatter!(sc, n, color=:blue)
+        display(sc)
+    end
     # only optimize momenta
     mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))
-    ϵ = 6.e-4
-    @show o =  obj(x)
+    ϵ = 6.e-2
+    #@show o =  obj(x)
+    ∇x = ForwardDiff.gradient(obj, x)
+    x .+= ϵ*mask.*∇x
+    s = deepvec2state(x)
+    if MAKIE
+        n[] = s.q
+        n2[] = s.p
+    end
+    display(s-x0)
 
-    for i in 1:1000
+
+    @profile for i in 1:1000
     #record(sc, "output/gradientdescent.mp4", 1:100) do i
         #i % 10 == 0 && (o =  obj(x))
         for k in 1:1
@@ -327,8 +349,10 @@ let
             x .+= ϵ*mask.*∇x
         end
         s = deepvec2state(x)
-        n[] = s.q
-        n2[] = s.p
+        if MAKIE
+            n[] = s.q
+            n2[] = s.p
+        end
         display(s-x0)
         println("$i d(x,xtrue) = ", norm(deepvec(x0)-x))#, " ", o)
     end

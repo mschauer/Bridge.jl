@@ -107,9 +107,10 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge!; skip = 0
     end
     som
 end
+
 function hadamtrace(A, H)
     @assert eachindex(A) == eachindex(H)
-    Trajectories.@unroll1 for i in eachindex(A)
+    @unroll1 for i in eachindex(A)
             if $first
                 som = A[i]*H[i]
             else

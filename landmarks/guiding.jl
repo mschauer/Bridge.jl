@@ -152,20 +152,21 @@ end
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
-struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,TC,F} <: ContinuousTimeProcess{T}
+struct GuidedProposal!{T,Ttarget,Taux,Tν,TH,Tν0, TC,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
     ν::Vector{Tν}
     H::Vector{TH}
-    ν0::Tν
+    ν0::Tν0
     H0::TH
     C0::TC
     endpoint::F
 
     function GuidedProposal!(target, aux, tt_, ν, H, ν0, H0, C0, endpoint=Bridge.endpoint)
         tt = collect(tt_)
-        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, ν0, H0, C0, endpoint)
+        @show  typeof.(( ν0, H0, C0))
+        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(ν),eltype(H),typeof(ν0),typeof(C),typeof(endpoint)}(target, aux, tt, ν, H, ν0, H0, C0, endpoint)
     end
 end
 
@@ -203,7 +204,7 @@ auxiliary(P::GuidedProposal!) = P.aux
 
 constdiff(P::GuidedProposal!) = constdiff(target(P)) && constdiff(auxiliary(P))
 
-function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposal!; skip = 0) where {Pnt}
+function llikelihood(::LeftRule, Xcirc::SamplePath{<:State{Pnt}}, Q::GuidedProposal!; skip = 0) where {Pnt}
     tt = Xcirc.tt
     xx = Xcirc.yy
 
@@ -236,10 +237,12 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
             som += 0.5*Bridge.inner(srout) * dt
             som -= 0.5*Bridge.inner(strout) * dt
 
+            # inference failure
             A = Bridge.a((i,s), x, target(Q))
             At = Bridge.a((i,s), x, auxiliary(Q))
             som -= 0.5*hadamtrace(A, Q.H[i]) * dt
             som -= -0.5*hadamtrace(At, Q.H[i]) * dt
+
 
         end
     end
@@ -250,10 +253,10 @@ function hadamtrace(A, H::InverseCholesky)
     tr(tr(H*A))
 end
 
-
+import Trajectories.@unroll1
 function hadamtrace(A, H)
     @assert eachindex(A) == eachindex(H)
-    Trajectories.@unroll1 for i in eachindex(A)
+    @unroll1 for i in eachindex(A)
         if $first
             som = A[i]*H[i]
         else

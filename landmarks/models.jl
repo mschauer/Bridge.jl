@@ -64,10 +64,10 @@ function ∇kernel(q, qT, P::Union{Landmarks, LandmarksAux, MarslandShardlow, Ma
 end
 
 
-function hamiltonian((q, p), P)
+function hamiltonian(x, P)
     s = 0.0
-    for i in eachindex(q), j in eachindex(q)
-        s += 1/2*dot(p[i], p[j])*kernel(q[i] - q[j], P)
+    for i in axes(x, 2), j in axes(x, 2)
+        s += 1/2*dot(x.p[i], x.p[j])*kernel(x.q[i] - x.q[j], P)
     end
     s
 end
@@ -91,26 +91,40 @@ function ∇K̄(q, qT, τ)
 end
 
 # function for specification of diffusivity of landmarks
-σq(q, nf::Noisefield) = diagm(0 =>nf.λ) * K̄(q - nf.δ,nf.τ)
-σp(q, p, nf::Noisefield) = -diagm(0 => p.*nf.λ.* ∇K̄(q - nf.δ,nf.τ))
+"""
+    Suppose one noise field nf
+    Returns diagonal matrix with noisefield for position at point location q (can be vector or Point)
+"""
+σq(q, nf::Noisefield) = Diagonal(nf.λ * K̄(q - nf.δ,nf.τ))
+
+"""
+    Suppose one noise field nf
+    Returns diagonal matrix with noisefield for momentum at point location q (can be vector or Point)
+"""
+σp(q, p, nf::Noisefield) = -Diagonal(p .* nf.λ .* ∇K̄(q - nf.δ,nf.τ))
 
 
-function σq(x::Point, nfs::Array{<:Noisefield,1})
-    out = 0.0 * x
-    for j in 1:length(nfs)
+
+"""
+    For AHS model compute total noise field on position experienced at a point x.
+    Useful for plotting purposes.
+
+    Example usage:
+        σq(Point(0.0, 0.0), nfs)
+        σq([0.0; 0.0], nfs)
+"""
+function σq(x, nfs::Array{<:Noisefield,1})
+    out = σq(x, nfs[1])
+    for j in 2:length(nfs)
         out += σq(x, nfs[j])
     end
+
     out
 end
 
+#σq(nfs) = (x) -> σq(x,nfs)
+
 Bridge.b(t::Float64, x, P::Union{Landmarks,MarslandShardlow})= Bridge.b!(t, x, 0*x, P)
-#Bridge._b(it, x, P::Union{LandmarksAux,MarslandShardlowAux})= Bridge._b!(it, x, copy(x), P)
-#Bridge._b(it, x, P::Union{Landmarks,MarslandShardlow})= Bridge._b!(it, x, 0*x, P)
-
-#Bridge.σ(t::Float64, x, dm, P::Union{LandmarksAux,MarslandShardlowAux}) = Bridge.σ!(t, x, dm, copy(x), P)
-
-
-#Bridge.σ(t::Float64, x, dm, P::Union{Landmarks,MarslandShardlow}) = Bridge.σ!(t, x, dm, copy(x), P)
 
 """
 Evaluate drift of landmarks in (t,x) and save to out
@@ -141,15 +155,15 @@ function Bridge.b!(t, x, out, P::Landmarks)
             out.q[i] += p(x,j)*kernel(q(x,i) - q(x,j), P)
             out.p[i] +=  -dot(p(x,i), p(x,j)) * ∇kernel(q(x,i) - q(x,j), P)
         end
-        if itostrat
-            global ui = zero(Unc{Float64})
-            for k in 1:length(P.nfs)
-                nf = P.nfs[k]
-                ui += 0.5 * nf.τ^(-2) * diagm(0 =>nf.λ.^2) * K̄(q(x,i)-nf.δ,nf.τ)^2
-            end
-            out.q[i] -=  ui * q(x,i)
-            out.p[i] += ui * p(x,i)
-        end
+#        if itostrat
+#            global ui = zero(Unc{Float64})
+#            for k in 1:length(P.nfs)
+#                nf = P.nfs[k]
+#                ui += 0.5 * nf.τ^(-2) * diagm(0 =>nf.λ.^2) * K̄(q(x,i)-nf.δ,nf.τ)^2
+#            end
+#            out.q[i] -=  ui * q(x,i)
+#            out.p[i] += ui * p(x,i)
+#        end
     end
     out
 end
@@ -164,7 +178,7 @@ function Bridge.b!(t, x, out, Paux::MarslandShardlowAux)
     for i in 1:Paux.n
         for j in 1:Paux.n
             out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
-            out.p[i] +=   -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), P)
+            #out.p[i] +=   -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), P)
         end
     end
     out
@@ -377,6 +391,7 @@ function σtmul(t, x_, y::State{Pnt}, P::Union{Landmarks,LandmarksAux}) where Pn
 end
 
 function σt!(t, x_, y::State, out, P::Union{Landmarks,LandmarksAux})
+    zero!(out)  # added frank
     if P isa Landmarks
         x = x_
     else
@@ -385,7 +400,7 @@ function σt!(t, x_, y::State, out, P::Union{Landmarks,LandmarksAux})
     for j in 1:length(P.nfs)
         for i in 1:P.n
             out[j] += σq(q(x, i), P.nfs[j])' * q(y, i) +
-                        σp(q(x, i), p(x, i), P.nfs[j])' * q(y, i)
+                    σp(q(x, i), p(x, i), P.nfs[j])' * p(y, i)
         end
     end
     out
@@ -508,6 +523,21 @@ function amul(t, x::State, xin::State, P::Union{Landmarks,LandmarksAux})
     out = copy(x)
     zero!(out)
     Bridge.σ!(t, x, σtmul(t, x, xin, P),out,P)
+end
+
+"""
+    Construct sequence of Noisefields for AHS model
+    db: domainbound (sources are places on square grid specified by
+        (-db:2nfstd:db) x -db:2nfstd:db
+    nfstd: standard deviation of noise fields (the smaller: the more noise fields we use)
+    γ: if set to one, then the value of the  noise field on the positions is approximately 1 at all locations in the domain
+"""
+function construct_nfs(db, nfstd, γ)
+    r1 = -db:2nfstd:db
+    r2 = -db:2nfstd:db
+    nfloc = Point.(collect(product(r1, r2)))[:]
+    nfscales = [2/pi*γ*Point(1.0, 1.0) for x in nfloc]  # intensity
+    [Noisefield(δ, λ, nfstd) for (δ, λ) in zip(nfloc, nfscales)]
 end
 
 

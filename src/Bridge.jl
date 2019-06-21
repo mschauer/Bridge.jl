@@ -39,10 +39,12 @@ using Statistics
 
 include("chol.jl")
 
+
 using StaticArrays
 using Distributions
 using Colors
 using Trajectories
+include(joinpath(dirname(Base.find_package(string(Trajectories))), "unroll1.jl"))
 
 
 
