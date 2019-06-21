@@ -1,4 +1,9 @@
 
+"""
+    Initialise SamplePath on time grid t by copying x into each value of the field yy
+"""
+initSamplePath(t,x) = SamplePath(t, [copy(x) for s in t])
+
 function Bridge.sample!(W::SamplePath{Vector{T}}, P::Wiener{Vector{T}}, y1 = W.yy[1]) where {T}
     y = copy(y1)
     copyto!(W.yy[1], y)
@@ -259,7 +264,7 @@ B = copy(A)
 A
 conj!(B)
 """
-function conj!(A::Array{Unc,2})
+function conj!(A::Array{<:Unc,2})
     for i in 1:size(A,1)
         A[i,i] = A[i,i]'
         for j in (i+1):size(A,2)
@@ -269,7 +274,7 @@ function conj!(A::Array{Unc,2})
     A
 end
 
-function conj2(A::Array{Unc,2})
+function conj2(A::Array{<:Unc,2})
     At =  Matrix{Unc}(undef,size(A,2),size(A,1))
     for i in 1:size(A,2)
         for j in 1:size(A,1)
@@ -284,3 +289,25 @@ if TEST
         B = conj2(A)
         @test norm(deepmat(A)'-deepmat(B))<10^(-10)
 end
+
+
+"""
+    Forward simulate landmarks process specified by P on grid t.
+    Returns driving motion W and landmarks process X
+    t: time grid
+    dwiener: dimension of Wiener driving process
+    x0: starting point
+    P: landmarks specification
+"""
+landmarksforward = function(t, dwiener, x0::State{Pnt}, P) where Pnt
+    W = initSamplePath(t,  zeros(Pnt, dwiener))
+    sample!(W, Wiener{Vector{Pnt}}())
+    # forward simulate landmarks
+    X = initSamplePath(t,x0)
+    println("Solve for forward provess:")
+    solve!(EulerMaruyama!(), X, x0, W, P)  #@time solve!(StratonovichHeun!(), X, x0, W, P)
+    W, X
+end
+
+tc(t,T) = t.* (2 .-t/T)
+extractcomp(v,i) = map(x->x[i], v)
