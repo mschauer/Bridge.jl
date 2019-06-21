@@ -15,6 +15,7 @@ using RCall
 using Base.Iterators
 using SparseArrays
 using Trajectories
+using LowRankApprox
 
 models = [:ms, :ahs]
 model = models[2]
@@ -141,28 +142,24 @@ elseif obsscheme==:full
     vT = vec(X.yy[end])
 end
 
+
+
 #Paux = (model==:ms) ? Pmsaux : Pahsaux
 # solve backward recursion on [0,T]
 if LM
 
     if obsscheme == :partial
-        Lend = L
-        Σend = Σ
-        μend = deepvec(zeros(PointF, n))
+        Lend = deepmat2unc(L)
+        Σend = deepmat2unc(Matrix(Σ))
+        μend = zeros(PointF, n)
         xobs = vT
-#        Pahsaux = LandmarksAux(Pahs, State(vT, zero(vT)))
-#        Pmsaux = MarslandShardlowAux(Pms, State(vT, zero(vT)))
     else
         # full observation case
 #        L = [(i==j)*one(Unc) for i in 1:2n, j in 1:2n]
 #        Σ = [(i==j)*σobs^2*one(Unc) for i in 1:2n, j in 1:2n]
         μend = zeros(PointF, 2n)
-#        xobs = vec(X.yy[end])
-#        Pahsaux = LandmarksAux(Pahs, X.yy[end])
-#        Pmsaux = MarslandShardlowAux(Pms, X.yy[end])
     end
 else
-
     if obsscheme == :partial
         #νT = State(zero(vT), zero(vT))
         νT = State(randn(PointF,Pahs.n), 0randn(PointF,Pahs.n))
@@ -216,6 +213,8 @@ if LM
     (Lstart, Mstart⁺, μstart) = lmgpupdate(Lend, Mend⁺, μend, Σ, L, v0)
     xinit = x0
 
+
+
 else
     νt =  [copy(ν) for s in tt_]
     println("Compute guiding term:")
@@ -242,21 +241,19 @@ else
         Ht = map(H⁺ -> InverseCholesky(lchol(H⁺)),H⁺t)
     end
 
-
 # careful, not a state
     νstart , Hstart⁺, Cstart = gpupdate(ν , H⁺, C, Σ, L, v0)
-
     #also update C??
-
     Q = GuidedProposal!(P, Paux, tt_, νt, Ht, νstart, InverseCholesky(lchol(Hstart⁺)), Cstart)
-
     xinit = cheat ? x0 : State(νstart.q, 0νstart.q)#νstart  # or xinit ~ N(νstart, Hstart⁺)
-
 end
 winit = zeros(StateW, dwiener)
 XX = SamplePath(tt_, [copy(xinit) for s in tt_])
 WW = SamplePath(tt_, [copy(winit) for s in tt_])
 sample!(WW, Wiener{Vector{StateW}}())
+
+# adjust xinit as test
+xinit = State(v0, [Point(3,3) for i in 1:P.n] + rand(Point{Float64}, P.n))
 
 println("Sample guided bridge proposal:")
 @time Bridge.solve!(EulerMaruyama!(), XX, xinit, WW, Q)
@@ -316,6 +313,7 @@ let
     x = x .* (1 .+ 0.2*randn(length(x)))
 
     x = deepvec(State(x0.q, deepvec2state(x).p))
+
 
     s = deepvec2state(x)
     if MAKIE
