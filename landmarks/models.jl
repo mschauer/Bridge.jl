@@ -52,7 +52,6 @@ kernel in Hamiltonian
 """
 function kernel(q, P::LandmarkModel)
  (2*π*P.a^2)^(-d/2)*exp(-Bridge.inner(q)/(2*P.a^2))
- #0.1exp(-Bridge.inner(q)/(2*P.a^2))
 end
 
 """
