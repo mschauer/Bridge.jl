@@ -275,7 +275,7 @@ function conj!(A::Array{<:Unc,2})
 end
 
 function conj2(A::Array{T<:Unc,2}) where T
-    At =  Matrix{Unc}(undef,size(A,2),size(A,1))
+    At =  Matrix{T}(undef,size(A,2),size(A,1))
     for i in 1:size(A,2)
         for j in 1:size(A,1)
             At[i,j] = A[j,i]'
