@@ -2,7 +2,7 @@
 """
     Initialise SamplePath on time grid t by copying x into each value of the field yy
 """
-initSamplePath(t,x) = SamplePath(t, [copy(x) for s in t])
+initSamplePath(t,x) = Bridge.samplepath(t,  x)
 
 function Bridge.sample!(W::SamplePath{Vector{T}}, P::Wiener{Vector{T}}, y1 = W.yy[1]) where {T}
     y = copy(y1)
