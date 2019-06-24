@@ -112,7 +112,7 @@ function Bridge.b!(t, x, out, Paux::MarslandShardlowAux)
     zero!(out)
     for i in 1:Paux.n
         for j in 1:Paux.n
-            out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) # out.qp[1,i] +=
+            out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) 
             out.p[i] += -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
         end
     end
