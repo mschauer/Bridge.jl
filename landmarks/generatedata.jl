@@ -72,5 +72,16 @@ function generatedata(dataset,P,t,σobs)
         qT = [PointF(heart_xcoord(t), heart_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
     end
+    if dataset=="peach"
+        q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+        p0 = [PointF(1.0, -3.0) for i in 1:n]  # #p0 = [randn(Point) for i in 1:n]
+        x0 = State(q0, p0)
+        @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
+        xobs0 = x0.q + σobs * randn(PointF,n)
+        peach_xcoord(s) = (2.0 + sin(s)^3) * cos(s)
+        peach_ycoord(s) = (2.0 + sin(s)^3) * sin(s)
+        qT = [PointF(peach_xcoord(t), peach_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+        xobsT = qT + σobs * randn(PointF,n)
+    end
     x0, xobs0, xobsT, Xf, P
 end
