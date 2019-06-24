@@ -166,6 +166,7 @@ end
 Returns matrix a(t) for Marsland-Shardlow model
 """
 function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
+    error("remove error if we want to keep this")
     I = Int[]
     X = Unc{Float64}[]
     γ2 = P.γ^2
