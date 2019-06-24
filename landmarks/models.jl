@@ -151,7 +151,7 @@ function Bridge.B!(t,X,out, Paux::MarslandShardlowAux)
     out
 end
 
-function Bridge.β(t, Paux::MarslandShardlowAux)
+function Bridge.β(t, Paux::MarslandShardlowAux) # Not AD save
     State(zeros(PointF,Paux.n), zeros(PointF,Paux.n))
 end
 
