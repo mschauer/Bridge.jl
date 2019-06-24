@@ -144,7 +144,7 @@ function Bridge.B!(t,X,out, Paux::MarslandShardlowAux)
         for k in 1:2Paux.n # loop over all columns
             for j in 1:Paux.n
                  out[2i-1,k] += kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) * X[p(j), k]
-                 out[2i,k] += -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(UncF) * X[p(j), k]
+                 out[2i,k] += -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) * X[p(j), k]
             end
         end
     end
