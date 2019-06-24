@@ -122,7 +122,7 @@ end
 """
 Compute tildeB(t) for landmarks auxiliary process
 """
-function Bridge.B(t, Paux::MarslandShardlowAux)
+function Bridge.B(t, Paux::MarslandShardlowAux) # not AD safe
     X = zeros(UncF, 2Paux.n, 2Paux.n)
     for i in 1:Paux.n
         for j in 1:Paux.n
