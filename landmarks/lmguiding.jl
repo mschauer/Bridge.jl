@@ -172,19 +172,6 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
     som
 end
 
-#tr(si si' L' M L)=tr(si' L' M (si' L')') = tr(C' C) with Minv =D D'
-# C' = si' L' D'inv  oftwel C' D' = si' L'  oftewel D C = (si' L')'
-
-# compute sum ( tr(amul(t,x, coli(H))[i])  i in 1: nd)
-# each matrix in the trace is a Unc-matrix
-# for i in 1:n
-#     Bridge.σrowi!(t, x_, σt!(t, x_, coli(H)::State, out, P), out, P)
-#     som+= tr of this thing
-# end
-
-
-# ---- Doe tr (amuli!(t,x, coli) ) and sum over i
-
 construct_guidedproposal! = function(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     (Lt0₊, Mt⁺0₊, μt0₊) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (LT, ΣT, μT))
     Lt0, Mt⁺0, μt0, xobst0 = lmgpupdate(Lt0₊, Mt⁺0₊, μt0₊, xobsT, (L0, Σ0, xobs0))
