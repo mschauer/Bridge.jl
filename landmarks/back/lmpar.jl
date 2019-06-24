@@ -23,7 +23,7 @@ partialobs = true
 const d = 2
 const itostrat = false
 
-n = 100 # nr of landmarks
+n = 30 # nr of landmarks
 
 θ = 2π/5# π/6 0#π/5  # angle to rotate endpoint
 
@@ -194,7 +194,8 @@ function obj(xinitv)
      + llikelihood(LeftRule(), XXᵒ, Q; skip = 1)
     )
 end
-using Makie, Random
+using Makie
+using  Random
 Random.seed!(2)
 let
     x = deepvec(x0)
@@ -205,10 +206,10 @@ let
     s = deepvec2state(x)
     n = Node(s.q)
     n2 = Node(s.p)
-    sc = scatter(x0.q, color=:red)
+    sc = scatter(x0.q, color=:red) # plot locations of x0 in red
 
-    scatter!(sc, n2)
-    scatter!(sc, n, color=:blue)
+    scatter!(sc, n2) # plot momenta of x0 in black
+    scatter!(sc, n, color=:blue) # plot locations of x0 (again) in blue
     display(sc)
 
     # only optimize momenta
@@ -230,3 +231,5 @@ let
         println("$i d(x,xtrue) = ", norm(deepvec(x0)-x))#, " ", o)
     end
 end
+
+# should first plot v0 and vT, should randomly initialise momenta and see whether these convert to p0
