@@ -28,6 +28,7 @@ function initLMμ(t,(L,M,μ))
     Lt, Mt⁺ , μt
 end
 
+
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
@@ -52,21 +53,25 @@ end
 struct Lm  end
 
 
-function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (L, Σ , μend))
-    Mt⁺[end] .= Σ
-    Lt[end] .= L
-    BB = Matrix(Bridge.B(0, Paux)) # does not depend on time
+
+function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
+    Mt⁺[end] .= ΣT
+    Lt[end] .= LT
+    μt[end] .= μT
+
+    BB = Bridge.B(0, Paux)          # does not depend on time
+    β = vec(Bridge.β(0,Paux))       # does not depend on time
     println("computing ã and its low rank approximation:")
     # various ways to compute ã (which does not depend on time);
     # low rank appoximation really makes sense here
-#   @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
-#   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
-#   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
+        #   @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
+        #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
+        #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
     @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-10)  # control accuracy of lr approx
     println("Rank ",size(aalr[:vectors],2), " approximation to ã")
     sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
 
-    β = vec(Bridge.β(0,Paux)) # does not depend on time
+
     for i in length(t)-1:-1:1
         dt = t[i+1]-t[i]
 #       Lt[i] .=  Lt[i+1] * (I + BB * dt)  # explicit
@@ -171,6 +176,8 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposa
     end
     som
 end
+
+
 
 construct_guidedproposal! = function(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     (Lt0₊, Mt⁺0₊, μt0₊) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (LT, ΣT, μT))
