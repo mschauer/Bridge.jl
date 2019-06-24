@@ -248,7 +248,6 @@ z(q,τ,δ,λ) =  Bridge.inner(∇K̄(q - δ,τ),λ)
 """
 function σq(x, nfs::Array{<:Noisefield,1})
     out = σq(x, nfs[1])
-    if length(nfs)>1
         for j in 2:length(nfs)
             out += σq(x, nfs[j])
         end
