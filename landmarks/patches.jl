@@ -299,7 +299,7 @@ end
     x0: starting point
     P: landmarks specification
 """
-landmarksforward = function(t, dwiener, x0::State{Pnt}, P) where Pnt
+function landmarksforward(t, dwiener, x0::State{Pnt}, P) where Pnt
     W = initSamplePath(t,  zeros(Pnt, dwiener))
     sample!(W, Wiener{Vector{Pnt}}())
     # forward simulate landmarks
