@@ -254,7 +254,7 @@ function σq(x, nfs::Array{<:Noisefield,1})
     out
 end
 
-σq(nfs) = (x) -> σq(x,nfs)
+σq(nfs) = (x) -> σq(x,nfs) # inefficient
 
 """
     Construct sequence of Noisefields for AHS model
