@@ -71,7 +71,7 @@ end
 """
 Hamiltonian for deterministic part of landmarks model
 """
-function hamiltonian((q, p), P)
+function hamiltonian(x, P)
     s = 0.0
     for i in eachindex(q), j in eachindex(q)
 #        s += 1/2*dot(p[i], p[j])*kernel(q[i] - q[j], P)
