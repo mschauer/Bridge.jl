@@ -211,9 +211,11 @@ function llikelihood(::LeftRule, Xcirc::SamplePath{<:State{Pnt}}, Q::GuidedPropo
     som::deepeltype(xx[1]) = 0.
     rout = copy(xx[1])
 
-    if !constdiff(Q) # use sizetypes?
-        srout = zeros(Pnt, length(P.nfs))
-        strout = zeros(Pnt, length(P.nfs))
+    if !constdiff(Q) # use sizetypes?  # must be target(Q).nfs
+        # srout = zeros(Pnt, length(P.nfs))
+        # strout = zeros(Pnt, length(P.nfs))
+        srout = zeros(Pnt, length(Q.target.nfs))
+        strout = zeros(Pnt, length(Q.target.nfs))
     end
 
 
@@ -253,7 +255,7 @@ function hadamtrace(A, H::InverseCholesky)
     tr(tr(H*A))
 end
 
-import Trajectories.@unroll1
+
 function hadamtrace(A, H)
     @assert eachindex(A) == eachindex(H)
     @unroll1 for i in eachindex(A)
