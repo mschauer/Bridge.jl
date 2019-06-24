@@ -250,7 +250,6 @@ function σq(x, nfs::Array{<:Noisefield,1})
     out = σq(x, nfs[1])
         for j in 2:length(nfs)
             out += σq(x, nfs[j])
-        end
     end
     out
 end
