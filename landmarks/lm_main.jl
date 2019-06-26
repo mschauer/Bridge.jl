@@ -6,8 +6,7 @@ using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff: GradientConfig, Chunk, gradient!, gradient
-using TimerOutputs
-
+using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 
 pyplot()
@@ -33,8 +32,8 @@ sampler = samplers[3]
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
 dataset = datasets[6]
 
-ITER = 20 # nr of sgd iterations
-subsamples = 0:20:ITER
+ITER = 2 # nr of sgd iterations
+subsamples = 0:2:ITER
 
 
 const itostrat = true                    #false#true#false#true
@@ -48,7 +47,9 @@ T = 1.0#1.0#0.5
 t = 0.0:0.005:T  # time grid
 
 #Random.seed!(5)
+include("ostate.jl")
 include("state.jl")
+
 include("models.jl")
 include("patches.jl")
 include("lmguiding.jl")
