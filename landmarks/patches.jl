@@ -274,7 +274,7 @@ function conj!(A::Array{<:Unc,2})
     A
 end
 
-function conj2(A::Array{T<:Unc,2}) where T
+function conj2(A::Array{T,2}) where {T<:Unc}
     At =  Matrix{T}(undef,size(A,2),size(A,1))
     for i in 1:size(A,2)
         for j in 1:size(A,1)
