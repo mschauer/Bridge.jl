@@ -112,7 +112,7 @@ function Bridge.b!(t, x, out, Paux::MarslandShardlowAux)
     zero!(out)
     for i in 1:Paux.n
         for j in 1:Paux.n
-            out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) 
+            out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
             out.p[i] += -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
         end
     end
@@ -166,13 +166,12 @@ end
 Returns matrix a(t) for Marsland-Shardlow model
 """
 function Bridge.a(t,  P::Union{MarslandShardlow, MarslandShardlowAux})
-    error("remove error if we want to keep this")
     I = Int[]
-    X = Unc{Float64}[]
+    X = UncF[]
     γ2 = P.γ^2
     for i in 1:P.n
             push!(I, 2i)
-            push!(X, γ2*one(Unc{Float64}))
+            push!(X, γ2*one(UncF))
     end
     sparse(I, I, X, 2P.n, 2P.n)
 end
