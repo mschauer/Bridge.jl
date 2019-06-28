@@ -25,7 +25,7 @@ function generatedata(dataset,P,t,σobs)
     end
     if dataset=="forwardsimulated"
         q0 = [PointF(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        p0 = [Point(1.0, -3.0) for i in 1:n]  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [Point(1.0, -3.0) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
@@ -33,7 +33,7 @@ function generatedata(dataset,P,t,σobs)
     end
     if dataset in ["shifted","shiftedextreme"] # first stretch, then rotate, then shift; finally add noise
         q0 = [PointF(2.0cos(t), sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        p0 = [PointF(1.0, -3.0) for i in 1:n]  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [PointF(1.0, -3.0) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
@@ -63,7 +63,7 @@ function generatedata(dataset,P,t,σobs)
     end
     if dataset=="heart"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        p0 = [PointF(1.0, -3.0) for i in 1:n]  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [PointF(1.0, -3.0) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
@@ -74,7 +74,7 @@ function generatedata(dataset,P,t,σobs)
     end
     if dataset=="peach"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        p0 = [PointF(1.0, -3.0) for i in 1:n]  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [PointF(1.0, -3.0) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)

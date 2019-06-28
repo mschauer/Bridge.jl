@@ -51,7 +51,8 @@ Bridge.constdiff(::Landmarks) = false
 kernel in Hamiltonian
 """
 function kernel(q, P::LandmarkModel)
- (2*π*P.a^2)^(-d/2)*exp(-Bridge.inner(q)/(2*P.a^2))
+ #(2*π*P.a^2)^(-d/2)*exp(-Bridge.inner(q)/(2*P.a^2))
+ exp(-Bridge.inner(q)/(2*P.a^2))
 end
 
 """
