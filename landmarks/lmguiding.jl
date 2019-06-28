@@ -64,20 +64,23 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
     println("computing ã and its low rank approximation:")
     # various ways to compute ã (which does not depend on time);
     # low rank appoximation really makes sense here
-        #   @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
+           @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
+
         #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
         #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
-    @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-10)  # control accuracy of lr approx
-    println("Rank ",size(aalr[:vectors],2), " approximation to ã")
-    sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
+
+    # @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-10)  # control accuracy of lr approx
+    # println("Rank ",size(aalr[:vectors],2), " approximation to ã")
+    # sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
 
 
     for i in length(t)-1:-1:1
         dt = t[i+1]-t[i]
 #       Lt[i] .=  Lt[i+1] * (I + BB * dt)  # explicit
         Lt[i] .= Lt[i+1]/(I - dt* BB)  # implicit, similar computational cost
-#       Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
-        Mt⁺[i] .= Mt⁺[i+1] + Bridge.outer(Lt[i+1] * sqrt_aalr) * dt
+       Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
+#        Mt⁺[i] .= Mt⁺[i+1] + Bridge.outer(Lt[i+1] * sqrt_aalr) * dt  # does not run with nstate, matmul of Array{Unc,2} with Adjoint(Array{Unc,2}) not defined
+#        Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1] * sqrt_aalr * conj!(Lt[i+1] * sqrt_aalr) * dt
         μt[i] .=  μt[i+1] + Lt[i+1] * β * dt
     end
     (Lt[1], Mt⁺[1], μt[1])
@@ -131,9 +134,12 @@ function Bridge.lptilde(x, L0, M⁺0, μ0, xobs)
   -0.5*logdet(M⁺0deep) -0.5*dot(y, M⁺0deep\y)
 end
 
-function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposall!; skip = 0) where {Pnt}
-    tt = Xcirc.tt
-    xx = Xcirc.yy
+
+#function llikelihood(::LeftRule, Xcirc::SamplePath{State{Pnt}}, Q::GuidedProposall!; skip = 0) where {Pnt}
+function llikelihood(::LeftRule,  Xᵒ, Q::GuidedProposall!; skip = 0)
+    Pnt = eltype(Xᵒ.yy[1])
+    tt =  Xᵒ.tt
+    xx =  Xᵒ.yy
     som::deepeltype(xx[1])  = 0.
 
     # initialise objects to write into

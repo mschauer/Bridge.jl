@@ -80,7 +80,7 @@ function hamiltonian(x, P)
     s
 end
 
-Bridge.b(t::Float64, x, P::Union{Landmarks,MarslandShardlow})= Bridge.b!(t, x, 0*x, P)
+Bridge.b(t::Float64, x, P::Union{Landmarks,MarslandShardlow})= Bridge.b!(t, x, copy(x), P)
 
 Bridge.σ(t, x, dm, P) =  Bridge.σ!(t, x, dm , 0*x, P)
 
