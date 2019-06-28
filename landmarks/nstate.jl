@@ -38,7 +38,7 @@
     size(s::NState) = size(s.x)
     axes(s::NState, i) = axes(s.x, i)
     deepvec(x::NState) = vec(reinterpret(deepeltype(x), x.x))
-    deepvec(x::Vector) = deepvec(vecofpoints2state(Y)) # CHECK, might be done more efficiently
+    deepvec(x::Vector) = deepvec(vecofpoints2state(x)) # CHECK, might be done more efficiently
     function deepvec2state(x::Vector)
         x = reinterpret(Point{eltype(x)}, x)
         #dump(length(x))
