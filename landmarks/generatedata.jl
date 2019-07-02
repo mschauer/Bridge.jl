@@ -85,3 +85,11 @@ function generatedata(dataset,P,t,σobs)
     end
     x0, xobs0, xobsT, Xf, P
 end
+
+if false
+    cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
+    using NPZ
+    cc = npzread("cc.npy") # corpus callosum data
+    cardiac = npzread("cardiac.npy")  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
+    npzread("match.npy.npz")
+end
