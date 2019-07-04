@@ -5,11 +5,18 @@ using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
-using ForwardDiff: GradientConfig, Chunk, gradient!, gradient
+fd = true
+if fd==true
+    using ForwardDiff: GradientConfig, Chunk, gradient!, gradient, Dual
+else
+    using ReverseDiff: GradientConfig, gradient!, gradient, Dual
+end
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 
 pyplot()
+
+Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
 
 models = [:ms, :ahs]
 model = models[2]
@@ -30,7 +37,7 @@ sampler = samplers[3]
 
 
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
-dataset = datasets[2]
+dataset = datasets[3]
 
 ITER = 10 # nr of sgd iterations
 subsamples = 0:2:ITER
@@ -38,12 +45,13 @@ subsamples = 0:2:ITER
 
 const itostrat = true                    #false#true#false#true
 const d = 2
+const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 
-n = 10#35 # nr of landmarks
+n = 20#35 # nr of landmarks
 
 σobs = 0.01   # noise on observations
 
-T = 2.0#1.0#0.5
+T = 1.0#1.0#0.5
 t = 0.0:0.005:T  # time grid
 
 #Random.seed!(5)
@@ -60,10 +68,11 @@ include("generatedata.jl")
 
 ### Specify landmarks models
 a = 2.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
+#a = 5.0
 
 if model == :ms
     λ = 0.0;    # Mean reversion par in MS-model = not the lambda of noise fields  =#
-    γ = 10.0     # Noise level in for MS-model
+    γ = .5 #2.0     # Noise level in for MS-model
     dwiener = n
     nfs = 0 # needs to have value for plotting purposes
     P = MarslandShardlow(a, γ, λ, n)
@@ -86,7 +95,11 @@ tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 
 # generate data
 x0, xobs0, xobsT, Xf, P = generatedata(dataset,P,t,σobs)
-plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=3)#2.6)
+
+# plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=6)#2.6)
+# ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
+# Plots.plot(1:length(t),ham)
+# print(ham)
 
 if partialobs
     L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
@@ -117,8 +130,9 @@ Lt, Mt⁺ , μt = initLMμ(tt_,(LT,ΣT,μT))
 (Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
 # initialise guided path
-xinit = State(xobs0, [Point(-6.,6.) for i in 1:P.n])
-xinit = State(xobs0, rand(PointF,n))
+#xinit = State(xobs0, [Point(6.,6.) for i in 1:P.n])
+xinit = State(xobs0, 0.0*rand(PointF,n))
+xinit = x0
 #xinit = State(xobs0, zeros(PointF,n))
 
 # sample guided path
@@ -145,7 +159,6 @@ mask_id = (mask .> 0.1) # get indices that correspond to momenta
 sk = 1
 acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
 
-#Xsave = SamplePath{State{PointF}}[]
 Xsave = typeof(Xᵒ)[]
 
 # initialisation
@@ -172,6 +185,9 @@ xobsTcomp2 = extractcomp(xobsT,2)
 
 showmomenta = false
 
+
+
+
 anim =    @animate for i in 1:ITER
 #for i in 1:ITER
     #
@@ -193,7 +209,7 @@ anim =    @animate for i in 1:ITER
         δ = 0.02 # for mala in this case
     end
 
-     X,Xᵒ,W,Wᵒ,ll,x,xᵒ,∇x,∇xᵒ, obj,acc = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
+@time     X,Xᵒ,W,Wᵒ,ll,x,xᵒ,∇x,∇xᵒ, obj,acc = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
             sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
                 mask, mask_id, δ, ρ, acc)
 
@@ -201,9 +217,6 @@ anim =    @animate for i in 1:ITER
         push!(Xsave, copy(X))
     end
     push!(objvals, obj)
-end
-
-error("FF STOPPPEN NU")
 
     # plotting
     s = deepvec2state(x).p
