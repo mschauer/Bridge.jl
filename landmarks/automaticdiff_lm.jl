@@ -11,11 +11,14 @@ slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> slogpW(x, Lt0,  Mt⁺0, μt
 ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> gradient(slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ), x)
 
 function slogpWX(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,Xᵒ) # preferred way
+    #dump(typeof(x0deepv))
     x0 = deepvec2state(x0deepv)
-#    println(fieldnames(typeof(x0)))
     solve!(EulerMaruyama!(), Xᵒ, x0, Wᵒ, Q)
+    #dump(typeof(Xᵒ))
     lptilde(vec(x0), Lt0, Mt⁺0, μt0, xobst0) + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
 end
+slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> slogpWX(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X)
+∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> gradient(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X), x)
 
 
 """
@@ -62,10 +65,23 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         println()
 
         # MALA step (update x)
-        ∇x .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(x)
+        # ∇x  = rand(2*d*Q.target.n)
+        # ∇xᵒ  = rand(2*d*Q.target.n)
+        if !inplace
+            ∇x .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(x)
+        else
+            #∇x .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(x)
+            cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+            gradient!(∇x, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),x,cfg)
+        end
         xᵒ .= x .+ .5*δ * mask.* (∇x .+ sqrt(δ) * randn(length(x)))
-        ∇xᵒ .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(xᵒ)
-
+        if !inplace
+             ∇xᵒ .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(xᵒ)
+        else
+             #∇xᵒ .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(xᵒ)
+             cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), xᵒ, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+             gradient!(∇xᵒ, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),xᵒ,cfg)
+        end
         xstate = deepvec2state(x)
         xᵒstate = deepvec2state(xᵒ)
         solve!(EulerMaruyama!(), Xᵒ, xᵒstate, W, Q)
