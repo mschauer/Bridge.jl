@@ -5,7 +5,6 @@
     thereby avoiding 'double' computations
 """
 # Fixme: do something with Bridge.endpoint
-# TBA: σt! for MarslandShardlow      #  σ(t,x)' * tilder(t,x)
 function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, X0, W, Q::GuidedProposall!; skip = 0)
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
@@ -64,5 +63,5 @@ if TEST
 
 
     @time simguidedlm_llikelihood!(LeftRule(), Ynew, xinit, Wᵒ, Q)
-    j=3;print(Y.yy[j]-Ynew.yy[j])
+    j=30;print(Y.yy[j]-Ynew.yy[j])
 end

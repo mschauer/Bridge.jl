@@ -167,6 +167,9 @@ function Bridge.β(t, Paux::MarslandShardlowAux) # Not AD save
     State(zeros(PointF,Paux.n), zeros(PointF,Paux.n))
 end
 
+"""
+    compute σ(t,x) * dm and write to out
+"""
 function Bridge.σ!(t, x, dm, out, P::Union{MarslandShardlow, MarslandShardlowAux})
     zero!(out.q)
     out.p .= dm*P.γ
@@ -434,6 +437,21 @@ function σtmul(t, x_, y::State{Pnt}, P::Union{Landmarks,LandmarksAux}) where Pn
     out
 end
 
+"""
+    compute σ(t,x)' y, where y::State
+    the result is a vector of points that is written to out
+"""
+function σt!(t, x_, y::State{Pnt}, out, P::Union{MarslandShardlow}) where Pnt
+    out.= P.γ * y.p
+    out
+end
+
+
+
+"""
+    compute σ(t,x)' y, where y::State
+    the result is a vector of points that is written to out
+"""
 function σt!(t, x_, y::State{Pnt}, out, P::Union{Landmarks,LandmarksAux}) where Pnt
     zero!(out)
     if P isa Landmarks
