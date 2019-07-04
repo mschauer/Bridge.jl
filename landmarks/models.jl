@@ -98,7 +98,7 @@ function Bridge.b!(t, x, out, P::MarslandShardlow)
     for i in 1:P.n
         for j in 1:P.n
             out.q[i] += p(x,j)*kernel(q(x,i) - q(x,j), P)
-            out.p[i] += -P.λ*p(x,j)*kernel(q(x,i) - q(x,j), P) -
+            out.p[i] += -P.λ*kernel(q(x,i) - q(x,j), P) -
                  dot(p(x,i), p(x,j)) * ∇kernel(q(x,i) - q(x,j), P)
         end
     end
@@ -109,16 +109,27 @@ end
 Evaluate drift of landmarks auxiliary process in (t,x) and save to out
 x is a state and out as well
 """
+# function Bridge.b!(t, x, out, Paux::MarslandShardlowAux)
+#     zero!(out)
+#     for i in 1:Paux.n
+#         for j in 1:Paux.n
+#             out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
+#             out.p[i] += -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
+#         end
+#     end
+#     out
+# end
 function Bridge.b!(t, x, out, Paux::MarslandShardlowAux)
     zero!(out)
     for i in 1:Paux.n
         for j in 1:Paux.n
             out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
-            out.p[i] += -Paux.λ*p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
         end
     end
-    out
+    NState(out.q, - Paux.λ* out.q)
 end
+
+
 
 """
 Compute tildeB(t) for landmarks auxiliary process
