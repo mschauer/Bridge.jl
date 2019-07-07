@@ -28,26 +28,26 @@ rotation = false  # rotate configuration at time T
 showplotσq = false
 
 samplers =[:sgd, :sgld, :mcmc]
-sampler = samplers[3]
+sampler = samplers[1]
 
-ρ = 0.99 #CN par
-δ = 0.8 # MALA par
+ρ = 0.9#0.99999#1.0 #0.9999 #CN par
+δ = 0.1#0.00001 # MALA par
 ϵ = 0.01  # sgd step size
 ϵstep(i) = 1/(1+i)^(0.7)
 
 
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
-dataset = datasets[3]
+dataset = datasets[1]
 
 ITER = 10 # nr of sgd iterations
 subsamples = 0:2:ITER
 
-
+const sk=1  # entries to skip for likelihood evaluation
 const itostrat = true                    #false#true#false#true
 const d = 2
 const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 
-n = 20#35 # nr of landmarks
+n = 6#35 # nr of landmarks
 
 σobs = 0.01   # noise on observations
 
@@ -65,9 +65,10 @@ include("lmguiding.jl")
 include("plotlandmarks.jl")
 include("automaticdiff_lm.jl")
 include("generatedata.jl")
+include("patches_test.jl")
 
 ### Specify landmarks models
-a = 2.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
+a = 3.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
 #a = 5.0
 
 if model == :ms
@@ -78,10 +79,11 @@ if model == :ms
     P = MarslandShardlow(a, γ, λ, n)
 else
     db = 5.0 # domainbound
-    nfstd = 2.5#  1.25 # tau , width of noisefields
-    nfs = construct_nfs(db, nfstd, .2) # 3rd argument gives average noise of positions (with superposition)
+    nfstd = 1.25#2.5#  1.25 # tau , width of noisefields
+    γ = 0.5
+    nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
     dwiener = length(nfs)
-    P = Landmarks(a, 0.0, n, nfs)
+    P = Landmarks(a, n, nfs)
 end
 
 if (model == :ahs) & showplotσq
@@ -97,9 +99,9 @@ tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 x0, xobs0, xobsT, Xf, P = generatedata(dataset,P,t,σobs)
 
 # plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=6)#2.6)
-# ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
-# Plots.plot(1:length(t),ham)
-# print(ham)
+ # ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
+ # Plots.plot(1:length(t),ham)
+ # print(ham)
 
 if partialobs
     L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
@@ -116,7 +118,7 @@ else
     Σ0 = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
 end
 
-
+ #
 
 if model == :ms
     Paux = MarslandShardlowAux(P, State(xobsT, mT))
@@ -130,23 +132,29 @@ Lt, Mt⁺ , μt = initLMμ(tt_,(LT,ΣT,μT))
 (Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
 # initialise guided path
-#xinit = State(xobs0, [Point(6.,6.) for i in 1:P.n])
-xinit = State(xobs0, 0.0*rand(PointF,n))
-xinit = x0
+xinit = State(xobs0, [Point(2.,2.) for i in 1:P.n])
+#xinit = State(xobs0, rand(PointF,n))
+#xinit = x0
 #xinit = State(xobs0, zeros(PointF,n))
 
 # sample guided path
 println("Sample guided proposal:")
-Xᵒ = initSamplePath(tt_, xinit)
-Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
-sample!(Wᵒ, Wiener{Vector{StateW}}())
-@time Bridge.solve!(EulerMaruyama!(), Xᵒ, xinit, Wᵒ, Q)
-#guid = guidingterms(Xᵒ,Q)
-# plot forward path and guided path
-plotlandmarkpositions(Xf,Xᵒ,P.n,model,xobs0,xobsT,nfs,db=3)#2.6)
+X = initSamplePath(tt_, xinit)
+W = initSamplePath(tt_,  zeros(StateW, dwiener))
+sample!(W, Wiener{Vector{StateW}}())
 
-@time llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
-@time lptilde(vec(xinit), Lt0, Mt⁺0, μt0, xobst0)
+#  @time Bridge.solve!(EulerMaruyama!(), Xᵒ, xinit, Wᵒ, Q)
+ # @time llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
+
+@time ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
+lptilde(xinit, Lt0, Mt⁺0, μt0, xobst0)
+
+guid = guidingterms(X,Q)
+
+plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,nfs,db=3)#2.6)
+
+
+
 
 
 objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
@@ -156,26 +164,25 @@ mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
 mask_id = (mask .> 0.1) # get indices that correspond to momenta
 
 
-sk = 1
+
 acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
 
-Xsave = typeof(Xᵒ)[]
+Xsave = typeof(X)[]
 
 # initialisation
-W = copy(Wᵒ)
-Wnew = copy(Wᵒ)
-X = SamplePath(t, [copy(xinit) for s in tt_])
-solve!(EulerMaruyama!(), X, x0, W, Q)
-ll = llikelihood(Bridge.LeftRule(), X, Q,skip=sk)
-Xᵒ = copy(X)
+Wᵒ = deepcopy(W)
+Wnew = deepcopy(W)
+Xᵒ = deepcopy(X)
+llᵒ = ll
+
 if 0 in subsamples
     push!(Xsave, copy(X))
 end
 
 x = deepvec(xinit)
-xᵒ = copy(x)
-∇x = copy(x)
-∇xᵒ = copy(x)
+xᵒ = deepcopy(x)
+∇x = deepcopy(x)
+∇xᵒ = deepcopy(x)
 
 # for plotting
 xobs0comp1 = extractcomp(xobs0,1)
@@ -185,7 +192,7 @@ xobsTcomp2 = extractcomp(xobsT,2)
 
 showmomenta = false
 
-
+plotting = true
 
 
 anim =    @animate for i in 1:ITER
@@ -203,21 +210,24 @@ anim =    @animate for i in 1:ITER
     global ∇xᵒ
     println("iteration $i")
 
-    δ = ϵstep(i)
+    #δ = ϵstep(i)
 
-    if sampler==:mcmc
-        δ = 0.02 # for mala in this case
-    end
 
-@time     X,Xᵒ,W,Wᵒ,ll,x,xᵒ,∇x,∇xᵒ, obj,acc = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
-            sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
-                mask, mask_id, δ, ρ, acc)
+     # X,Xᵒ,W,Wᵒ,ll,x,xᵒ,∇x,∇xᵒ, obj,acc = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
+     #        sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
+     #            mask, mask_id, δ, ρ, acc)
+
+    (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
+                                sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
+                                mask, mask_id, δ, ρ, acc)
+    println()
 
     if i in subsamples
         push!(Xsave, copy(X))
     end
     push!(objvals, obj)
 
+if plotting
     # plotting
     s = deepvec2state(x).p
     s0 = x0.p # true momenta
@@ -237,7 +247,7 @@ anim =    @animate for i in 1:ITER
           ylims!(-4,3)
     else
         xlims!(-3,3)
-        ylims!(-2,3)
+        ylims!(-4,2)
     end
 
 
@@ -259,9 +269,12 @@ anim =    @animate for i in 1:ITER
     l = @layout [a  b]
     Plots.plot(pp,pp2,background_color = :ivory,layout=l , size = (900, 500) )
 
-    plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,nfs,db=2.6)
+
+end
+    plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
 end
 
+print(100acc/ITER)
 
 cd("/Users/Frank/.julia/dev/Bridge/landmarks/figs")
 fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
@@ -316,7 +329,7 @@ function obj2(xinitv,pars)
     sample!(WW, Wiener{Vector{StateW}}())
     Xᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
     (
-    (lptilde(vec(xinit  ), L0, M0⁺, μ0, V, Q) - lptilde(vec(x0), L0, M0⁺, μ0, V, Q))
+    (lptilde(xinit, L0, M0⁺, μ0, V, Q) - lptilde(x0, L0, M0⁺, μ0, V, Q))
      + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
     )
 end

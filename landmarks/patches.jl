@@ -311,7 +311,6 @@ function landmarksforward(t, dwiener, x0::State{Pnt}, P) where Pnt
     X = initSamplePath(t,x0)
     println("Solve for forward provess:")
     solve!(EulerMaruyama!(), X, x0, W, P)  #@time solve!(StratonovichHeun!(), X, x0, W, P)
-    print(X.yy[1]-X.yy[end])
     W, X
 end
 

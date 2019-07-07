@@ -20,26 +20,25 @@ MarslandShardlowAux(P::MarslandShardlow, xT) = MarslandShardlowAux(P.a, P.γ, P.
 
 struct Noisefield{T}
     δ::Point{T}   # locations of noise field
-    λ::Point{T}  # scaling at noise field
+    γ::Point{T}  # scaling at noise field (used to be called lambda)
     τ::T # std of Gaussian kernel noise field
 end
 
 struct  Landmarks{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std
-    λ::T # mean reversion
     n::Int64   # numer of landmarks
     nfs::Vector{Noisefield{S}}  # vector containing pars of noisefields
 end
 
 struct LandmarksAux{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std
-    λ::T # mean reversion
     xT::State{Point{S}}  # use x = State(P.v, zero(P.v)) where v is conditioning vector
     n::Int64   # numer of landmarks
     nfs::Vector{Noisefield{S}}  # vector containing pars of noisefields
 end
 
-LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a, P.λ, xT, P.n, P.nfs)
+
+LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a, xT, P.n, P.nfs)
 
 const LandmarkModel = Union{Landmarks, LandmarksAux, MarslandShardlow, MarslandShardlowAux}
 
@@ -244,13 +243,13 @@ z(q,τ,δ,λ) =  Bridge.inner(∇K̄(q - δ,τ),λ)
     Suppose one noise field nf
     Returns diagonal matrix with noisefield for position at point location q (can be vector or Point)
 """
-σq(q, nf::Noisefield) = Diagonal(nf.λ * K̄(q - nf.δ,nf.τ))
+σq(q, nf::Noisefield) = Diagonal(nf.γ * K̄(q - nf.δ,nf.τ))
 
 """
     Suppose one noise field nf
     Returns diagonal matrix with noisefield for momentum at point location q (can be vector or Point)
 """
-σp(q, p, nf::Noisefield) = -Diagonal(p .* nf.λ .* ∇K̄(q - nf.δ,nf.τ))
+σp(q, p, nf::Noisefield) = -Diagonal(p .* nf.γ .* ∇K̄(q - nf.δ,nf.τ))
 
 
 """
@@ -301,8 +300,8 @@ function Bridge.b!(t, x, out, P::Landmarks)
          if itostrat
              for k in 1:length(P.nfs)
                  nf = P.nfs[k]
-                 out.q[i] += 0.5 * z(q(x,i),nf.τ,nf.δ,nf.λ) * K̄(q(x,i)-nf.δ,nf.τ) * nf.λ
-                 out.p[i] += 0.5 * dot(p(x,i),nf.λ) * ( z(q(x,i),nf.τ,nf.δ,nf.λ) * ∇K̄(q(x,i)-nf.δ,nf.τ) -K̄(q(x,i)-nf.δ,nf.τ) * ∇z(q(x,i),nf.τ,nf.δ,nf.λ) )
+                 out.q[i] += 0.5 * z(q(x,i),nf.τ,nf.δ,nf.γ) * K̄(q(x,i)-nf.δ,nf.τ) * nf.γ
+                 out.p[i] += 0.5 * dot(p(x,i),nf.γ) * ( z(q(x,i),nf.τ,nf.δ,nf.γ) * ∇K̄(q(x,i)-nf.δ,nf.τ) -K̄(q(x,i)-nf.δ,nf.τ) * ∇z(q(x,i),nf.τ,nf.δ,nf.γ) )
              end
          end
     end
@@ -324,8 +323,8 @@ function Bridge.b!(t, x, out, Paux::LandmarksAux)
                 # approximate q by qT
                 nf = P.nfs[k]
                 qT = q(Paux.xT,i)
-                out.q[i] += 0.5 * z(qT,nf.τ,nf.δ,nf.λ) * K̄(qT-nf.δ,nf.τ) * nf.λ
-                out.p[i] += 0.5 * dot(p(x,i),nf.λ) * ( z(qT,nf.τ,nf.δ,nf.λ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.λ) )
+                out.q[i] += 0.5 * z(qT,nf.τ,nf.δ,nf.γ) * K̄(qT-nf.δ,nf.τ) * nf.γ
+                out.p[i] += 0.5 * dot(p(x,i),nf.γ) * ( z(qT,nf.τ,nf.δ,nf.γ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.γ) )
             end
         end
     end
@@ -347,7 +346,7 @@ function Bridge.B(t, Paux::LandmarksAux)
             for k in 1:length(Paux.nfs)
                 nf = P.nfs[k]
                 qT = q(Paux.xT,i)
-                X[2i,2i] += 0.5 * ( z(qT,nf.τ,nf.δ,nf.λ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.λ) )  * nf.λ'
+                X[2i,2i] += 0.5 * ( z(qT,nf.τ,nf.δ,nf.γ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.γ) )  * nf.γ'
             end
         end
     end
@@ -371,7 +370,7 @@ function Bridge.B!(t,X,out, Paux::LandmarksAux)
                 for k in 1:length(Paux.nfs)
                     nf = P.nfs[k]
                     qT = q(Paux.xT,i)
-                    u += 0.5 * ( z(qT,nf.τ,nf.δ,nf.λ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.λ) )  * nf.λ'
+                    u += 0.5 * ( z(qT,nf.τ,nf.δ,nf.γ) * ∇K̄(qT - nf.δ,nf.τ) -K̄(qT - nf.δ,nf.τ) * ∇z(qT,nf.τ,nf.δ,nf.γ) )  * nf.γ'
                 end
                 out[2i,k] = u * X[2i,k]
             end
@@ -387,7 +386,7 @@ function Bridge.β(t, Paux::LandmarksAux)
             for k in 1:length(P.nfs)
                 nf = P.nfs[k]
                 qT = q(Paux.xT,i)
-                out[i] += 0.5 * z(qT,nf.τ,nf.δ,nf.λ) * K̄(qT-nf.δ,nf.τ) * nf.λ # simply take q at endpoint
+                out[i] += 0.5 * z(qT,nf.τ,nf.δ,nf.γ) * K̄(qT-nf.δ,nf.τ) * nf.γ # simply take q at endpoint
             end
         end
         return(State(out,zeros(PointF,Paux.n)))

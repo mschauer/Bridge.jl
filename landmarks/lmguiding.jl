@@ -64,7 +64,7 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
     println("computing ã and its low rank approximation:")
     # various ways to compute ã (which does not depend on time);
     # low rank appoximation really makes sense here
-           @time    aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
+     aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
 
         #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
         #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
@@ -107,7 +107,7 @@ function _r!((i,t), x::State, out::State, Q::GuidedProposall!)
 end
 # need function that multiplies square unc with state and outputs state
 
-function guidingterm((i,t),x::State,Q::GuidedProposall!)
+function guidingterm((i,t),x,Q::GuidedProposall!)
     #Bridge.b(t,x,Q.target) +
     amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
 end
@@ -116,7 +116,7 @@ Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
 for each value in X.tt.
 Hence, it returns an Array of type State
 """
-function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::GuidedProposall!)
+function guidingterms(X,Q::GuidedProposall!)
     i = first(1:length(X.tt))
     out = [guidingterm((i,X.tt[i]),X.yy[i],Q)]
     for i in 2:length(X.tt)
@@ -125,11 +125,8 @@ function guidingterms(X::SamplePath{State{SArray{Tuple{2},Float64,1,2}}},Q::Guid
     out
 end
 
-"""
-v0 consists of all observation vectors stacked, so in case of two observations, it should be v0 and vT stacked
-"""
 function Bridge.lptilde(x, L0, M⁺0, μ0, xobs)
-  y = deepvec(xobs - μ0 - L0*x)
+  y = deepvec(xobs - μ0 - L0*vec(x))
   M⁺0deep = deepmat(M⁺0)
   -0.5*logdet(M⁺0deep) -0.5*dot(y, M⁺0deep\y)
 end
@@ -153,32 +150,32 @@ function llikelihood(::LeftRule,  Xᵒ, Q::GuidedProposall!; skip = 0)
     bout = copy(rout)
     btout = copy(rout)
 
-    At = Bridge.a((1,0), xx[1], auxiliary(Q))
-    A = zeros(Unc{deepeltype(xx[1])}, 2Q.target.n,2Q.target.n)
+    if !constdiff(Q)
+        At = Bridge.a((1,0), xx[1], auxiliary(Q))
+        A = zeros(Unc{deepeltype(xx[1])}, 2Q.target.n,2Q.target.n)
+    end
 
     for i in 1:length(tt)-1-skip #skip last value, summing over n-1 elements
-        s = tt[i]
-        x = xx[i]
-        _r!((i,s), x, rout, Q)
-        b!(s, x, bout, target(Q))
-        _b!((i,s), x, btout, auxiliary(Q))
+        _r!((i,tt[i]), xx[i], rout, Q)
+        b!(tt[i], xx[i], bout, target(Q))
+        _b!((i,tt[i]), xx[i], btout, auxiliary(Q))
+
 #        btitilde!((s,i), x, btout, Q)
         dt = tt[i+1]-tt[i]
         som += dot(bout-btout, rout) * dt
 
         if !constdiff(Q)
-            σt!(s, x, rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x)
-            σt!(s, x, rout, strout, auxiliary(Q))  #  tildeσ(t,x)' * tilder(t,x)
+            σt!(tt[i], xx[i], rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x)
+            σt!(tt[i], xx[i], rout, strout, auxiliary(Q))  #  tildeσ(t,x)' * tilder(t,x)
 
             som += 0.5*Bridge.inner(srout) * dt    # |σ(t,x)' * tilder(t,x)|^2
             som -= 0.5*Bridge.inner(strout) * dt   # |tildeσ(t,x)' * tilder(t,x)|^2
 
-            Bridge.a!((i,s), x, A, target(Q))  #A = Bridge.a((i,s), x, target(Q))
+            Bridge.a!((i,tt[i]), xx[i], A, target(Q))  #A = Bridge.a((i,s), x, target(Q))
 
-            # som -= 0.5*hadamtrace(A, Q.Ht[i]) * dt
-             # som += 0.5*hadamtrace(At, Q.Ht[i]) * dt
             som += 0.5*(dot(At,Q.Ht[i]) - dot(A,Q.Ht[i])) * dt
         end
+
     end
     som
 end

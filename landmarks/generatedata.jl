@@ -27,9 +27,10 @@ function generatedata(dataset,P,t,σobs)
         q0 = [PointF(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         p0 = [Point(1.0, -3.0) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
-        @time Wf, Xf = landmarksforward(t, dwiener, x0, P)
+        Wf, Xf = landmarksforward(t, dwiener, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
         xobsT = [Xf.yy[end].q[i] for i in 1:P.n ] + σobs * randn(PointF,n)
+        #plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=3)#2.6)
     end
     if dataset in ["shifted","shiftedextreme"] # first stretch, then rotate, then shift; finally add noise
         q0 = [PointF(2.0cos(t), sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))

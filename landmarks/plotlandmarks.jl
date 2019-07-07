@@ -20,7 +20,7 @@ function plotlandmarkpositions(X,Xᵒ,n,model,v0,vT,nfs;db=5)
     dfg = DataFrame(time=extractcomp(outg,1),pos1=extractcomp(outg,2),pos2=extractcomp(outg,3),mom1=extractcomp(outg,4),mom2=extractcomp(outg,5),pointID=extractcomp(outg,6))
     # construct df for noisefields
     if model ==:ahs
-        nfscales = [nfs[j].λ for j in eachindex(nfs)]
+        nfscales = [nfs[j].γ for j in eachindex(nfs)]
         nfsloc = [nfs[j].δ for j in eachindex(nfs)]
         df_nfs = DataFrame(locx =  extractcomp(nfsloc,1), locy =  extractcomp(nfsloc,2),
         lambda1=  extractcomp(nfscales,1), lambda2=extractcomp(nfscales,2), nfstd=fill(nfstd,length(nfs)))
