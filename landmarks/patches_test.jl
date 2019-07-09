@@ -52,7 +52,7 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, X0, W, Q::GuidedProposall!;
             end
         end
     end
-    som
+    Xᵒ, som
 end
 
 if TEST

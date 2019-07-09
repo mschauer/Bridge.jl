@@ -66,12 +66,12 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
     # low rank appoximation really makes sense here
      aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
 
-        #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
+#           @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
         #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
 
     # @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-10)  # control accuracy of lr approx
     # println("Rank ",size(aalr[:vectors],2), " approximation to ã")
-    # sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
+#     sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
 
 
     for i in length(t)-1:-1:1
@@ -81,7 +81,9 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
        Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
 #        Mt⁺[i] .= Mt⁺[i+1] + Bridge.outer(Lt[i+1] * sqrt_aalr) * dt  # does not run with nstate, matmul of Array{Unc,2} with Adjoint(Array{Unc,2}) not defined
 #        Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1] * sqrt_aalr * conj!(Lt[i+1] * sqrt_aalr) * dt
-        μt[i] .=  μt[i+1] + Lt[i+1] * β * dt
+
+        μt[i] .= μt[i+1] + Lt[i+1] * β * dt
+
     end
     (Lt[1], Mt⁺[1], μt[1])
 end

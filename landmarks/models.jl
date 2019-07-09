@@ -97,7 +97,7 @@ function Bridge.b!(t, x, out, P::MarslandShardlow)
     for i in 1:P.n
         for j in 1:P.n
             out.q[i] += p(x,j)*kernel(q(x,i) - q(x,j), P)
-            out.p[i] += -P.λ*kernel(q(x,i) - q(x,j), P) -
+            out.p[i] += -P.λ*p(x,j)*kernel(q(x,i) - q(x,j), P) -
                  dot(p(x,i), p(x,j)) * ∇kernel(q(x,i) - q(x,j), P)
         end
     end
@@ -319,7 +319,7 @@ function Bridge.b!(t, x, out, Paux::LandmarksAux)
             out.q[i] += p(x,j)*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)
         end
         if itostrat
-            for k in 1:length(P.nfs)
+            for k in 1:length(Paux.nfs)
                 # approximate q by qT
                 nf = P.nfs[k]
                 qT = q(Paux.xT,i)
@@ -332,7 +332,6 @@ function Bridge.b!(t, x, out, Paux::LandmarksAux)
 end
 
 
-
 """
 Compute tildeB(t) for landmarks auxiliary process
 """
@@ -340,7 +339,7 @@ function Bridge.B(t, Paux::LandmarksAux)
     X = zeros(UncF, 2Paux.n, 2Paux.n)
     for i in 1:Paux.n
         for j in 1:Paux.n
-            X[2i-1,2j] =  kernel(q(Paux.xT,i) - q(Paux.xT,j), P) * one(UncF)
+            X[2i-1,2j] =  kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) * one(UncF)
         end
         if itostrat
             for k in 1:length(Paux.nfs)
@@ -380,11 +379,11 @@ function Bridge.B!(t,X,out, Paux::LandmarksAux)
 end
 
 function Bridge.β(t, Paux::LandmarksAux)
-    out = 0.0 * copy(Paux.xT.q)
+    out = zeros(PointF,Paux.n)
     if itostrat
         for i in 1:Paux.n
-            for k in 1:length(P.nfs)
-                nf = P.nfs[k]
+            for k in 1:length(Paux.nfs)
+                nf = Paux.nfs[k]
                 qT = q(Paux.xT,i)
                 out[i] += 0.5 * z(qT,nf.τ,nf.δ,nf.γ) * K̄(qT-nf.δ,nf.τ) * nf.γ # simply take q at endpoint
             end
@@ -563,6 +562,8 @@ if TEST
     out = deepcopy(Hend⁺)
     Bridge.B!(t0,Hend⁺,out,Paux)
     @test out==BB
+    differ = Bridge.b(t0,Paux.xT,P) - Bridge.B(t0,Paux) * Paux.xT - Bridge.β(t0,Paux)
+    @test Bridge.inner(vec(differ.q)) < 10^(-6) # at the endpoint, drift should match for q coordinates
 end
 
 

@@ -18,6 +18,7 @@ pyplot()
 
 Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
 
+n = 26#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[2]
 println(model)
@@ -28,12 +29,19 @@ rotation = false  # rotate configuration at time T
 showplotσq = false
 
 samplers =[:sgd, :sgld, :mcmc]
-sampler = samplers[1]
+sampler = samplers[3]
+
+
 
 ρ = 0.9#0.99999#1.0 #0.9999 #CN par
-δ = 0.1#0.00001 # MALA par
+if model==:ms
+    δ = 0.1#0.00001 # MALA par
+else
+    δ = 0.005
+end
 ϵ = 0.01  # sgd step size
 ϵstep(i) = 1/(1+i)^(0.7)
+
 
 
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
@@ -43,11 +51,11 @@ ITER = 10 # nr of sgd iterations
 subsamples = 0:2:ITER
 
 const sk=1  # entries to skip for likelihood evaluation
-const itostrat = true                    #false#true#false#true
+const itostrat = true#false#true                    #false#true#false#true
 const d = 2
 const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 
-n = 6#35 # nr of landmarks
+
 
 σobs = 0.01   # noise on observations
 
@@ -55,10 +63,10 @@ T = 1.0#1.0#0.5
 t = 0.0:0.005:T  # time grid
 
 #Random.seed!(5)
- include("nstate.jl")
- include("state.jl")
+#include("ostate.jl")
+include("nstate.jl")
+include("state.jl")
 #include("state_localversion.jl")
-
 include("models.jl")
 include("patches.jl")
 include("lmguiding.jl")
@@ -68,7 +76,7 @@ include("generatedata.jl")
 include("patches_test.jl")
 
 ### Specify landmarks models
-a = 3.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
+a = 5.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
 #a = 5.0
 
 if model == :ms
@@ -79,8 +87,8 @@ if model == :ms
     P = MarslandShardlow(a, γ, λ, n)
 else
     db = 5.0 # domainbound
-    nfstd = 1.25#2.5#  1.25 # tau , width of noisefields
-    γ = 0.5
+    nfstd = 2.5#2.5#  1.25 # tau , width of noisefields
+    γ = 0.2
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
     dwiener = length(nfs)
     P = Landmarks(a, n, nfs)
@@ -120,6 +128,9 @@ end
 
  #
 
+#mT = randn(PointF,P.n)   #
+#mT = zeros(PointF,P.n)   #
+
 if model == :ms
     Paux = MarslandShardlowAux(P, State(xobsT, mT))
 else
@@ -131,11 +142,17 @@ println("compute guiding term:")
 Lt, Mt⁺ , μt = initLMμ(tt_,(LT,ΣT,μT))
 (Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
-# initialise guided path
-xinit = State(xobs0, [Point(2.,2.) for i in 1:P.n])
-#xinit = State(xobs0, rand(PointF,n))
-#xinit = x0
+
+
+#  @time Bridge.solve!(EulerMaruyama!(), X, xinit, W, Q)
+ # @time llikelihood(LeftRule(), X, Q; skip = 1)
+
+ # initialise guided path
+xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
+# xinit = State(xobs0, rand(PointF,n))
+# xinit = x0
 #xinit = State(xobs0, zeros(PointF,n))
+#xinit=State(x0.q, 30*x0.p)
 
 # sample guided path
 println("Sample guided proposal:")
@@ -143,15 +160,13 @@ X = initSamplePath(tt_, xinit)
 W = initSamplePath(tt_,  zeros(StateW, dwiener))
 sample!(W, Wiener{Vector{StateW}}())
 
-#  @time Bridge.solve!(EulerMaruyama!(), Xᵒ, xinit, Wᵒ, Q)
- # @time llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
 
-@time ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
+@time X, ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
 lptilde(xinit, Lt0, Mt⁺0, μt0, xobst0)
 
 guid = guidingterms(X,Q)
 
-plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,nfs,db=3)#2.6)
+plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,nfs,db=4)#2.6)
 
 
 
@@ -170,9 +185,25 @@ acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2
 Xsave = typeof(X)[]
 
 # initialisation
-Wᵒ = deepcopy(W)
-Wnew = deepcopy(W)
-Xᵒ = deepcopy(X)
+# Wᵒ = deepcopy(W)
+# Wnew = deepcopy(W)
+# Xᵒ = deepcopy(X)
+
+Xᵒ = initSamplePath(tt_, xinit)
+Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
+Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
+
+# solve!(EulerMaruyama!(), X, xinit, W, Q)
+# solve!(EulerMaruyama!(), Xᵒ, 100*xinit, W, Q)
+# X.yy-Xᵒ.yy # different, as expected
+#
+# Xᵒ.yy .= X.yy # I thought this means that all elements of X.yy are copied to Xᵒ.yy
+# X.yy-Xᵒ.yy # all zero, as expected
+# Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
+# sample!(Wnew, Wiener{Vector{StateW}}())
+# solve!(EulerMaruyama!(), Xᵒ, 100*xinit, Wnew, Q) # simulate new path for
+# X.yy-Xᵒ.yy # all zero, didn't see that one coming. WHY?
+
 llᵒ = ll
 
 if 0 in subsamples

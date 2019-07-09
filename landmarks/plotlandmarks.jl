@@ -87,7 +87,7 @@ function plotlandmarkpositions(X,n,model,v0,vT,nfs;db=5)
     df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))
     # construct df for noisefields
     if model ==:ahs
-        nfscales = [nfs[j].λ for j in eachindex(nfs)]
+        nfscales = [nfs[j].γ for j in eachindex(nfs)]
         nflocs = [nfs[j].δ for j in eachindex(nfs)]
         df_nfs = DataFrame(locx =  extractcomp(nflocs,1), locy =  extractcomp(nflocs,2),
         lambda1=  extractcomp(nfscales,1), lambda2=extractcomp(nfscales,2), nfstd=fill(nfstd,length(nfs)))
@@ -148,7 +148,7 @@ function plotσq(db,nfs ;δ=0.1)
     σq_fineres = σq(nfs).(nfloc_fineres)
     df_sigmaq = DataFrame(x=extractcomp(nfloc_fineres,1), y=extractcomp(nfloc_fineres,2), horiz =map(x->x[1,1], σq_fineres), vertic = map(x->x[2,2], σq_fineres) )
     if model ==:ahs
-        nfscales = [nfs[j].λ for j in eachindex(nfs)]
+        nfscales = [nfs[j].γ for j in eachindex(nfs)]
         nfsloc = [nfs[j].δ for j in eachindex(nfs)]
         df_nfs = DataFrame(locx =  extractcomp(nfsloc,1), locy =  extractcomp(nfsloc,2),
         lambda1=  extractcomp(nfscales,1), lambda2=extractcomp(nfscales,2), nfstd=fill(nfstd,length(nfs)))

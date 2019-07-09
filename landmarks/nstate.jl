@@ -132,3 +132,6 @@ if TEST
     U = rand(UncF,5,5)
     U * x.p
 end
+
+q(i::Int) = 2i - 1
+p(i::Int) = 2i
