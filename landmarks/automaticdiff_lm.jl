@@ -1,24 +1,19 @@
-"""
-Stochastic approximation to transition density.
-Provide Wiener process.
-"""
-function slogpW(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ)
-    x0 = deepvec2state(x0deepv)
-    Xᵒ = Bridge.solve(EulerMaruyama!(), x0, Wᵒ, Q)# this causes the problem
-    lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
-end
-slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> slogpW(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ)
-∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> gradient(slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ), x)
+# function slogpW(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ)
+#     x0 = deepvec2state(x0deepv)
+#     Xᵒ = Bridge.solve(EulerMaruyama!(), x0, Wᵒ, Q)# this causes the problem
+#     lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
+# end
+# slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> slogpW(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ)
+# ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> gradient(slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ), x)
 
-function slogpWX(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, W,X) # preferred way
+function slogpWX(x0deepv, Q, W,X) # preferred way
     x0 = deepvec2state(x0deepv)
 #    solve!(EulerMaruyama!(), X, x0, W, Q)
 # ll = llikelihood(LeftRule(), X, Q; skip = 1)
     X, ll = simguidedlm_llikelihood!(LeftRule(), X, x0, W, Q; skip=sk)
-    lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + ll
 end
-slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> slogpWX(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X)
-∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> gradient(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X), x)
+slogpWX(Q, W, X) = (x) -> slogpWX(x, Q, W,X)
+∇slogpWX(Q, W, X) = (x) -> gradient(slogpWX(Q, W,X), x)
 
 
 """
@@ -26,13 +21,13 @@ slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> slogpWX(x, Lt0,  Mt⁺0,
     sgd, sgld or mcmc
 """
 function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
-                sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),mask, mask_id, δ, ρ, acc)
+                sampler, Q,mask, mask_id, δ, ρ, acc)
     if sampler in [:sgd, :sgld]
         sample!(W, Wiener{Vector{StateW}}())
         # cfg = GradientConfig(slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W), x, Chunk{d*P.n}()) # 2*d*P.n is maximal
         # @time gradient!(∇x, slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W),x,cfg)
-        cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
-        gradient!(∇x, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),x,cfg) # ensure X does not get overwritten
+        cfg = GradientConfig(slogpWX(Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+        gradient!(∇x, slogpWX(Q, W, X),x,cfg) # ensure X does not get overwritten
 
 
         if sampler==:sgd
@@ -45,7 +40,7 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         # Bridge.solve!(EulerMaruyama!(), X, xstate, W, Q)
         # obj = lptilde(xstate, Lt0, Mt⁺0, μt0, xobst0) +
         #         llikelihood(LeftRule(), X, Q; skip = 1)
-        obj = lptilde(xstate, Lt0, Mt⁺0, μt0, xobst0) +
+        obj = lptilde(xstate, Q) +
             simguidedlm_llikelihood!(LeftRule(), X, xstate, W, Q;skip=sk)
         println("obj ", obj)
     end
@@ -78,19 +73,27 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
 
         # MALA step (update x, for fixed W)
         if !inplace
-            ∇x .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(x)
+            ∇x .= ∇slogpW(Q, W)(x)
         else
             #∇x .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(x)
-            cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
-            gradient!(∇x, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),x,cfg) # X gets overwritten but does not change
+            cfg = GradientConfig(slogpWX(Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+        @time    gradient!(∇x, slogpWX(Q, W, X),x,cfg) # X gets overwritten but does not change
+
+            # obtain function value and gradient at once
+            if false
+             result = DiffResults.GradientResult(x)
+             @time result = gradient!(result, slogpWX(Q, W, X),x,cfg) # X gets overwritten but does not change
+             ll_withlptilde = DiffResults.value(result)
+             ∇x =  DiffResults.gradient(result)
+            end
         end
         xᵒ .= x .+ .5*δ * mask.* (∇x .+ sqrt(δ) * randn(length(x)))
         if !inplace
-             ∇xᵒ .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(xᵒ)
+             ∇xᵒ .= ∇slogpW(Q, W)(xᵒ)
         else
              #∇xᵒ .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(xᵒ)
-             cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, Xᵒ), xᵒ, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
-             gradient!(∇xᵒ, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, Xᵒ),xᵒ,cfg) # Xᵒ gets overwritten and is changed
+             cfg = GradientConfig(slogpWX(Q, W, Xᵒ), xᵒ, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+             gradient!(∇xᵒ, slogpWX(Q, W, Xᵒ),xᵒ,cfg) # Xᵒ gets overwritten and is changed
         end
         xstate = deepvec2state(x)
         xᵒstate = deepvec2state(xᵒ)
@@ -100,11 +103,11 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         #     logpdf(MvNormal(d*P.n,sqrt(δ)),(xᵒ - x - .5*δ* mask.* ∇x)[mask_id]) +
         #     logpdf(MvNormal(d*P.n,sqrt(δ)),(x - xᵒ - .5*δ* mask.* ∇xᵒ)[mask_id])
 
-        lp = lptilde(xstate, Lt0, Mt⁺0, μt0, xobst0)
+        lp = lptilde(xstate, Q)
         #X, ll = simguidedlm_llikelihood!(LeftRule(), X, xstate, W, Q;skip=sk)
         #Xᵒ, llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, xᵒstate, W, Q;skip=sk)
         llᵒ = llikelihood(LeftRule(), Xᵒ, Q; skip = sk)
-        lpᵒ = lptilde(xᵒstate, Lt0, Mt⁺0, μt0, xobst0)
+        lpᵒ = lptilde(xᵒstate, Q)
 
         ainit = lpᵒ + llᵒ - (lp + ll)
                  - logpdf(MvNormal(d*P.n,sqrt(δ)),(xᵒ - x - .5*δ* mask.* ∇x)[mask_id]) +

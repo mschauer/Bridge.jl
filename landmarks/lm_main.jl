@@ -11,6 +11,7 @@ if fd==true
 else
     using ReverseDiff: GradientConfig, gradient!, gradient, Dual
 end
+using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 
@@ -20,7 +21,7 @@ Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
 
 n = 26#35 # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println(model)
 
 TEST = false#true
@@ -128,8 +129,6 @@ end
 
  #
 
-#mT = randn(PointF,P.n)   #
-#mT = zeros(PointF,P.n)   #
 
 if model == :ms
     Paux = MarslandShardlowAux(P, State(xobsT, mT))
@@ -139,10 +138,12 @@ end
 
 # compute guided prposal
 println("compute guiding term:")
-Lt, Mt⁺ , μt = initLMμ(tt_,(LT,ΣT,μT))
-(Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
+#(Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+# should become
+Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
-
+# where Q has additional fields (Lt0, Mt⁺0, μt0)
 
 #  @time Bridge.solve!(EulerMaruyama!(), X, xinit, W, Q)
  # @time llikelihood(LeftRule(), X, Q; skip = 1)
@@ -162,7 +163,7 @@ sample!(W, Wiener{Vector{StateW}}())
 
 
 @time X, ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
-lptilde(xinit, Lt0, Mt⁺0, μt0, xobst0)
+
 
 guid = guidingterms(X,Q)
 
@@ -241,15 +242,9 @@ anim =    @animate for i in 1:ITER
     global ∇xᵒ
     println("iteration $i")
 
-    #δ = ϵstep(i)
-
-
-     # X,Xᵒ,W,Wᵒ,ll,x,xᵒ,∇x,∇xᵒ, obj,acc = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
-     #        sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
-     #            mask, mask_id, δ, ρ, acc)
 
     (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
-                                sampler,(Lt0,  Mt⁺0, μt0, xobst0, Q),
+                                sampler,Q,
                                 mask, mask_id, δ, ρ, acc)
     println()
 

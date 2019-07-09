@@ -5,7 +5,7 @@
     thereby avoiding 'double' computations
 """
 # Fixme: do something with Bridge.endpoint
-function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, X0, W, Q::GuidedProposall!; skip = 0)
+function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, X0, W, Q::GuidedProposall!; skip = 0, lptilde = true)
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
     Xᵒ.yy[1] .= X0
@@ -52,7 +52,13 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, X0, W, Q::GuidedProposall!;
             end
         end
     end
-    Xᵒ, som
+    if lptilde == true
+        logρ0 = lptilde(x0,Q)
+    else
+        logρ0 = 0.0 # don't compute
+        ρ
+    end
+    Xᵒ, som + logρ0
 end
 
 if TEST

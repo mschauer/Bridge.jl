@@ -7,45 +7,50 @@ import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B
     L: specification that L x is observed (where x is the 'full' state)
     newobs: new observation (obtained as L x + N(0,Σ))
 """
-function lmgpupdate(Lt, Mt::Array{Pnt,2}, μt, xobst, (L, Σ, newobs)) where Pnt
-    Lt = [L; Lt]
-    m = size(Σ)[1]
-    n = size(Mt)[2]
-    Mt = [Σ zeros(Pnt,m,n); zeros(Pnt,n,m) Mt]
-    μt = [0newobs; μt]
-    xobst = [newobs; xobst]
-
-    Lt, Mt, μt, xobst
+function lmgpupdate(Lt0₊, Mt⁺0₊::Array{Pnt,2}, μt0₊, (L0, Σ0, xobs0)) where Pnt
+    Lt0 = [L0; Lt0₊]
+    m = size(Σ0)[1]
+    n = size(Mt⁺0₊)[2]
+    Mt⁺0 = [Σ0 zeros(Pnt,m,n); zeros(Pnt,n,m) Mt⁺0₊]
+    μt0 = [0*xobs0; μt0₊]
+    Lt0, Mt⁺0, μt0
 end
 
 """
     Initialise arrays for (L,M,μ) where each value is copied length(t) times
 """
-function initLMμ(t,(L,M,μ))
+function initLMμH(t,(L,M,μ))
     Lt =  [copy(L) for s in t]
     Mt⁺ = [copy(M) for s in t]
     μt = [copy(μ) for s in t]
-    Lt, Mt⁺ , μt
+    H = L' * (M * L )
+    Ht = [copy(H) for s in t]
+    Lt, Mt⁺ , μt, Ht
 end
+
 
 
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
-struct GuidedProposall!{T,Ttarget,Taux,TL,TM,Tμ,TH,Txobs,F} <: ContinuousTimeProcess{T}
+struct GuidedProposall!{T,Ttarget,Taux,TL,TM,Tμ,TH,Txobs0,TxobsT,TLt0,TMt⁺0,Tμt0,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
-    Lt::Vector{TL}
-    Mt::Vector{TM}
-    μt::Vector{Tμ}
-    Ht::Vector{TH}
-    xobs::Txobs
+    Lt::Vector{TL} # Lt on grid tt
+    Mt::Vector{TM}  # Mt on grid tt
+    μt::Vector{Tμ}  # μt on grid tt
+    Ht::Vector{TH}  # Ht on grid tt
+    xobs0::Txobs0   # observation at time 0
+    xobsT::TxobsT  # observation at time T
+    Lt0::TLt0      # Lt at time 0, after gpupdate step incorporating observation xobs0
+    Mt⁺0::TMt⁺0    # inv(Mt) at time 0, after gpupdate step incorporating observation xobs0
+    μt0::Tμt0       # μt at time 0, after gpupdate step incorporating observation xobs0
     endpoint::F
 
-    function GuidedProposall!(target, aux, tt_, L, M, μ, H, xobs, endpoint=Bridge.endpoint)
+    function GuidedProposall!(target, aux, tt_, L, M, μ, H, xobs0, xobsT, Lt0,Mt⁺0,μt0, endpoint=Bridge.endpoint)
         tt = collect(tt_)
-        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(L),eltype(M),eltype(μt),eltype(H),typeof(xobs),typeof(endpoint)}(target, aux, tt, L, M, μ, H, xobs, endpoint)
+        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(L),eltype(M),eltype(μt),eltype(H),typeof(xobs0),typeof(xobsT),typeof(Lt0),typeof(Mt⁺0),typeof(μt0),typeof(endpoint)}(target, aux, tt, L, M, μ, H, xobs0, xobsT, Lt0, Mt⁺0,μt0, endpoint)
     end
 end
 
@@ -96,7 +101,7 @@ constdiff(Q::GuidedProposall!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
 
 function _b!((i,t), x::State, out::State, Q::GuidedProposall!)
     Bridge.b!(t, x, out, Q.target)
-    out .+= amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
+    out .+= amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobsT-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
     out
 end
 
@@ -104,14 +109,14 @@ end
 
 # in following x is of type state
 function _r!((i,t), x::State, out::State, Q::GuidedProposall!)
-    out .= vecofpoints2state(Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))))
+    out .= vecofpoints2state(Q.Lt[i]' * (Q.Mt[i] *(Q.xobsT-Q.μt[i]-Q.Lt[i]*vec(x))))
     out
 end
 # need function that multiplies square unc with state and outputs state
 
 function guidingterm((i,t),x,Q::GuidedProposall!)
     #Bridge.b(t,x,Q.target) +
-    amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobs-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
+    amul(t,x,Q.Lt[i]' * (Q.Mt[i] *(Q.xobsT-Q.μt[i]-Q.Lt[i]*vec(x))),Q.target)
 end
 """
 Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
@@ -127,9 +132,9 @@ function guidingterms(X,Q::GuidedProposall!)
     out
 end
 
-function Bridge.lptilde(x, L0, M⁺0, μ0, xobs)
-  y = deepvec(xobs - μ0 - L0*vec(x))
-  M⁺0deep = deepmat(M⁺0)
+function Bridge.lptilde(x, Q)
+  y = deepvec([Q.xobs0; Q.xobsT] - Q.μt0 - Q.Lt0*vec(x))
+  M⁺0deep = deepmat(Q.Mt⁺0)
   -0.5*logdet(M⁺0deep) -0.5*dot(y, M⁺0deep\y)
 end
 
@@ -184,12 +189,13 @@ end
 
 
 
-construct_guidedproposal! = function(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+construct_guidedproposal! = function(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     (Lt0₊, Mt⁺0₊, μt0₊) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (LT, ΣT, μT))
-    Lt0, Mt⁺0, μt0, xobst0 = lmgpupdate(Lt0₊, Mt⁺0₊, μt0₊, xobsT, (L0, Σ0, xobs0))
-    Mt = map(X -> InverseCholesky(lchol(X)),Mt⁺)
-    Ht = [Lt[i]' * (Mt[i] * Lt[i] ) for i in 1:length(tt_) ]
-    Q = GuidedProposall!(P, Paux, tt_, Lt, Mt, μt, Ht, xobsT)
+    Lt0, Mt⁺0, μt0 = lmgpupdate(Lt0₊, Mt⁺0₊, μt0₊, (L0, Σ0, xobs0))
 
-    (Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0)
+    Mt = map(X -> InverseCholesky(lchol(X)),Mt⁺)
+    for i in 1:length(tt_)
+        Ht[i] .= Lt[i]' * (Mt[i] * Lt[i] )
+    end
+    GuidedProposall!(P, Paux, tt_, Lt, Mt, μt, Ht, xobs0, xobsT, Lt0, Mt⁺0, μt0)
 end
