@@ -10,11 +10,12 @@ end
 slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> slogpW(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ)
 ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ) = (x) -> gradient(slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ), x)
 
-function slogpWX(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,Xᵒ) # preferred way
+function slogpWX(x0deepv, Lt0,  Mt⁺0, μt0, xobst0, Q, W,X) # preferred way
     x0 = deepvec2state(x0deepv)
-#    solve!(EulerMaruyama!(), Xᵒ, x0, Wᵒ, Q)
-#    lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
-    lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + simguidedlm_llikelihood!(LeftRule(), Xᵒ, x0, Wᵒ, Q; skip=sk)
+#    solve!(EulerMaruyama!(), X, x0, W, Q)
+# ll = llikelihood(LeftRule(), X, Q; skip = 1)
+    X, ll = simguidedlm_llikelihood!(LeftRule(), X, x0, W, Q; skip=sk)
+    lptilde(x0, Lt0, Mt⁺0, μt0, xobst0) + ll
 end
 slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> slogpWX(x, Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X)
 ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X) = (x) -> gradient(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, Wᵒ,X), x)
@@ -56,12 +57,18 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         Wᵒ.yy .= ρ * W.yy + sqrt(1-ρ^2) * Wnew.yy
         # solve!(EulerMaruyama!(), Xᵒ, deepvec2state(x), Wᵒ, Q)
         # llᵒ = llikelihood(Bridge.LeftRule(), Xᵒ, Q,skip=sk)
-        llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), Wᵒ, Q;skip=sk)
+        Xᵒ, llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), Wᵒ, Q;skip=sk)
 
 
         if log(rand()) <= llᵒ - ll
-            X.yy .= Xᵒ.yy
-            W.yy .= Wᵒ.yy
+
+            for i in eachindex(X.yy)
+                X.yy[i] .= Xᵒ.yy[i]
+                W.yy[i] .= Wᵒ.yy[i]
+            end
+            #X, Xᵒ = Xᵒ, X
+            #W, Wᵒ = Wᵒ, W
+
             ll = llᵒ
             println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  accepted")
             acc[1] +=1
@@ -75,15 +82,15 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         else
             #∇x .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(x)
             cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
-            gradient!(∇x, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),copy(x),cfg) # ensure X does not get overwritten
+            gradient!(∇x, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),x,cfg) # X gets overwritten but does not change
         end
         xᵒ .= x .+ .5*δ * mask.* (∇x .+ sqrt(δ) * randn(length(x)))
         if !inplace
              ∇xᵒ .= ∇slogpW(Lt0,  Mt⁺0, μt0, xobst0, Q, W)(xᵒ)
         else
              #∇xᵒ .= ∇slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X)(xᵒ)
-             cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X), xᵒ, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
-             gradient!(∇xᵒ, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, X),xᵒ,cfg) # Xᵒ get overwritten
+             cfg = GradientConfig(slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, Xᵒ), xᵒ, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+             gradient!(∇xᵒ, slogpWX(Lt0,  Mt⁺0, μt0, xobst0, Q, W, Xᵒ),xᵒ,cfg) # Xᵒ gets overwritten and is changed
         end
         xstate = deepvec2state(x)
         xᵒstate = deepvec2state(xᵒ)
@@ -94,7 +101,9 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
         #     logpdf(MvNormal(d*P.n,sqrt(δ)),(x - xᵒ - .5*δ* mask.* ∇xᵒ)[mask_id])
 
         lp = lptilde(xstate, Lt0, Mt⁺0, μt0, xobst0)
-        llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, xᵒstate, W, Q;skip=sk)
+        #X, ll = simguidedlm_llikelihood!(LeftRule(), X, xstate, W, Q;skip=sk)
+        #Xᵒ, llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, xᵒstate, W, Q;skip=sk)
+        llᵒ = llikelihood(LeftRule(), Xᵒ, Q; skip = sk)
         lpᵒ = lptilde(xᵒstate, Lt0, Mt⁺0, μt0, xobst0)
 
         ainit = lpᵒ + llᵒ - (lp + ll)
@@ -105,13 +114,16 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
 
         if log(rand()) <= ainit
             x .= xᵒ
-            X.yy .= Xᵒ.yy
+            for i in eachindex(X.yy)
+                X.yy[i] .= Xᵒ.yy[i]
+            end
             println("update initial state; ainit: ", ainit, "  accepted")
             acc[2] +=1
             obj = lpᵒ + llᵒ
             ll = llᵒ
         else
             println("update initial state; ainit: ", ainit, "  rejected")
+        #    ll = simguidedlm_llikelihood!(LeftRule(), X, xstate, W, Q;skip=sk)# just added
             obj = lp + ll
         end
 
