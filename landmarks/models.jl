@@ -137,7 +137,7 @@ function Bridge.B(t, Paux::MarslandShardlowAux) # not AD safe
     X = zeros(UncF, 2Paux.n, 2Paux.n)
     for i in 1:Paux.n
         for j in 1:Paux.n
-            X[2i-1,2j] =  kernel(q(Paux.xT,i) - q(Paux.xT,j), P) * one(UncF)
+            X[2i-1,2j] =  kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux) * one(UncF)
             X[2i,2j] = -Paux.λ*kernel(q(Paux.xT,i) - q(Paux.xT,j), Paux)*one(UncF)
         end
     end
@@ -236,7 +236,7 @@ z(q,τ,δ,λ) =  Bridge.inner(∇K̄(q - δ,τ),λ)
     Define ∇z(q) = ∇ < ∇K̄(q - δ,τ), λ >
     Required for Stratonovich -> Ito correction in AHS-model
 """
-∇z(q,τ,δ,λ) =  gradient(x -> z(x,τ,δ,λ),q)
+∇z(q,τ,δ,λ) =  ForwardDiff.gradient(x -> z(x,τ,δ,λ),q)
 
 # function for specification of diffusivity of landmarks
 """

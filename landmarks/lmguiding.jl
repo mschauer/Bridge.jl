@@ -189,13 +189,91 @@ end
 
 
 
-construct_guidedproposal! = function(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+function construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     (Lt0₊, Mt⁺0₊, μt0₊) =  guidingbackwards!(Lm(), tt_, (Lt, Mt⁺,μt), Paux, (LT, ΣT, μT))
     Lt0, Mt⁺0, μt0 = lmgpupdate(Lt0₊, Mt⁺0₊, μt0₊, (L0, Σ0, xobs0))
-
     Mt = map(X -> InverseCholesky(lchol(X)),Mt⁺)
     for i in 1:length(tt_)
         Ht[i] .= Lt[i]' * (Mt[i] * Lt[i] )
     end
     GuidedProposall!(P, Paux, tt_, Lt, Mt, μt, Ht, xobs0, xobsT, Lt0, Mt⁺0, μt0)
+end
+
+
+"""
+    Simulate guided proposal and compute loglikelihood
+
+    solve sde inplace and return loglikelihood;
+    thereby avoiding 'double' computations
+"""
+function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!; skip = 0, ll0 = true)
+    Pnt = eltype(x0)
+    tt =  Xᵒ.tt
+    #Xᵒ.yy[1] .= deepvalue(x0.x)
+    Xᵒ.yy[1] .= deepvalue.(x0)
+    x = copy(x0)
+    som::deepeltype(x0)  = 0.
+
+    # initialise objects to write into
+    # srout and strout are vectors of Points
+    if isa(Q.target,Landmarks)
+        srout = zeros(Pnt, length(Q.target.nfs))
+        strout = zeros(Pnt, length(Q.target.nfs))
+    end
+    if isa(Q.target,MarslandShardlow)
+        srout = zeros(Pnt, Q.target.n)
+        strout = zeros(Pnt, Q.target.n)
+    end
+    rout = copy(x0)
+    bout = copy(x0)
+    btout = copy(x0)
+    wout = copy(x0)
+
+    if !constdiff(Q)
+        At = Bridge.a((1,0), x0, auxiliary(Q))  # auxtimehomogeneous switch
+        A = zeros(Unc{deepeltype(x0)}, 2Q.target.n,2Q.target.n)
+    end
+
+    for i in 1:length(tt)-1
+        #x = Xᵒ.yy[i]
+
+        dt = tt[i+1]-tt[i]
+        b!(tt[i], x, bout, target(Q)) # b(t,x)
+        _r!((i,tt[i]), x, rout, Q) # tilder(t,x)
+        σt!(tt[i], x, rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x) for target(Q)
+        Bridge.σ!(tt[i], x, srout*dt + W.yy[i+1] - W.yy[i], wout, target(Q)) # σ(t,x) (σ(t,x)' * tilder(t,x) + dW(t))
+
+        # likelihood terms
+        if i<=length(tt)-1-skip
+            _b!((i,tt[i]), x, btout, auxiliary(Q))
+            som += dot(bout-btout, rout) * dt
+            if !constdiff(Q)
+                σt!(tt[i], x, rout, strout, auxiliary(Q))  #  tildeσ(t,x)' * tilder(t,x) for auxiliary(Q)
+                som += 0.5*Bridge.inner(srout) * dt    # |σ(t,x)' * tilder(t,x)|^2
+                som -= 0.5*Bridge.inner(strout) * dt   # |tildeσ(t,x)' * tilder(t,x)|^2
+                Bridge.a!((i,tt[i]), x, A, target(Q))
+                som += 0.5*(dot(At,Q.Ht[i]) - dot(A,Q.Ht[i])) * dt
+            end
+        end
+        x.= x + dt * bout +  wout
+        Xᵒ.yy[i+1] .= deepvalue.(x)
+    end
+    if ll0
+        logρ0 = lptilde(x0,Q)
+    else
+        logρ0 = 0.0 # don't compute
+    end
+    copyto!(Xᵒ.yy[end], Bridge.endpoint(Xᵒ.yy[end],Q))
+    # println("som+logrho0 ", som+logρ0)
+    # dump(typeof(som+logρ0))
+    som + logρ0
+end
+
+if TEST
+    Y = deepcopy(Xᵒ)
+    Ynew = deepcopy(Xᵒ)
+    @time Bridge.solve!(EulerMaruyama!(), Y, xinit, Wᵒ, Q)
+    @time llikelihood(LeftRule(), Y, Q; skip = 1)
+    @time simguidedlm_llikelihood!(LeftRule(), Ynew, xinit, Wᵒ, Q)
+    j=30;print(Y.yy[j]-Ynew.yy[j])
 end

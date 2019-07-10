@@ -5,23 +5,30 @@ using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
-fd = true
-if fd==true
-    using ForwardDiff: GradientConfig, Chunk, gradient!, gradient, Dual
-else
-    using ReverseDiff: GradientConfig, gradient!, gradient, Dual
-end
+
+
+using ForwardDiff #: GradientConfig, Chunk, gradient!, gradient, Dual, value
+using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
+
 using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 
 pyplot()
 
-Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
+#Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
+#Base.float(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
 
-n = 26#35 # nr of landmarks
+deepvalue(x::Float64) = x
+deepvalue(x::ForwardDiff.Dual) = ForwardDiff.value(x)
+deepvalue(x) = deepvalue.(x)
+
+
+
+
+n = 6#35 # nr of landmarks
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 println(model)
 
 TEST = false#true
@@ -161,8 +168,7 @@ X = initSamplePath(tt_, xinit)
 W = initSamplePath(tt_,  zeros(StateW, dwiener))
 sample!(W, Wiener{Vector{StateW}}())
 
-
-@time X, ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
+@time ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
 
 
 guid = guidingterms(X,Q)
@@ -186,9 +192,6 @@ acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2
 Xsave = typeof(X)[]
 
 # initialisation
-# Wᵒ = deepcopy(W)
-# Wnew = deepcopy(W)
-# Xᵒ = deepcopy(X)
 
 Xᵒ = initSamplePath(tt_, xinit)
 Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
@@ -215,6 +218,9 @@ x = deepvec(xinit)
 xᵒ = deepcopy(x)
 ∇x = deepcopy(x)
 ∇xᵒ = deepcopy(x)
+result = DiffResults.GradientResult(x) # allocate
+resultᵒ = DiffResults.GradientResult(xᵒ)
+
 
 # for plotting
 xobs0comp1 = extractcomp(xobs0,1)
@@ -240,10 +246,13 @@ anim =    @animate for i in 1:ITER
     global xᵒ
     global ∇x
     global ∇xᵒ
+    global δ
     println("iteration $i")
 
-
-    (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,
+    if sampler==:sgd
+        δ = 0.01*ϵstep(i)
+    end
+    (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                                 sampler,Q,
                                 mask, mask_id, δ, ρ, acc)
     println()
