@@ -28,8 +28,6 @@ function initLMμH(t,(L,M,μ))
     Lt, Mt⁺ , μt, Ht
 end
 
-
-
 """
 Construct guided proposal on a single segment with times in tt from precomputed ν and H
 """
@@ -209,7 +207,6 @@ end
 function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!; skip = 0, ll0 = true)
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
-    #Xᵒ.yy[1] .= deepvalue(x0.x)
     Xᵒ.yy[1] .= deepvalue.(x0)
     x = copy(x0)
     som::deepeltype(x0)  = 0.
@@ -235,8 +232,6 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!;
     end
 
     for i in 1:length(tt)-1
-        #x = Xᵒ.yy[i]
-
         dt = tt[i+1]-tt[i]
         b!(tt[i], x, bout, target(Q)) # b(t,x)
         _r!((i,tt[i]), x, rout, Q) # tilder(t,x)
@@ -264,8 +259,6 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!;
         logρ0 = 0.0 # don't compute
     end
     copyto!(Xᵒ.yy[end], Bridge.endpoint(Xᵒ.yy[end],Q))
-    # println("som+logrho0 ", som+logρ0)
-    # dump(typeof(som+logρ0))
     som + logρ0
 end
 

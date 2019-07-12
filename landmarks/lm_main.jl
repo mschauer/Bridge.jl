@@ -81,7 +81,7 @@ include("lmguiding.jl")
 include("plotlandmarks.jl")
 include("automaticdiff_lm.jl")
 include("generatedata.jl")
-include("patches_test.jl")
+
 
 ### Specify landmarks models
 a = 5.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
@@ -101,6 +101,8 @@ else
     dwiener = length(nfs)
     P = Landmarks(a, n, nfs)
 end
+
+
 
 if (model == :ahs) & showplotσq
     plotσq(db, nfs)
@@ -146,21 +148,11 @@ end
 # compute guided prposal
 println("compute guiding term:")
 Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
-#(Lt, Mt⁺ , μt), Q, (Lt0, Mt⁺0, μt0, xobst0) = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
-# should become
 Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
-# where Q has additional fields (Lt0, Mt⁺0, μt0)
-
-#  @time Bridge.solve!(EulerMaruyama!(), X, xinit, W, Q)
- # @time llikelihood(LeftRule(), X, Q; skip = 1)
-
- # initialise guided path
+# initialise guided path
 xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-# xinit = State(xobs0, rand(PointF,n))
-# xinit = x0
-#xinit = State(xobs0, zeros(PointF,n))
-#xinit=State(x0.q, 30*x0.p)
+# xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
 
 # sample guided path
 println("Sample guided proposal:")
@@ -169,33 +161,32 @@ W = initSamplePath(tt_,  zeros(StateW, dwiener))
 sample!(W, Wiener{Vector{StateW}}())
 
 @time ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
+plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,P.nfs;db=4)#2.6)
 
-
-guid = guidingterms(X,Q)
-
-plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,nfs,db=4)#2.6)
-
-
-
-
-
+# saving objects
 objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
+acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
+Xsave = typeof(X)[]
 
 
 mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
 mask_id = (mask .> 0.1) # get indices that correspond to momenta
 
 
-
-acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
-
-Xsave = typeof(X)[]
-
 # initialisation
-
 Xᵒ = initSamplePath(tt_, xinit)
 Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
 Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
+llᵒ = ll
+if 0 in subsamples
+    push!(Xsave, copy(X))
+end
+x = deepvec(xinit)
+xᵒ = deepcopy(x)
+∇x = deepcopy(x)
+∇xᵒ = deepcopy(x)
+result = DiffResults.GradientResult(x) # allocate
+resultᵒ = DiffResults.GradientResult(xᵒ)
 
 # solve!(EulerMaruyama!(), X, xinit, W, Q)
 # solve!(EulerMaruyama!(), Xᵒ, 100*xinit, W, Q)
@@ -208,18 +199,6 @@ Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
 # solve!(EulerMaruyama!(), Xᵒ, 100*xinit, Wnew, Q) # simulate new path for
 # X.yy-Xᵒ.yy # all zero, didn't see that one coming. WHY?
 
-llᵒ = ll
-
-if 0 in subsamples
-    push!(Xsave, copy(X))
-end
-
-x = deepvec(xinit)
-xᵒ = deepcopy(x)
-∇x = deepcopy(x)
-∇xᵒ = deepcopy(x)
-result = DiffResults.GradientResult(x) # allocate
-resultᵒ = DiffResults.GradientResult(xᵒ)
 
 
 # for plotting
@@ -236,8 +215,7 @@ plotting = true
 anim =    @animate for i in 1:ITER
 #for i in 1:ITER
     #
-    global ll
-    global acc
+    global ll,  acc
     global X
     global Xᵒ
     global W
@@ -306,7 +284,7 @@ if plotting
 
 
 end
-    plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
+#    plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
 end
 
 print(100acc/ITER)
