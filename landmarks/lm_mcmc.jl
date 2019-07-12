@@ -1,3 +1,14 @@
+if TEST
+    uu = State([Point{ForwardDiff.Dual{Float64}}(2,3) for i in 1:6],  [Point{ForwardDiff.Dual{Float64}}(2,3) for i in 1:6])
+    duu .= deepvalue(uu)
+    typeof(duu)
+end
+
+function deepvalue(x::State)
+    State(deepvalue.(x.x))
+end
+
+
 if false # check later
     function nfs(P::Union{Landmarks,MarslandShardlow})
         if isa(P,Landmarks)
@@ -21,7 +32,7 @@ end
 
 
 
-function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ; makefig=true)
+function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER; makefig=true)
     println("compute guiding term:")
     Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
     Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
@@ -31,18 +42,22 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
     W = initSamplePath(tt_,  zeros(StateW, dwiener))
     sample!(W, Wiener{Vector{StateW}}())
 
-    dump(typeof(xinit))
-    print(xinit)
-    deepvalue.(xinit)
     ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
     if makefig
-        plotlandmarkpositions(X,P.n,model,xobs0,xobsT,P.nfs;db=4)
+        if isa(P,Landmarks)
+            plotlandmarkpositions(X,P.n,model,xobs0,xobsT,P.nfs;db=4)
+        end
+        if isa(P,MarslandShardlow)
+            plotlandmarkpositions(X,P.n,model,xobs0,xobsT,0;db=4)
+        end
     end
 
     # saving objects
     objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
     acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
     Xsave = typeof(X)[]
+    push!(Xsave, copy(X))
+    push!(objvals, ll)
 
     mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
     mask_id = (mask .> 0.1) # get indices that correspond to momenta
@@ -71,7 +86,12 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
     showmomenta = false
 
     # start iterations
-    anim =    @animate for i in 1:ITER
+    anim =    @animate for i in 2:ITER
+        if makefig
+            drawpath(i-1,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+        end
+        #   plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
+
         # global ll, acc, X, Xᵒ, W, Wᵒ, Wnew, x, xᵒ, ∇x
         # global ∇xᵒ
         # global δ
@@ -89,18 +109,16 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
             push!(Xsave, copy(X))
         end
         push!(objvals, obj)
-
-        if makefig
-            drawpath(x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+        if makefig && (i==ITER)
+            drawpath(ITER,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
         end
-        #   plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
     end
     cd("/Users/Frank/.julia/dev/Bridge/landmarks/figs")
     fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
     gif(anim, fn*".gif", fps = 20)
     mp4(anim, fn*".mp4", fps = 20)
 
-    drawobjective(objvals)
+    # drawobjective(objvals)
 
     perc_acc = 100acc/ITER
     println("Acceptance percentages (bridgepath - inital state): ",perc_acc)
@@ -109,7 +127,7 @@ end
 
 
 
-function drawpath(x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+function drawpath(i,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
         s = deepvec2state(x).p
         s0 = x0.p # true momenta
 
@@ -165,5 +183,7 @@ end
 
 if TEST
     xinit = State(xobs0, zeros(PointF,n))
-    lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, δ, xinit; makefig=true)
+    xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
+    ITER = 10
+    lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER; makefig=true)
 end

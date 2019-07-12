@@ -5,11 +5,8 @@ using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
-
-
 using ForwardDiff #: GradientConfig, Chunk, gradient!, gradient, Dual, value
 using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
-
 using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
@@ -28,7 +25,7 @@ deepvalue(x) = deepvalue.(x)
 
 n = 6#35 # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println(model)
 
 TEST = false#true
@@ -145,14 +142,19 @@ else
     Paux = LandmarksAux(P, State(xobsT, mT))
 end
 
+####### from here, lm_mcmc can be called ####### adjust in August
+
+
+
+# initialise guided path
+xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
+# xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
+
 # compute guided prposal
 println("compute guiding term:")
 Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
 Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
-# initialise guided path
-xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-# xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
 
 # sample guided path
 println("Sample guided proposal:")

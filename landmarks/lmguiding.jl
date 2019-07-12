@@ -207,7 +207,7 @@ end
 function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!; skip = 0, ll0 = true)
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
-    Xᵒ.yy[1] .= deepvalue.(x0)
+    Xᵒ.yy[1] .= deepvalue(x0)
     x = copy(x0)
     som::deepeltype(x0)  = 0.
 
@@ -251,7 +251,7 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!;
             end
         end
         x.= x + dt * bout +  wout
-        Xᵒ.yy[i+1] .= deepvalue.(x)
+        Xᵒ.yy[i+1] .= deepvalue(x)
     end
     if ll0
         logρ0 = lptilde(x0,Q)
