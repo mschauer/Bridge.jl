@@ -4,9 +4,6 @@ if TEST
     typeof(duu)
 end
 
-function deepvalue(x::State)
-    State(deepvalue.(x.x))
-end
 
 
 if false # check later
@@ -32,7 +29,7 @@ end
 
 
 
-function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER; makefig=true)
+function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER,outdir; makefig=true)
     println("compute guiding term:")
     Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
     Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
@@ -55,8 +52,9 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
     # saving objects
     objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
     acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
-    Xsave = typeof(X)[]
-    push!(Xsave, copy(X))
+    #Xsave = zeros(length(subsamples), length(tt_) * P.n * 2 * d )
+    Xsave = typeof(zeros(length(tt_) * P.n * 2 * d))[]
+    push!(Xsave, convert_samplepath(X))
     push!(objvals, ll)
 
     mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
@@ -66,8 +64,9 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
     Xᵒ = initSamplePath(tt_, xinit)
     Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
     Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
-    if 0 in subsamples
-        push!(Xsave, copy(X))
+    if 1 in subsamples
+        # push!(Xsave, copy(X))
+
     end
     x = deepvec(xinit)
     xᵒ = deepcopy(x)
@@ -106,17 +105,18 @@ function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sam
         println()
         # save some of the results
         if i in subsamples
-            push!(Xsave, copy(X))
+            #push!(Xsave, copy(X))
+            push!(Xsave, convert_samplepath(X))
         end
         push!(objvals, obj)
         if makefig && (i==ITER)
             drawpath(ITER,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
         end
     end
-    cd("/Users/Frank/.julia/dev/Bridge/landmarks/figs")
+
     fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
-    gif(anim, fn*".gif", fps = 20)
-    mp4(anim, fn*".mp4", fps = 20)
+    gif(anim, outdir*fn*".gif", fps = 20)
+    mp4(anim, outdir*fn*".mp4", fps = 20)
 
     # drawobjective(objvals)
 
@@ -180,10 +180,35 @@ function drawobjective(objvals)
     png(sc2,"stochlogp.png")
 end
 
+"""
+    Useful for storage of a samplepath of states
+    Ordering is as follows:
+    1) time
+    2) landmark nr
+    3) for each landmark: q1, q2 p1, p2
+
+    With m time-steps, n landmarks, this entails a vector of length m * n * 2 * d
+"""
+function convert_samplepath(X)
+    VA = VectorOfArray(map(x->deepvec(x),X.yy))
+    vec(convert(Array,VA))
+end
+
 
 if TEST
     xinit = State(xobs0, zeros(PointF,n))
     xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
     ITER = 10
     lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER; makefig=true)
+end
+
+# change parameter values and update
+function updateguidedproposal!((α,γ), tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P::MarslandShardlow, Paux, Q)
+    P = MarslandShardlow(α, γ, P.λ, P.n)
+    if model == :ms
+        Paux = MarslandShardlowAux(P, State(xobsT, mT))
+    else
+        Paux = LandmarksAux(P, State(xobsT, mT))
+    end
+    Q .= construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 end

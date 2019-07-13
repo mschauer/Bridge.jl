@@ -11,6 +11,8 @@ using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 
+outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"
+
 pyplot()
 
 #Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
@@ -19,6 +21,9 @@ pyplot()
 deepvalue(x::Float64) = x
 deepvalue(x::ForwardDiff.Dual) = ForwardDiff.value(x)
 deepvalue(x) = deepvalue.(x)
+function deepvalue(x::State)
+    State(deepvalue.(x.x))
+end
 
 
 
@@ -142,184 +147,15 @@ else
     Paux = LandmarksAux(P, State(xobsT, mT))
 end
 
-####### from here, lm_mcmc can be called ####### adjust in August
-
-
-
 # initialise guided path
 xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
 # xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
 
-# compute guided prposal
-println("compute guiding term:")
-Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
-Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+Xsave, objvals, perc_acc = lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler,
+                                        dataset, xinit, δ, ITER, outdir; makefig=true)
 
 
-# sample guided path
-println("Sample guided proposal:")
-X = initSamplePath(tt_, xinit)
-W = initSamplePath(tt_,  zeros(StateW, dwiener))
-sample!(W, Wiener{Vector{StateW}}())
-
-@time ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
-plotlandmarkpositions(Xf,X,P.n,model,xobs0,xobsT,P.nfs;db=4)#2.6)
-
-# saving objects
-objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
-acc = zeros(2) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta)
-Xsave = typeof(X)[]
-
-
-mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
-mask_id = (mask .> 0.1) # get indices that correspond to momenta
-
-
-# initialisation
-Xᵒ = initSamplePath(tt_, xinit)
-Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
-Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
-llᵒ = ll
-if 0 in subsamples
-    push!(Xsave, copy(X))
-end
-x = deepvec(xinit)
-xᵒ = deepcopy(x)
-∇x = deepcopy(x)
-∇xᵒ = deepcopy(x)
-result = DiffResults.GradientResult(x) # allocate
-resultᵒ = DiffResults.GradientResult(xᵒ)
-
-# solve!(EulerMaruyama!(), X, xinit, W, Q)
-# solve!(EulerMaruyama!(), Xᵒ, 100*xinit, W, Q)
-# X.yy-Xᵒ.yy # different, as expected
-#
-# Xᵒ.yy .= X.yy # I thought this means that all elements of X.yy are copied to Xᵒ.yy
-# X.yy-Xᵒ.yy # all zero, as expected
-# Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
-# sample!(Wnew, Wiener{Vector{StateW}}())
-# solve!(EulerMaruyama!(), Xᵒ, 100*xinit, Wnew, Q) # simulate new path for
-# X.yy-Xᵒ.yy # all zero, didn't see that one coming. WHY?
-
-
-
-# for plotting
-xobs0comp1 = extractcomp(xobs0,1)
-xobs0comp2 = extractcomp(xobs0,2)
-xobsTcomp1 = extractcomp(xobsT,1)
-xobsTcomp2 = extractcomp(xobsT,2)
-
-showmomenta = false
-
-plotting = true
-
-
-anim =    @animate for i in 1:ITER
-#for i in 1:ITER
-    #
-    global ll,  acc
-    global X
-    global Xᵒ
-    global W
-    global Wᵒ
-    global x
-    global xᵒ
-    global ∇x
-    global ∇xᵒ
-    global δ
-    println("iteration $i")
-
-    if sampler==:sgd
-        δ = 0.01*ϵstep(i)
-    end
-    (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
-                                sampler,Q,
-                                mask, mask_id, δ, ρ, acc)
-    println()
-
-    if i in subsamples
-        push!(Xsave, copy(X))
-    end
-    push!(objvals, obj)
-
-if plotting
-    # plotting
-    s = deepvec2state(x).p
-    s0 = x0.p # true momenta
-
-    # plot initial and final shapes
-    pp = Plots.plot(xobs0comp1, xobs0comp2,seriestype=:scatter, color=:black,label="q0", title="Landmark evolution")
-    Plots.plot!(pp, repeat(xobs0comp1,2), repeat(xobs0comp2,2),seriestype=:path, color=:black,label="")
-    Plots.plot!(pp, xobsTcomp1, xobsTcomp2,seriestype=:scatter , color=:orange,label="qT") # points move from black to orange
-    Plots.plot!(pp, repeat(xobsTcomp1,2), repeat(xobsTcomp2,2),seriestype=:path, color=:orange,label="")
-
-    if showmomenta
-        Plots.plot!(pp, extractcomp(s,1), extractcomp(s,2),seriestype=:scatter ,
-         color=:blue,label="p0 est") # points move from black to orange)
-        Plots.plot!(pp, extractcomp(s0,1), extractcomp(s0,2),seriestype=:scatter ,
-          color=:red,label="p0",markersize=5) # points move from black to orange)
-          xlims!(-3,3)
-          ylims!(-4,3)
-    else
-        xlims!(-3,3)
-        ylims!(-4,2)
-    end
-
-
-    outg = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
-    dfg = DataFrame(time=extractcomp(outg,1),pos1=extractcomp(outg,2),pos2=extractcomp(outg,3),mom1=extractcomp(outg,4),mom2=extractcomp(outg,5),pointID=extractcomp(outg,6))
-    for j in 1:n
-        #global pp
-        el1 = dfg[:pointID].=="point"*"$j"
-        dfg1 = dfg[el1,:]
-        Plots.plot!(pp,dfg1[:pos1], dfg1[:pos2],label="")
-    end
-
-    pp2 = Plots.plot(collect(1:i), objvals[1:i],seriestype=:scatter ,color=:blue,markersize=1.5,label="",title="Loglikelihood approximation")
-    Plots.plot!(pp2, collect(1:i), objvals[1:i] ,color=:blue,label="")
-    xlabel!(pp2,"iteration")
-    ylabel!(pp2,"stoch log likelihood")
-    xlims!(0,ITER)
-
-    l = @layout [a  b]
-    Plots.plot(pp,pp2,background_color = :ivory,layout=l , size = (900, 500) )
-
-
-end
-#    plotlandmarkpositions(X,P.n,model,xobs0,xobsT,nfs,db=2.6)
-end
-
-print(100acc/ITER)
-
-cd("/Users/Frank/.julia/dev/Bridge/landmarks/figs")
-fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
-gif(anim, fn*".gif", fps = 20)
-mp4(anim, fn*".mp4", fps = 20)
-
-print(objvals)
-#end
-
-sc2 = Plots.plot(collect(1:ITER), objvals,seriestype=:scatter ,color=:blue,markersize=1.2,label="",title="Loglikelihood approximation")
-Plots.plot!(sc2, collect(1:ITER), objvals ,color=:blue,label="")
-xlabel!(sc2,"iteration")
-ylabel!(sc2,"stoch log likelihood")
-xlims!(0,ITER)
-display(sc2)
-png(sc2,"stochlogp.png")
-
-
-error("STOP HERE")
-
-
-
-
-
-
-
-
-
-
-
+########### grad desc for pars
 
 # also do gradient descent on parameters a (in kernel of Hamiltonian)
 # first for MS model
@@ -337,29 +173,23 @@ QQ.target.a
 QQ.target.γ
 
 
-function obj2(xinitv,pars)
-    Q = put_targetpars(pars,Q)
-    Q = put_auxpars(pars,Q)
-    xinit = deepvec2state(xinitv)
-    sample!(WW, Wiener{Vector{StateW}}())
-    Xᵒ = Bridge.solve(EulerMaruyama!(), xinit, WW, Q)
-    (
-    (lptilde(xinit, L0, M0⁺, μ0, V, Q) - lptilde(x0, L0, M0⁺, μ0, V, Q))
-     + llikelihood(LeftRule(), Xᵒ, Q; skip = 1)
-    )
-end
-
 
 
 if false
     # write mcmc iterates to csv file
+    iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
+    # Ordering in each column is as follows:
+    # 1) time
+    # 2) landmark nr
+    # 3) for each landmark: q1, q2 p1, p2
+    pqtype = repeat(["pos1", "pos2", "mom1", "mom2"], length(tt_)*P.n* length(subsamples))
 
     fn = outdir*"iterates.csv"
+    iterates = [Any[s, Xsave[i].tt[j], d, Xsave[i].yy[j][d]] for d in 1:1, j in 1:length(X), (i,s) in enumerate(subsamples) ][:]
     f = open(fn,"w")
     head = "iteration, time, component, value \n"
     write(f, head)
-    iterates = [Any[s, tt[j], d, XX[i].yy[j][d]] for d in 1:1, j in 1:length(X), (i,s) in enumerate(subsamples) ][:]
-    writecsv(f,iterates)
+    writedlm(f,iterates)
     close(f)
 
     ave_acc_perc = 100*round(acc/iterations,2)
