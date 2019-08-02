@@ -10,10 +10,30 @@ using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
 using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
+using RecursiveArrayTools
 
 outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"
 
 pyplot()
+
+const sk=1  # entries to skip for likelihood evaluation
+const itostrat = true#false#true                    #false#true#false#true
+const d = 2
+const inplace = true  # if true inplace updates on the path when doing autodifferentiation
+const TEST = false
+
+
+#include("ostate.jl")
+include("nstate.jl")
+include("state.jl")
+#include("state_localversion.jl")
+include("models.jl")
+include("patches.jl")
+include("lmguiding.jl")
+include("plotlandmarks.jl")
+include("automaticdiff_lm.jl")
+include("generatedata.jl")
+include("lm_mcmc.jl")
 
 #Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
 #Base.float(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
@@ -26,14 +46,11 @@ function deepvalue(x::State)
 end
 
 
-
-
 n = 6#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println(model)
 
-TEST = false#true
 partialobs = true  #false
 rotation = false  # rotate configuration at time T
 showplotσq = false
@@ -60,10 +77,6 @@ dataset = datasets[1]
 ITER = 10 # nr of sgd iterations
 subsamples = 0:2:ITER
 
-const sk=1  # entries to skip for likelihood evaluation
-const itostrat = true#false#true                    #false#true#false#true
-const d = 2
-const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 
 
 
@@ -73,16 +86,6 @@ T = 1.0#1.0#0.5
 t = 0.0:0.005:T  # time grid
 
 #Random.seed!(5)
-#include("ostate.jl")
-include("nstate.jl")
-include("state.jl")
-#include("state_localversion.jl")
-include("models.jl")
-include("patches.jl")
-include("lmguiding.jl")
-include("plotlandmarks.jl")
-include("automaticdiff_lm.jl")
-include("generatedata.jl")
 
 
 ### Specify landmarks models
@@ -119,9 +122,9 @@ tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
 x0, xobs0, xobsT, Xf, P = generatedata(dataset,P,t,σobs)
 
 # plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=6)#2.6)
- # ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
- # Plots.plot(1:length(t),ham)
- # print(ham)
+# ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
+# Plots.plot(1:length(t),ham)
+# print(ham)
 
 if partialobs
     L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
@@ -137,9 +140,6 @@ else
     L0 = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
     Σ0 = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
 end
-
- #
-
 
 if model == :ms
     Paux = MarslandShardlowAux(P, State(xobsT, mT))

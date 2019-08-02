@@ -31,7 +31,7 @@ end
 
 function lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER,outdir; makefig=true)
     println("compute guiding term:")
-    Lt, Mt⁺ , μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
+    Lt, Mt⁺, μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
     Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 
     println("Sample guided proposal:")
@@ -127,7 +127,7 @@ end
 
 
 
-function drawpath(i,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+function drawpath(i,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2);showmomenta=false)
         s = deepvec2state(x).p
         s0 = x0.p # true momenta
 

@@ -48,7 +48,7 @@ struct GuidedProposall!{T,Ttarget,Taux,TL,TM,Tμ,TH,Txobs0,TxobsT,TLt0,TMt⁺0,T
 
     function GuidedProposall!(target, aux, tt_, L, M, μ, H, xobs0, xobsT, Lt0,Mt⁺0,μt0, endpoint=Bridge.endpoint)
         tt = collect(tt_)
-        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(L),eltype(M),eltype(μt),eltype(H),typeof(xobs0),typeof(xobsT),typeof(Lt0),typeof(Mt⁺0),typeof(μt0),typeof(endpoint)}(target, aux, tt, L, M, μ, H, xobs0, xobsT, Lt0, Mt⁺0,μt0, endpoint)
+        new{Bridge.valtype(target),typeof(target),typeof(aux),eltype(L),eltype(M),eltype(μ),eltype(H),typeof(xobs0),typeof(xobsT),typeof(Lt0),typeof(Mt⁺0),typeof(μt0),typeof(endpoint)}(target, aux, tt, L, M, μ, H, xobs0, xobsT, Lt0, Mt⁺0,μt0, endpoint)
     end
 end
 

@@ -1,6 +1,6 @@
 function slogρ(x0deepv, Q, W,X) # stochastic approx to log(ρ)
     x0 = deepvec2state(x0deepv)
-    simguidedlm_llikelihood!(LeftRule(), X, x0, W, Q; skip=sk) 
+    simguidedlm_llikelihood!(LeftRule(), X, x0, W, Q; skip=sk)
 end
 slogρ(Q, W, X) = (x) -> slogρ(x, Q, W,X)
 ∇slogρ(Q, W, X) = (x) -> ForwardDiff.gradient(slogρ(Q, W,X), x)
