@@ -11,6 +11,7 @@ using DiffResults
 using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
+using DataFrames
 
 outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"
 
@@ -46,7 +47,7 @@ function deepvalue(x::State)
 end
 
 
-n = 6#35 # nr of landmarks
+n = 15#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println(model)
@@ -60,9 +61,9 @@ sampler = samplers[3]
 
 
 
-ρ = 0.9#0.99999#1.0 #0.9999 #CN par
+ρ = 0.9
 if model==:ms
-    δ = 0.1#0.00001 # MALA par
+    δ = 0.1
 else
     δ = 0.005
 end
@@ -70,27 +71,22 @@ end
 ϵstep(i) = 1/(1+i)^(0.7)
 
 
-
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
 dataset = datasets[1]
 
-ITER = 10 # nr of sgd iterations
+ITER = 50 # nr of sgd iterations
 subsamples = 0:2:ITER
-
-
 
 
 σobs = 0.01   # noise on observations
 
 T = 1.0#1.0#0.5
-t = 0.0:0.005:T  # time grid
-
-#Random.seed!(5)
-
+dt = 0.01
+t = 0.0:dt:T  # time grid
 
 ### Specify landmarks models
 a = 5.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
-#a = 5.0
+
 
 if model == :ms
     λ = 0.0;    # Mean reversion par in MS-model = not the lambda of noise fields  =#
@@ -151,67 +147,70 @@ end
 xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
 # xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
 
+start = time() # to compute elapsed time
 Xsave, objvals, perc_acc = lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler,
                                         dataset, xinit, δ, ITER, outdir; makefig=true)
-
-
-########### grad desc for pars
-
-# also do gradient descent on parameters a (in kernel of Hamiltonian)
-# first for MS model
-get_targetpars(Q::GuidedProposall!) = [Q.target.a, Q.target.γ]
-get_auxpars(Q::GuidedProposall!) = [Q.aux.a, Q.aux.γ]
-
-put_targetpars = function(pars,Q)
-    GuidedProposall!(MarslandShardlow(pars[1],pars[2],Q.target.λ, Q.target.n), Q.aux, Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
-end
-
-put_auxpars(pars,Q) = GuidedProposall!(Q.target,MarslandShardlowAux(pars[1],pars[2],Q.aux.λ, Q.aux.xT,Q.aux.n), Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
-
-QQ = put_targetpars([3.0, 300.0],Q)
-QQ.target.a
-QQ.target.γ
-
-
-
+elapsed = time() - start
 
 if false
-    # write mcmc iterates to csv file
-    iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
-    # Ordering in each column is as follows:
-    # 1) time
-    # 2) landmark nr
-    # 3) for each landmark: q1, q2 p1, p2
-    pqtype = repeat(["pos1", "pos2", "mom1", "mom2"], length(tt_)*P.n* length(subsamples))
+    ########### grad desc for pars
 
-    fn = outdir*"iterates.csv"
-    iterates = [Any[s, Xsave[i].tt[j], d, Xsave[i].yy[j][d]] for d in 1:1, j in 1:length(X), (i,s) in enumerate(subsamples) ][:]
-    f = open(fn,"w")
-    head = "iteration, time, component, value \n"
-    write(f, head)
-    writedlm(f,iterates)
-    close(f)
+    # also do gradient descent on parameters a (in kernel of Hamiltonian)
+    # first for MS model
+    get_targetpars(Q::GuidedProposall!) = [Q.target.a, Q.target.γ]
+    get_auxpars(Q::GuidedProposall!) = [Q.aux.a, Q.aux.γ]
 
-    ave_acc_perc = 100*round(acc/iterations,2)
+    put_targetpars = function(pars,Q)
+        GuidedProposall!(MarslandShardlow(pars[1],pars[2],Q.target.λ, Q.target.n), Q.aux, Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
+    end
 
-    # write info to txt file
-    fn = outdir*"info.txt"
-    f = open(fn,"w")
-    write(f, "Number of iterations: ",string(iterations),"\n")
-    write(f, "Skip every ",string(skip_it)," iterations, when saving to csv","\n\n")
-    write(f, "Starting point: ",string(x0),"\n")
-    write(f, "End time T: ", string(T),"\n")
-    write(f, "Endpoint v: ",string(v),"\n")
-    write(f, "Noise Sigma: ",string(Î£),"\n")
-    write(f, "L: ",string(L),"\n\n")
-    write(f, "Mesh width: ",string(dt),"\n")
-    write(f, "rho (Crank-Nicholsen parameter: ",string(Ï),"\n")
-    write(f, "Average acceptance percentage: ",string(ave_acc_perc),"\n\n")
-    write(f, "Backward type parametrisation in terms of nu and H? ",string(Î½Hparam),"\n")
-    close(f)
+    put_auxpars(pars,Q) = GuidedProposall!(Q.target,MarslandShardlowAux(pars[1],pars[2],Q.aux.λ, Q.aux.xT,Q.aux.n), Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
 
-
-    println("Average acceptance percentage: ",ave_acc_perc,"\n")
-    println("Parametrisation of nu and H? ", Î½Hparam)
-    println("Elapsed time: ",elapsed_time)
+    QQ = put_targetpars([3.0, 300.0],Q)
+    QQ.target.a
+    QQ.target.γ
 end
+
+
+# write mcmc iterates to csv file
+iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
+# Ordering in each column is as follows:
+# 1) time
+# 2) landmark nr
+# 3) for each landmark: q1, q2 p1, p2
+pqtype = repeat(["pos1", "pos2", "mom1", "mom2"], length(tt_)*P.n)
+times = repeat(tt_,inner=2d*P.n)
+landmarkid = repeat(1:P.n, inner=2d, outer=length(tt_))
+
+out = hcat(times,pqtype,landmarkid,iterates)
+head = "time " * "pqtype " * "landmarkid " * prod(map(x -> "iter"*string(x)*" ",subsamples))
+head = chop(head,tail=1) * "\n"
+
+fn = outdir*"iterates.csv"
+f = open(fn,"w")
+write(f, head)
+writedlm(f,out)
+close(f)
+
+println("Average acceptance percentage: ",perc_acc,"\n")
+println("Elapsed time: ",round(elapsed;digits=3))
+
+
+
+# write info to txt file
+fn = outdir*"info.txt"
+f = open(fn,"w")
+write(f, "Dataset: ", string(dataset),"\n")
+write(f, "Sampler: ", string(sampler), "\n")
+
+write(f, "Number of iterations: ",string(ITER),"\n")
+write(f, "Number of landmarks: ",string(P.n),"\n")
+write(f, "Length time grid: ", string(length(tt_)),"\n")
+write(f, "Mesh width: ",string(dt),"\n")
+write(f, "Noise Sigma: ",string(σobs),"\n")
+write(f, "rho (Crank-Nicholsen parameter: ",string(ρ),"\n")
+write(f, "MALA parameter (delta): ",string(δ),"\n")
+write(f, "skip in evaluation of loglikelihood: ",string(sk),"\n")
+write(f, "Average acceptance percentage (path - initial state): ",string(perc_acc),"\n\n")
+#write(f, "Backward type parametrisation in terms of nu and H? ",string(Î½Hparam),"\n")
+close(f)
