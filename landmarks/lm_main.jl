@@ -23,7 +23,6 @@ const d = 2
 const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 const TEST = false
 
-
 #include("ostate.jl")
 include("nstate.jl")
 include("state.jl")
@@ -46,8 +45,8 @@ function deepvalue(x::State)
     State(deepvalue.(x.x))
 end
 
-
-n = 15#35 # nr of landmarks
+################################# start settings #################################
+n = 10#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println(model)
@@ -59,30 +58,37 @@ showplotσq = false
 samplers =[:sgd, :sgld, :mcmc]
 sampler = samplers[3]
 
-
-
 ρ = 0.9
 if model==:ms
     δ = 0.1
 else
     δ = 0.005
 end
+
+σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
+σ_γ = 0.1  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
+
+
 ϵ = 0.01  # sgd step size
 ϵstep(i) = 1/(1+i)^(0.7)
 
 
 datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
-dataset = datasets[1]
+dataset = datasets[2]
 
-ITER = 50 # nr of sgd iterations
+ITER = 1000 # nr of sgd iterations
 subsamples = 0:2:ITER
 
 
 σobs = 0.01   # noise on observations
 
+prior_a = Uniform(0.5,10)
+prior_γ = Exponential(1.0)
+
 T = 1.0#1.0#0.5
 dt = 0.01
 t = 0.0:dt:T  # time grid
+################################# end settings #################################
 
 ### Specify landmarks models
 a = 5.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
@@ -100,7 +106,7 @@ else
     γ = 0.2
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
     dwiener = length(nfs)
-    P = Landmarks(a, n, nfs)
+    P = Landmarks(a, n, db, nfstd, nfs)
 end
 
 
@@ -137,6 +143,9 @@ else
     Σ0 = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
 end
 
+# deliberately start with 'wrong' value of a
+P = MarslandShardlow(2.0, γ, λ, n)
+
 if model == :ms
     Paux = MarslandShardlowAux(P, State(xobsT, mT))
 else
@@ -146,31 +155,14 @@ end
 # initialise guided path
 xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
 # xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
+xinit = State(xobs0, zeros(PointF,n))
 
 start = time() # to compute elapsed time
-Xsave, objvals, perc_acc = lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler,
-                                        dataset, xinit, δ, ITER, outdir; makefig=true)
+Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler,
+                                        dataset, xinit, δ, ITER, subsamples, prior_a, prior_γ, σ_a, σ_γ, outdir; makefig=true)
+
+
 elapsed = time() - start
-
-if false
-    ########### grad desc for pars
-
-    # also do gradient descent on parameters a (in kernel of Hamiltonian)
-    # first for MS model
-    get_targetpars(Q::GuidedProposall!) = [Q.target.a, Q.target.γ]
-    get_auxpars(Q::GuidedProposall!) = [Q.aux.a, Q.aux.γ]
-
-    put_targetpars = function(pars,Q)
-        GuidedProposall!(MarslandShardlow(pars[1],pars[2],Q.target.λ, Q.target.n), Q.aux, Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
-    end
-
-    put_auxpars(pars,Q) = GuidedProposall!(Q.target,MarslandShardlowAux(pars[1],pars[2],Q.aux.λ, Q.aux.xT,Q.aux.n), Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs)
-
-    QQ = put_targetpars([3.0, 300.0],Q)
-    QQ.target.a
-    QQ.target.γ
-end
-
 
 # write mcmc iterates to csv file
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
@@ -214,3 +206,53 @@ write(f, "skip in evaluation of loglikelihood: ",string(sk),"\n")
 write(f, "Average acceptance percentage (path - initial state): ",string(perc_acc),"\n\n")
 #write(f, "Backward type parametrisation in terms of nu and H? ",string(Î½Hparam),"\n")
 close(f)
+
+
+
+pardf = DataFrame(a=extractcomp(parsave,1),gamma=extractcomp(parsave,2), subsamples=subsamples)
+@rput pardf
+R"""
+library(ggplot2)
+pardf %>% ggplot(aes(x=a,y=gamma,colour=subsamples)) + geom_point()
+"""
+
+pp1 = Plots.plot(subsamples, extractcomp(parsave,1),label="")
+xlabel!(pp1,"iteration")
+pp2 = Plots.plot(subsamples, extractcomp(parsave,2),label="")
+xlabel!(pp2,"iteration")
+pp3 = Plots.plot(extractcomp(parsave,1), extractcomp(parsave,2),seriestype=:scatter,label="")
+xlabel!(pp3,"a")
+ylabel!(pp3,"γ")
+l = @layout [a  b c]
+Plots.plot(pp1,pp2,pp3,background_color = :ivory,layout=l , size = (900, 500) )
+
+
+
+################ following is probably obsolete
+if false
+    ########### grad desc for pars
+
+    # also do gradient descent on parameters a (in kernel of Hamiltonian)
+    # first for MS model
+    get_targetpars(Q::GuidedProposall!) = [Q.target.a, Q.target.γ]
+    get_auxpars(Q::GuidedProposall!) = [Q.aux.a, Q.aux.γ]
+
+    put_targetpars = function(pars,Q)
+        if isa(Q.target,MarslandShardlow)
+            P = MarslandShardlow(pars[1],pars[2],Q.target.λ, Q.target.n)
+        end
+        if isa(Q.target,Landmarks)
+            nfs = construct_nfs(Q.target.db, Q.target.nfstd, pars[2]) # need ot add db and nfstd to struct Landmarks
+            P = Landmarks(pars[1],P.n,nfs)
+        end
+        GuidedProposall!(P, Q.aux, Q.tt, Q.Lt, Q.Mt, Q.μt,Q.Ht, Q.xobs0, Q.xobsT, Q.Lt0,Q.Mt⁺0,Q.μt0)
+    end
+
+
+    if TEST
+        get_targetpars(Q)
+        QQ = put_targetpars([3.0, 300.0],Q)
+        QQ.target.a
+        QQ.target.γ
+    end
+end

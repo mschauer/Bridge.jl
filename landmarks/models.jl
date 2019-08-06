@@ -27,6 +27,8 @@ end
 struct  Landmarks{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std
     n::Int64   # numer of landmarks
+    db::Float64 # domainbound
+    nfstd::Float64
     nfs::Vector{Noisefield{S}}  # vector containing pars of noisefields
 end
 

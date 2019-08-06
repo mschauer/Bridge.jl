@@ -14,7 +14,7 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, result�
                 sampler, Q,mask, mask_id, δ, ρ, acc)
     if sampler in [:sgd, :sgld]
         sample!(W, Wiener{Vector{StateW}}())
-        cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, Chunk{2*d*P.n}()) # 2*d*P.n is maximal
+        cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, ForwardDiff.Chunk{2*d*P.n}()) # 2*d*P.n is maximal
         ForwardDiff.gradient!(∇x, slogρ(Q, W, X),x,cfg) # X gets overwritten but does not change
         if sampler==:sgd
             x .+= δ * mask .* ∇x
