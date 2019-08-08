@@ -115,5 +115,5 @@ VERBOSE && println("Xo")
 @test abs(pt - pt_) < 0.015
 @test abs(phat - 0.1788)<0.015
 @test abs(phat3 - 0.1788)<0.015
-@test abs(ahat(B3) - 2) < 0.15
+@test abs(ahat(B3) - 2) < 0.175
 @test abs(ahat(Xo) - 2) < 0.15;
