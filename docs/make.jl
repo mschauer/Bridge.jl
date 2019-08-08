@@ -18,7 +18,7 @@ makedocs(
 # for more information.
 deploydocs(
     repo = "github.com/mschauer/Bridge.jl.git",
-    julia  = "0.7",
+    julia  = "1.1",
     target = "build",
     deps = nothing,
     make = nothing,
