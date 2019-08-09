@@ -55,11 +55,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
 
     ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
     if makefig
-        if isa(P,Landmarks)
-            plotlandmarkpositions(X,P.n,model,xobs0,xobsT,P.nfs;db=4)
-        elseif isa(P,MarslandShardlow)
-            plotlandmarkpositions(X,P.n,model,xobs0,xobsT,0;db=4)
-        end
+        plotlandmarkpositions(X,P,model,xobs0,xobsT;db=4)
     end
 
     # saving objects

@@ -42,7 +42,7 @@ models = [:ms, :ahs]
 model = models[1]
 println(model)
 
-ITER = 1000 # nr of sgd iterations
+ITER = 200 # nr of sgd iterations
 subsamples = 0:1:ITER
 
 
@@ -68,7 +68,7 @@ end
 
 datasets =["forwardsimulated", "shifted","shiftedextreme",
         "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[2]
+dataset = datasets[1]
 
 
 σobs = 0.01   # noise on observations
@@ -119,8 +119,7 @@ else
 end
 
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
-#xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-xinit = State(xobs0, zeros(PointF,P.n)) # xinit = State(xobs0, rand(PointF,P.n))# xinit = x0
+xinit = State(xobs0, zeros(PointF,P.n)) # xinit = State(xobs0, rand(PointF,P.n))# xinit = x0 # State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
 
 start = time() # to compute elapsed time
 Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), mT, P, model, sampler,

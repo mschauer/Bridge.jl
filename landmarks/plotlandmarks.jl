@@ -11,7 +11,13 @@
     nfs: contains info over noisefields
     db: domainbound (plot on [-db,db] x [-db,db])
 """
-function plotlandmarkpositions(X,Xᵒ,n,model,v0,vT,nfs;db=5)
+function plotlandmarkpositions(X,Xᵒ,P,model,v0,vT;db=5)
+    n = P.n
+    if isa(P,Landmarks)
+        nfs = P.nfs
+    elseif isa(P,MarslandShardlow)
+        nfs = 0.0
+    end
     # construct df for X
     out = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
     df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))
@@ -81,7 +87,13 @@ end
     nfs: contains info over noisefields
     db: domainbound (plot on [-db,db] x [-db,db])
 """
-function plotlandmarkpositions(X,n,model,v0,vT,nfs;db=5)
+function plotlandmarkpositions(X,P,model,v0,vT;db=5)
+    n = P.n
+    if isa(P,Landmarks)
+        nfs = P.nfs
+    elseif isa(P,MarslandShardlow)
+        nfs = 0.0
+    end
     # construct df for X
     out = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
     df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))

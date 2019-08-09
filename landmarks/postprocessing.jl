@@ -53,12 +53,15 @@ library(ggplot2)
 pardf %>% ggplot(aes(x=a,y=gamma,colour=subsamples)) + geom_point()
 """
 
-pp1 = Plots.plot(subsamples, extractcomp(parsave,1),label="")
+pp1 = Plots.plot(subsamples, extractcomp(parsave,1),label="a")
 xlabel!(pp1,"iteration")
-pp2 = Plots.plot(subsamples, extractcomp(parsave,2),label="")
+pp2 = Plots.plot(subsamples, extractcomp(parsave,2),label="γ")
 xlabel!(pp2,"iteration")
 pp3 = Plots.plot(extractcomp(parsave,1), extractcomp(parsave,2),seriestype=:scatter,label="")
 xlabel!(pp3,"a")
 ylabel!(pp3,"γ")
 l = @layout [a  b c]
 pp = Plots.plot(pp1,pp2,pp3,background_color = :ivory,layout=l , size = (900, 500) )
+
+cd(outdir)
+#Plots.savefig("trace_pars.pdf")
