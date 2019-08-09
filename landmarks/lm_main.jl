@@ -1,3 +1,4 @@
+ cd("/Users/Frank/.julia/dev/Bridge/landmarks/")
 # THIS SCRIPT REPLACES THE OLDER 'lmpar.jl'
 using Bridge, StaticArrays, Distributions
 using Bridge:logpdfnormal
@@ -12,6 +13,7 @@ using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
 using DataFrames
+using NPZ # for reading python datafiles
 
 outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"
 
@@ -26,7 +28,6 @@ const TEST = false
 #include("ostate.jl")
 include("nstate.jl")
 include("state.jl")
-#include("state_localversion.jl")
 include("models.jl")
 include("patches.jl")
 include("lmguiding.jl")
@@ -35,24 +36,14 @@ include("automaticdiff_lm.jl")
 include("generatedata.jl")
 include("lm_mcmc.jl")
 
-#Base.Float64(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
-#Base.float(d::Dual{T,V,N}) where {T,V,N} = Float64(d.value)
-
-deepvalue(x::Float64) = x
-deepvalue(x::ForwardDiff.Dual) = ForwardDiff.value(x)
-deepvalue(x) = deepvalue.(x)
-function deepvalue(x::State)
-    State(deepvalue.(x.x))
-end
-
 ################################# start settings #################################
 n = 10#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println(model)
 
-partialobs = true  #false
-rotation = false  # rotate configuration at time T
+startPtrue = false  # start from true P?
+
 showplotσq = false
 
 samplers =[:sgd, :sgld, :mcmc]
@@ -61,105 +52,84 @@ sampler = samplers[3]
 ρ = 0.9
 if model==:ms
     δ = 0.1
-else
+elseif model==:ahs
     δ = 0.005
 end
 
 σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
 σ_γ = 0.1  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
 
-
 ϵ = 0.01  # sgd step size
 ϵstep(i) = 1/(1+i)^(0.7)
 
 
-datasets =["forwardsimulated", "shifted","shiftedextreme", "bear", "heart","peach"]
+datasets =["forwardsimulated", "shifted","shiftedextreme",
+        "bear", "heart","peach", "generatedstefan"]
 dataset = datasets[2]
 
-ITER = 1000 # nr of sgd iterations
-subsamples = 0:2:ITER
-
+ITER = 5 # nr of sgd iterations
+subsamples = 0:1:ITER
 
 σobs = 0.01   # noise on observations
 
-prior_a = Uniform(0.5,10)
+prior_a = Uniform(0.1,10)
 prior_γ = Exponential(1.0)
 
-T = 1.0#1.0#0.5
+# set time grids
+T = 1.0
 dt = 0.01
 t = 0.0:dt:T  # time grid
+tt_ =  tc(t,T)                          #tc(t,T)# 0:dtimp:(T)
+
 ################################# end settings #################################
 
 ### Specify landmarks models
-a = 5.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
-
+a = 2.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
+γ = 1.0     # Noise level
 
 if model == :ms
     λ = 0.0;    # Mean reversion par in MS-model = not the lambda of noise fields  =#
-    γ = .5 #2.0     # Noise level in for MS-model
-    dwiener = n
     nfs = 0 # needs to have value for plotting purposes
-    P = MarslandShardlow(a, γ, λ, n)
+    Ptrue = MarslandShardlow(a, γ, λ, n)
 else
     db = 5.0 # domainbound
     nfstd = 2.5#2.5#  1.25 # tau , width of noisefields
-    γ = 0.2
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
-    dwiener = length(nfs)
-    P = Landmarks(a, n, db, nfstd, nfs)
+    Ptrue = Landmarks(a, n, db, nfstd, nfs)
 end
-
-
 
 if (model == :ahs) & showplotσq
     plotσq(db, nfs)
 end
 
-StateW = PointF
+x0, xobs0, xobsT, Xf, Ptrue = generatedata(dataset,P,t,σobs)
 
-# set time grid for guided process
-tt_ =  tc(t,T)#tc(t,T)# 0:dtimp:(T)
+if startPtrue
+    P = Ptrue
+else
+    if model == :ms
+        P = MarslandShardlow(.3, 2.0, P.λ, P.n)
+    elseif model == :ahs
+        P = Landmarks(.3, P.n, P.db, P.nfstd, P.nfs)
+    end
+end
 
-# generate data
-x0, xobs0, xobsT, Xf, P = generatedata(dataset,P,t,σobs)
-
-# plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,nfs,db=6)#2.6)
+# plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,P.nfs,db=6)#2.6)
 # ham = [hamiltonian(Xf.yy[i],P) for i in 1:length(t)]
 # Plots.plot(1:length(t),ham)
 # print(ham)
 
-if partialobs
-    L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
-    Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
-    μT = zeros(PointF,P.n)
-    mT = zeros(PointF,P.n)   #
-else
-    LT = [(i==j)*one(UncF) for i in 1:2P.n, j in 1:2P.n]
-    ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:2P.n, j in 1:2P.n]
-    μT = zeros(PointF,2P.n)
-    xobsT = vec(X.yy[end])
-    mT = Xf.yy[end].p
-    L0 = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
-    Σ0 = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
-end
-
-# deliberately start with 'wrong' value of a
-P = MarslandShardlow(2.0, γ, λ, n)
-
-if model == :ms
-    Paux = MarslandShardlowAux(P, State(xobsT, mT))
-else
-    Paux = LandmarksAux(P, State(xobsT, mT))
-end
+# vector of momenta at time T used for constructing guiding term
+mT = zeros(PointF,P.n)   #
 
 # initialise guided path
-xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-# xinit = State(xobs0, rand(PointF,n))# xinit = x0#xinit = State(xobs0, zeros(PointF,n))#xinit=State(x0.q, 30*x0.p)
-xinit = State(xobs0, zeros(PointF,n))
+#xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
+xinit = State(xobs0, zeros(PointF,P.n)) # xinit = State(xobs0, rand(PointF,P.n))# xinit = x0
 
 start = time() # to compute elapsed time
-Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler,
-                                        dataset, xinit, δ, ITER, subsamples, prior_a, prior_γ, σ_a, σ_γ, outdir; makefig=true)
+Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), mT, P, model, sampler,
+                                        dataset, xinit, δ, ITER, subsamples,
+                                        prior_a, prior_γ, σ_a, σ_γ, outdir)
 
 
 elapsed = time() - start
@@ -224,7 +194,7 @@ pp3 = Plots.plot(extractcomp(parsave,1), extractcomp(parsave,2),seriestype=:scat
 xlabel!(pp3,"a")
 ylabel!(pp3,"γ")
 l = @layout [a  b c]
-Plots.plot(pp1,pp2,pp3,background_color = :ivory,layout=l , size = (900, 500) )
+pp = Plots.plot(pp1,pp2,pp3,background_color = :ivory,layout=l , size = (900, 500) )
 
 
 

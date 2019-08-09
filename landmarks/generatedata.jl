@@ -55,11 +55,14 @@ function generatedata(dataset,P,t,σobs)
         xobsT = [Point(bearT[i,1], bearT[i,2]) - avePoint for i in 1:nb]/200.
         # need to redefine P, because of n
         if model == :ms
-            P = MarslandShardlow(a, γ, λ, nb)
+            P = MarslandShardlow(P.a, P.γ, P.λ, nb)
         else
-            P = Landmarks(a, 0.0, nb, nfs)
+            P = Landmarks(P.a, nb, P.db, P.nfstd, P.nfs)
         end
         x0 = State(xobs0, rand(PointF,P.n))
+        if P isa MarslandShardlow
+            dwiener = P.n
+        end
         Wf, Xf = landmarksforward(t, dwiener, x0, P)
     end
     if dataset=="heart"
@@ -84,13 +87,43 @@ function generatedata(dataset,P,t,σobs)
         qT = [PointF(peach_xcoord(t), peach_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
     end
+    if dataset=="generatedstefan"
+        cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
+
+        testshapes = npzread("match.npy.npz")
+        xobs0vec =  get(testshapes,"q0",0)
+        xobsTvec =  get(testshapes,"v",0)
+        p0vec = get(testshapes,"p",0)
+        nb = div(length(xobs0vec),2)
+
+        subs = 1:4:nb#1:5:nb
+        xobs0 = [PointF(xobs0vec[2i-1],xobs0vec[2i]) for i in subs]
+        xobsT = [PointF(xobsTvec[2i-1],xobsTvec[2i]) for i in subs]
+        p0 = [PointF(p0vec[2i-1],p0vec[2i]) for i in subs]
+        nb = length(subs)
+
+        # need to redefine P, because of n
+        if model == :ms
+            P = MarslandShardlow(P.a, P.γ, P.λ, nb)
+        else
+            P = Landmarks(P.a, nb, P.db, P.nfstd, P.nfs)
+        end
+        dwiener = dimwiener(P)
+        x0 = State(xobs0, p0)
+        Wf, Xf = landmarksforward(t, dwiener, x0, P)
+        if isa(P,Landmarks)
+            plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,P.nfs;db=4)
+        end
+        if isa(P,MarslandShardlow)
+            plotlandmarkpositions(Xf,P.n,model,xobs0,xobsT,0;db=2)
+        end
+    end
     x0, xobs0, xobsT, Xf, P
 end
 
 if false
     cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
-    using NPZ
     cc = npzread("cc.npy") # corpus callosum data
     cardiac = npzread("cardiac.npy")  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
-    npzread("match.npy.npz")
+
 end

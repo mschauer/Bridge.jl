@@ -554,6 +554,25 @@ function Bridge.a!(t, x_, out, P::Union{Landmarks,LandmarksAux})
 end
 
 
+function getγ(P)
+    if isa(P,MarslandShardlow)
+        out = P.γ
+    elseif isa(P,Landmarks)
+        out = P.nfs[1].γ[1]
+    end
+    out
+end
+
+function dimwiener(P)
+    if P isa MarslandShardlow
+        out = P.n
+    elseif P isa Landmarks
+        out = length(P.nfs)
+    end
+    out
+end
+
+
 ######################################################################################################
 
 

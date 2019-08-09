@@ -1,3 +1,12 @@
+# convert dual to float, while retaining float if type is float
+deepvalue(x::Float64) = x
+deepvalue(x::ForwardDiff.Dual) = ForwardDiff.value(x)
+deepvalue(x) = deepvalue.(x)
+function deepvalue(x::State)
+    State(deepvalue.(x.x))
+end
+
+
 function slogρ(x0deepv, Q, W,X) # stochastic approx to log(ρ)
     x0 = deepvec2state(x0deepv)
     simguidedlm_llikelihood!(LeftRule(), X, x0, W, Q; skip=sk)
@@ -12,6 +21,7 @@ slogρ(Q, W, X) = (x) -> slogρ(x, Q, W,X)
 """
 function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                 sampler, Q,mask, mask_id, δ, ρ, acc)
+    P = Q.target
     if sampler in [:sgd, :sgld]
         sample!(W, Wiener{Vector{StateW}}())
         cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, ForwardDiff.Chunk{2*d*P.n}()) # 2*d*P.n is maximal
