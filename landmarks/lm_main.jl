@@ -20,12 +20,11 @@ using NPZ # for reading python datafiles
 pyplot()
 
 const sk=1  # entries to skip for likelihood evaluation
-const itostrat = true#false#true                    #false#true#false#true
+const itostrat = true
 const d = 2
-const inplace = true  # if true inplace updates on the path when doing autodifferentiation
+#const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 const TEST = false
 
-#include("ostate.jl")
 include("nstate.jl")
 include("state.jl")
 include("models.jl")
@@ -39,27 +38,28 @@ include("lm_mcmc.jl")
 ################################# start settings #################################
 n = 10#35 # nr of landmarks
 models = [:ms, :ahs]
-model = models[1]
-println(model)
+model = models[2]
+println("model: ",model)
 
-ITER = 200 # nr of sgd iterations
+ITER = 3 # nr of sgd iterations
 subsamples = 0:1:ITER
 
-
-startPtrue = false  # start from true P?
+startPtrue = true # start from true P?
 showplotσq = false # only for ahs model
 
 samplers =[:sgd, :sgld, :mcmc]
 sampler = samplers[3]
+println("sampler: ",sampler)
 
 ρ = 0.9
 if model==:ms
     δ = 0.1
 elseif model==:ahs
-    δ = 0.005
+    δ = 0.05
 end
 
 σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
+σ_c = 0.1  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
 σ_γ = 0.1  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
 
 ϵ = 0.01  # sgd step size
@@ -68,12 +68,13 @@ end
 
 datasets =["forwardsimulated", "shifted","shiftedextreme",
         "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[1]
+dataset = datasets[7]
+println("dataset: ",dataset)
 
-
-σobs = 0.01   # noise on observations
+σobs = 0.1   # noise on observations
 
 prior_a = Uniform(0.1,10)
+prior_c = Exponential(1.0)
 prior_γ = Exponential(1.0)
 
 # set time grids
@@ -86,17 +87,19 @@ tt_ =  tc(t,T)                          #tc(t,T)# 0:dtimp:(T)
 
 ### Specify landmarks models
 a = 2.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks behave similarly)
+c = 0.1     # multiplicative factor in kernel
 γ = 1.0     # Noise level
+
 
 if model == :ms
     λ = 0.0;    # Mean reversion par in MS-model = not the lambda of noise fields  =#
     nfs = 0 # needs to have value for plotting purposes
-    Ptrue = MarslandShardlow(a, γ, λ, n)
+    Ptrue = MarslandShardlow(a, c, γ, λ, n)
 else
     db = 5.0 # domainbound
     nfstd = 2.5#2.5#  1.25 # tau , width of noisefields
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
-    Ptrue = Landmarks(a, n, db, nfstd, nfs)
+    Ptrue = Landmarks(a, c, n, db, nfstd, nfs)
 end
 
 if (model == :ahs) & showplotσq
@@ -109,22 +112,26 @@ if startPtrue
     P = Ptrue
 else
     ainit = 0.3
-    γinit = 2.0
+    γinit = 5.0
     if model == :ms
-        P = MarslandShardlow(ainit, γinit, Ptrue.λ, Ptrue.n)
+        P = MarslandShardlow(ainit, Ptrue.c, γinit, Ptrue.λ, Ptrue.n)
     elseif model == :ahs
         nfsinit = construct_nfs(Ptrue.db, Ptrue.nfstd, γinit)
-        P = Landmarks(ainit, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
+        P = Landmarks(ainit, Ptrue.c, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
     end
 end
 
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
 xinit = State(xobs0, zeros(PointF,P.n)) # xinit = State(xobs0, rand(PointF,P.n))# xinit = x0 # State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
 
+
+
 start = time() # to compute elapsed time
-Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), mT, P, model, sampler,
-                                        dataset, xinit, δ, ITER, subsamples,
-                                        prior_a, prior_γ, σ_a, σ_γ, outdir)
+Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
+                                    sampler, dataset,
+                                    xinit, ITER, subsamples,
+                                    (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+                                      outdir)
 elapsed = time() - start
 
 include("/Users/Frank/.julia/dev/Bridge/landmarks/postprocessing.jl")

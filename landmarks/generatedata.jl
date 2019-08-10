@@ -49,9 +49,9 @@ function generatedata(dataset,P,t,σobs)
         xobsT = [Point(bearT[i,1], bearT[i,2]) - avePoint for i in 1:nb]/200.
         # need to redefine P, because of n
         if model == :ms
-            P = MarslandShardlow(P.a, P.γ, P.λ, nb)
+            P = MarslandShardlow(P.a, P.c, P.γ, P.λ, nb)
         else
-            P = Landmarks(P.a, nb, P.db, P.nfstd, P.nfs)
+            P = Landmarks(P.a, P.c, nb, P.db, P.nfstd, P.nfs)
         end
         x0 = State(xobs0, rand(PointF,P.n))
         Wf, Xf = landmarksforward(t, x0, P)
@@ -95,13 +95,13 @@ function generatedata(dataset,P,t,σobs)
 
         # need to redefine P, because of n
         if model == :ms
-            P = MarslandShardlow(P.a, P.γ, P.λ, nb)
+            P = MarslandShardlow(P.a,P.c, P.γ, P.λ, nb)
         elseif model== :ahs
-            P = Landmarks(P.a, nb, P.db, P.nfstd, P.nfs)
+            P = Landmarks(P.a,P.c, nb, P.db, P.nfstd, P.nfs)
         end
         x0 = State(xobs0, p0)
         Wf, Xf = landmarksforward(t, x0, P)
-        plotlandmarkpositions(Xf,P,model,xobs0,xobsT;db=4)
+        plotlandmarkpositions(Xf,P,xobs0,xobsT;db=4)
 
     end
     x0, xobs0, xobsT, Xf, P

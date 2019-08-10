@@ -2,20 +2,27 @@
     Perform mcmc or sgd for landmarks model using the LM-parametrisation
     tt_:      time grid
     (xobs0,xobsT): observations at times 0 and T
+    σobs: standard deviation of Gaussian noise assumed on xobs0 and xobsT
     mT: vector of momenta at time T used for constructing guiding term
     P: target process
-    model: either :ms (Marsland-Shardlow) or :ahs (Arnaudon-Holm-Sommer)
+
     sampler: either sgd (stochastic gradient descent) or mcmc (Markov Chain Monte Carlo)
     dataset: dataset to extract xobs0 and xobsT
     xinit: initial guess on starting state
-    δ: parameter for Langevin updates on initial state
+
     ITER: number of iterations
     subsamples: vector of indices of iterations that are to be saved
+
+    δ: parameter for Langevin updates on initial state
     prior_a: prior on parameter a
+    prior_c: prior on parameter c
     prior_γ: prior on parameter γ
     σ_a: parameter determining update proposal for a [update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())]
+    σ_c: parameter determining update proposal for c [update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())]
     σ_γ: parameter determining update proposal for γ [update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())]
-    ourdir: output directory for animation
+
+    outdir: output directory for animation
+    updatepars: logical flag for updating pars a, c, γ
     makefig: logical flag for making figures
     showmomenta: logical flag if momenta are also drawn in figures
 
@@ -26,11 +33,11 @@
     perc_acc: acceptance percentages (bridgepath - inital state)
 
 """
-function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
-        model, sampler, dataset,
-        xinit, δ, ITER, subsamples,
-        prior_a, prior_γ, σ_a, σ_γ,
-        outdir; makefig=true, showmomenta=false)
+function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
+         sampler, dataset,
+         xinit, ITER, subsamples,
+        (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+        outdir; updatepars = true, makefig=true, showmomenta=false)
 
     StateW = PointF
     dwiener = dimwiener(P)
@@ -43,7 +50,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
         Paux = MarslandShardlowAux(P, State(xobsT, mT))
     end
 
-    println("compute guiding term:")
+    println("Compute backward odes:")
     Lt, Mt⁺, μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
     Q = construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ = initLMμH(tt_,(LT,ΣT,μT)) # needed when doing parameter estimation
@@ -55,8 +62,9 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
 
     ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
     if makefig
-        plotlandmarkpositions(X,P,model,xobs0,xobsT;db=4)
+        plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
     end
+    println(norm(Paux.xT.q-X.yy[end].q))
 
     # saving objects
     objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
@@ -66,7 +74,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
     parsave = Vector{Float64}[]
     push!(Xsave, convert_samplepath(X))
     push!(objvals, ll)
-    push!(parsave,[P.a, getγ(P)])
+    push!(parsave,[P.a, P.c, getγ(P)])
 
 
     mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
@@ -93,43 +101,57 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
     # start iterations
     anim =    @animate for i in 1:ITER
         if makefig
-            drawpath(i,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+            drawpath(i,P.n,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
         end
         println("iteration $i")
 
         if sampler==:sgd
             δ = 0.01*ϵstep(i)
         end
-        #println("------")
-        #print(Q.target.a)
 
         (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                                     sampler,Q,
                                     mask, mask_id, δ, ρ, acc)
 
         # HERE updatepars!, i.e. an update on (P, Paux, Q)
-        updatepars = true
+
         if updatepars
             aᵒ = P.a * exp(σ_a * randn())
+            cᵒ = P.c * exp(σ_c * randn())
             γᵒ = getγ(P) * exp(σ_γ * randn())
             if isa(P,MarslandShardlow)
-                Pᵒ = MarslandShardlow(aᵒ,γᵒ,P.λ, P.n)
-                Pauxᵒ = MarslandShardlowAux(aᵒ,γᵒ,P.λ,Paux.xT,P.n)
+                Pᵒ = MarslandShardlow(aᵒ,cᵒ,γᵒ,P.λ, P.n)
+                Pauxᵒ = MarslandShardlowAux(Pᵒ,Paux.xT)
             elseif isa(P,Landmarks)
                 nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
-                Pᵒ = Landmarks(aᵒ,P.n,P.db,P.nfstd,nfs)
-                Pauxᵒ = LandmarksAux(aᵒ,Paux.xT,P.n,nfs)
+                Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
+                Pauxᵒ = LandmarksAux(Pᵒ,Paux.xT)
             end
-            println("compute Qᵒ")
+
             Qᵒ = construct_guidedproposal!(tt_, (Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), Pᵒ, Pauxᵒ)
             llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), W, Qᵒ; skip=sk)
-            A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) + logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
+            A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
+                logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
+                logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
                     llᵒ - ll +
-                    logpdf(LogNormal(log(aᵒ),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),aᵒ)+
-                    logpdf(LogNormal(log(γᵒ),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),γᵒ)
+                    logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a)+
+                    logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
+                    logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
+
+            # println("γ ", γ)
+            # println("γᵒ ", γᵒ)
+            # println("P ",P)
+            # println("Pcirc ", Pᵒ)
+            # println("ratio prior a ",logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a))
+            # println("ratio prior γ ",  logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)))
+            # println("ratio ll ",llᵒ - ll)
+            # println("proposal ratio a ",    logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a))
+            # println("proposal ratio γ ",logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ)))
+            #
+
             println("logaccept for parameter update ", round(A;digits=4))
             if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
-                println("parameter update accepted")
+                print("  accepted")
                 P, Pᵒ = Pᵒ, P
                 X, Xᵒ = Xᵒ, X
                 Paux, Pauxᵒ = Pauxᵒ, Paux
@@ -145,11 +167,11 @@ function lm_mcmc(tt_, (xobs0,xobsT), mT, P,
         if i in subsamples
             #push!(Xsave, copy(X))
             push!(Xsave, convert_samplepath(X))
-            push!(parsave, [P.a, getγ(P)])
+            push!(parsave, [P.a, P.c, getγ(P)])
         end
         push!(objvals, obj)
         if makefig && (i==ITER)
-            drawpath(ITER,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
+            drawpath(ITER,P.n,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
         end
     end
 
@@ -166,7 +188,7 @@ end
 
 
 
-function drawpath(i,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2);showmomenta=false)
+function drawpath(i,n,x,X,objvals,x0,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2);showmomenta=false)
         s = deepvec2state(x).p
         s0 = x0.p # true momenta
 
@@ -231,23 +253,4 @@ end
 function convert_samplepath(X)
     VA = VectorOfArray(map(x->deepvec(x),X.yy))
     vec(convert(Array,VA))
-end
-
-
-if TEST
-    xinit = State(xobs0, zeros(PointF,n))
-    xinit = State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-    ITER = 10
-    lm_mcmc(tt_, (LT,ΣT,μT), (L0,Σ0), (xobs0,xobsT), P, Paux, model, sampler, dataset, xinit, δ, ITER; makefig=true)
-end
-
-# change parameter values and update
-function updateguidedproposal!((α,γ), tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P::MarslandShardlow, Paux, Q)
-    P = MarslandShardlow(α, γ, P.λ, P.n)
-    if model == :ms
-        Paux = MarslandShardlowAux(P, State(xobsT, mT))
-    else
-        Paux = LandmarksAux(P, State(xobsT, mT))
-    end
-    Q .= construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
 end

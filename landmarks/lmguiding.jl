@@ -64,7 +64,7 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
 
     BB = Bridge.B(0, Paux)          # does not depend on time
     β = vec(Bridge.β(0,Paux))       # does not depend on time
-    println("computing ã and its low rank approximation:")
+
     # various ways to compute ã (which does not depend on time);
     # low rank appoximation really makes sense here
      aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
@@ -213,14 +213,10 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposall!;
 
     # initialise objects to write into
     # srout and strout are vectors of Points
-    if isa(Q.target,Landmarks)
-        srout = zeros(Pnt, length(Q.target.nfs))
-        strout = zeros(Pnt, length(Q.target.nfs))
-    end
-    if isa(Q.target,MarslandShardlow)
-        srout = zeros(Pnt, Q.target.n)
-        strout = zeros(Pnt, Q.target.n)
-    end
+    dwiener = dimwiener(Q.target)
+    srout = zeros(Pnt, dwiener)
+    strout = zeros(Pnt, dwiener)
+
     rout = copy(x0)
     bout = copy(x0)
     btout = copy(x0)

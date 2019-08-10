@@ -3,6 +3,7 @@ import Bridge: _b, _b!, B!, σ!, b!, σ, b
 
 struct MarslandShardlow{T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std parameter
+    c::T # kernel multiplicate parameter
     γ::T # noise level
     λ::T # mean reversion
     n::Int
@@ -10,13 +11,14 @@ end
 
 struct MarslandShardlowAux{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std parameter
+    c::T # kernel multiplicate parameter
     γ::T # noise level
     λ::T # mean reversion
     xT::State{Point{S}}  # use x = State(P.v, zero(P.v)) where v is conditioning vector
     n::Int
 end
 
-MarslandShardlowAux(P::MarslandShardlow, xT) = MarslandShardlowAux(P.a, P.γ, P.λ, xT, P.n)
+MarslandShardlowAux(P::MarslandShardlow, xT) = MarslandShardlowAux(P.a,P.c, P.γ, P.λ, xT, P.n)
 
 struct Noisefield{T}
     δ::Point{T}   # locations of noise field
@@ -26,6 +28,7 @@ end
 
 struct  Landmarks{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std
+    c::T # kernel multiplicate parameter
     n::Int64   # numer of landmarks
     db::Float64 # domainbound
     nfstd::Float64
@@ -34,13 +37,14 @@ end
 
 struct LandmarksAux{S,T} <: ContinuousTimeProcess{State{PointF}}
     a::T # kernel std
+    c::T # kernel multiplicate parameter
     xT::State{Point{S}}  # use x = State(P.v, zero(P.v)) where v is conditioning vector
     n::Int64   # numer of landmarks
     nfs::Vector{Noisefield{S}}  # vector containing pars of noisefields
 end
 
 
-LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a, xT, P.n, P.nfs)
+LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a,P.c, xT, P.n, P.nfs)
 
 const LandmarkModel = Union{Landmarks, LandmarksAux, MarslandShardlow, MarslandShardlowAux}
 
@@ -53,21 +57,21 @@ kernel in Hamiltonian
 """
 function kernel(q, P::LandmarkModel)
  #(2*π*P.a^2)^(-d/2)*exp(-Bridge.inner(q)/(2*P.a^2))
- exp(-Bridge.inner(q)/(2*P.a^2))
+ P.c * exp(-Bridge.inner(q)/(2*P.a^2))
 end
 
 """
 gradient of kernel in hamiltonian
 """
 function ∇kernel(q, P::LandmarkModel)
-    -P.a^(-2) * kernel(q, P) * q
+    -P.c * P.a^(-2) * kernel(q, P) * q
 end
 
 """
 Needed for b! in case P is auxiliary process
 """
 function ∇kernel(q, qT, P::LandmarkModel)
-     -P.a^(-2) * kernel(qT, P) * q
+     -P.a^(-2) *P.c  * kernel(qT, P) * q
 end
 
 """
@@ -558,7 +562,7 @@ function getγ(P)
     if isa(P,MarslandShardlow)
         out = P.γ
     elseif isa(P,Landmarks)
-        out = P.nfs[1].γ[1]
+        out = P.nfs[1].γ[1]*pi/2
     end
     out
 end

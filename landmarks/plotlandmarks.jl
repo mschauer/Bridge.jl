@@ -11,7 +11,7 @@
     nfs: contains info over noisefields
     db: domainbound (plot on [-db,db] x [-db,db])
 """
-function plotlandmarkpositions(X,Xᵒ,P,model,v0,vT;db=5)
+function plotlandmarkpositions(X,Xᵒ,P,v0,vT;db=5)
     n = P.n
     if isa(P,Landmarks)
         nfs = P.nfs
@@ -25,12 +25,12 @@ function plotlandmarkpositions(X,Xᵒ,P,model,v0,vT;db=5)
     outg = [Any[Xᵒ.tt[i], [Xᵒ.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(Xᵒ.tt) ][:]
     dfg = DataFrame(time=extractcomp(outg,1),pos1=extractcomp(outg,2),pos2=extractcomp(outg,3),mom1=extractcomp(outg,4),mom2=extractcomp(outg,5),pointID=extractcomp(outg,6))
     # construct df for noisefields
-    if model ==:ahs
+    if isa(P,Landmarks)
         nfscales = [nfs[j].γ for j in eachindex(nfs)]
         nfsloc = [nfs[j].δ for j in eachindex(nfs)]
         df_nfs = DataFrame(locx =  extractcomp(nfsloc,1), locy =  extractcomp(nfsloc,2),
         lambda1=  extractcomp(nfscales,1), lambda2=extractcomp(nfscales,2), nfstd=fill(nfstd,length(nfs)))
-    else
+    elseif isa(P,MarslandShardlow)
         df_nfs =DataFrame(locx=Int64[], locy=Int64[], lambda1=Int64[], lambda2=Int64[],nfstd=Int64[])
     end
 
@@ -39,9 +39,9 @@ function plotlandmarkpositions(X,Xᵒ,P,model,v0,vT;db=5)
     dfT = DataFrame(pos1=repeat(extractcomp(vT,1),2), pos2=repeat(extractcomp(vT,2),2))
     df0= DataFrame(pos1=repeat(extractcomp(v0,1),2), pos2=repeat(extractcomp(v0,2),2))
 
-    if model == :ms
+    if isa(P,MarslandShardlow)
         titel = "Marsland-Shardlow model, "
-    else
+    elseif isa(P,Landmarks)
         titel = "Arnaudon-Holm-Sommer model, "
     end
     titel = titel * string(n)*" landmarks"
@@ -87,7 +87,7 @@ end
     nfs: contains info over noisefields
     db: domainbound (plot on [-db,db] x [-db,db])
 """
-function plotlandmarkpositions(X,P,model,v0,vT;db=5)
+function plotlandmarkpositions(X,P,v0,vT;db=5)
     n = P.n
     if isa(P,Landmarks)
         nfs = P.nfs
@@ -98,12 +98,12 @@ function plotlandmarkpositions(X,P,model,v0,vT;db=5)
     out = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
     df = DataFrame(time=extractcomp(out,1),pos1=extractcomp(out,2),pos2=extractcomp(out,3),mom1=extractcomp(out,4),mom2=extractcomp(out,5),pointID=extractcomp(out,6))
     # construct df for noisefields
-    if model ==:ahs
+    if isa(P,Landmarks)
         nfscales = [nfs[j].γ for j in eachindex(nfs)]
         nflocs = [nfs[j].δ for j in eachindex(nfs)]
         df_nfs = DataFrame(locx =  extractcomp(nflocs,1), locy =  extractcomp(nflocs,2),
         lambda1=  extractcomp(nfscales,1), lambda2=extractcomp(nfscales,2), nfstd=fill(nfstd,length(nfs)))
-    else
+    elseif isa(P,MarslandShardlow)
         df_nfs =DataFrame(locx=Int64[], locy=Int64[], lambda1=Int64[], lambda2=Int64[],nfstd=Int64[])
     end
 
@@ -112,9 +112,9 @@ function plotlandmarkpositions(X,P,model,v0,vT;db=5)
     dfT = DataFrame(pos1=repeat(extractcomp(vT,1),2), pos2=repeat(extractcomp(vT,2),2))
     df0= DataFrame(pos1=repeat(extractcomp(v0,1),2), pos2=repeat(extractcomp(v0,2),2))
 
-    if model == :ms
+    if isa(P,MarslandShardlow)
         titel = "Marsland-Shardlow model, "
-    else
+    elseif isa(P,Landmarks)
         titel = "Arnaudon-Holm-Sommer model, "
     end
     titel = titel * string(n)*" landmarks"
