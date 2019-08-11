@@ -20,7 +20,7 @@ using NPZ # for reading python datafiles
 pyplot()
 
 const sk=1  # entries to skip for likelihood evaluation
-const itostrat = true
+const itostrat = true# false#true
 const d = 2
 #const inplace = true  # if true inplace updates on the path when doing autodifferentiation
 const TEST = false
@@ -36,15 +36,15 @@ include("generatedata.jl")
 include("lm_mcmc.jl")
 
 ################################# start settings #################################
-n = 10#35 # nr of landmarks
+n = 6#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[2]
 println("model: ",model)
 
-ITER = 3 # nr of sgd iterations
+ITER = 200 # nr of sgd iterations
 subsamples = 0:1:ITER
 
-startPtrue = true # start from true P?
+startPtrue = false # start from true P?
 showplotσq = false # only for ahs model
 
 samplers =[:sgd, :sgld, :mcmc]
@@ -73,7 +73,7 @@ println("dataset: ",dataset)
 
 σobs = 0.1   # noise on observations
 
-prior_a = Uniform(0.1,10)
+prior_a = Exponential(2.0)
 prior_c = Exponential(1.0)
 prior_γ = Exponential(1.0)
 
@@ -112,26 +112,28 @@ if startPtrue
     P = Ptrue
 else
     ainit = 0.3
-    γinit = 5.0
+    cinit = 0.1
+    γinit = 1.0
     if model == :ms
-        P = MarslandShardlow(ainit, Ptrue.c, γinit, Ptrue.λ, Ptrue.n)
+        P = MarslandShardlow(ainit, cinit, γinit, Ptrue.λ, Ptrue.n)
     elseif model == :ahs
         nfsinit = construct_nfs(Ptrue.db, Ptrue.nfstd, γinit)
-        P = Landmarks(ainit, Ptrue.c, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
+        P = Landmarks(ainit, cinit, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
     end
 end
 
+pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+
+
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
 xinit = State(xobs0, zeros(PointF,P.n)) # xinit = State(xobs0, rand(PointF,P.n))# xinit = x0 # State(xobs0, [Point(-1.0,3.0)/P.n for i in 1:P.n])
-
-
 
 start = time() # to compute elapsed time
 Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
                                     sampler, dataset,
                                     xinit, ITER, subsamples,
                                     (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-                                      outdir)
+                                      outdir,pb)
 elapsed = time() - start
 
 include("/Users/Frank/.julia/dev/Bridge/landmarks/postprocessing.jl")

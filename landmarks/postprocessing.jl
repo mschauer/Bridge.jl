@@ -46,13 +46,14 @@ close(f)
 
 
 
-pardf = DataFrame(a=extractcomp(parsave,1),c=extractcomp(parsave,2),
-            gamma=extractcomp(parsave,3), subsamples=subsamples)
-@rput pardf
-R"""
-library(ggplot2)
-pardf %>% ggplot(aes(x=a,y=gamma,colour=subsamples)) + geom_point()
-"""
+# pardf = DataFrame(a=extractcomp(parsave,1),c=extractcomp(parsave,2),
+#             gamma=extractcomp(parsave,3), subsamples=subsamples)
+# @rput pardf
+# R"""
+# library(ggplot2)
+# library(tidyverse)
+# pardf %>% ggplot(aes(x=a,y=gamma,colour=subsamples)) + geom_point()
+# """
 
 pp1 = Plots.plot(subsamples, extractcomp(parsave,1),label="a")
 xlabel!(pp1,"iteration")

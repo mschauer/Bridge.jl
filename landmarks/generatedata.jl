@@ -87,7 +87,7 @@ function generatedata(dataset,P,t,σobs)
         p0vec = get(testshapes,"p",0)
         nb = div(length(xobs0vec),2)
 
-        subs = 1:4:nb#1:5:nb
+        subs = 1:8:nb#1:5:nb
         xobs0 = [PointF(xobs0vec[2i-1],xobs0vec[2i]) for i in subs]
         xobsT = [PointF(xobsTvec[2i-1],xobsTvec[2i]) for i in subs]
         p0 = [PointF(p0vec[2i-1],p0vec[2i]) for i in subs]
@@ -101,7 +101,7 @@ function generatedata(dataset,P,t,σobs)
         end
         x0 = State(xobs0, p0)
         Wf, Xf = landmarksforward(t, x0, P)
-        plotlandmarkpositions(Xf,P,xobs0,xobsT;db=4)
+#        plotlandmarkpositions(Xf,P,xobs0,xobsT;db=4)
 
     end
     x0, xobs0, xobsT, Xf, P
