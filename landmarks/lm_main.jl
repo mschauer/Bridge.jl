@@ -36,12 +36,12 @@ include("generatedata.jl")
 include("lm_mcmc.jl")
 
 ################################# start settings #################################
-n = 6#35 # nr of landmarks
+n = 5#35 # nr of landmarks
 models = [:ms, :ahs]
 model = models[2]
 println("model: ",model)
 
-ITER = 200 # nr of sgd iterations
+ITER = 10 # nr of sgd iterations
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -55,7 +55,7 @@ println("sampler: ",sampler)
 if model==:ms
     δ = 0.1
 elseif model==:ahs
-    δ = 0.05
+    δ = 0.1
 end
 
 σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
@@ -68,7 +68,7 @@ end
 
 datasets =["forwardsimulated", "shifted","shiftedextreme",
         "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[7]
+dataset = datasets[3]
 println("dataset: ",dataset)
 
 σobs = 0.1   # noise on observations
@@ -133,7 +133,9 @@ Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
                                     sampler, dataset,
                                     xinit, ITER, subsamples,
                                     (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-                                      outdir,pb)
+                                      outdir,pb;makefig=true)
 elapsed = time() - start
+println("Average acceptance percentage: ",perc_acc,"\n")
+println("Elapsed time: ",round(elapsed/60;digits=2), " minutes")
 
 include("/Users/Frank/.julia/dev/Bridge/landmarks/postprocessing.jl")

@@ -45,11 +45,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
     L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
     Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
     μT = zeros(PointF,P.n)
-    if isa(P,Landmarks)
-        Paux = LandmarksAux(P, State(xobsT, mT))
-    elseif isa(P,MarslandShardlow)
-        Paux = MarslandShardlowAux(P, State(xobsT, mT))
-    end
+    Paux = auxiliary(P, State(xobsT, mT))
 
     println("Compute backward odes:")
     Lt, Mt⁺, μt, Ht = initLMμH(tt_,(LT,ΣT,μT))
@@ -60,12 +56,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
     X = initSamplePath(tt_, xinit)
     W = initSamplePath(tt_,  zeros(StateW, dwiener))
     sample!(W, Wiener{Vector{StateW}}())
-
     ll = simguidedlm_llikelihood!(LeftRule(), X, xinit, W, Q; skip=sk)
-    if makefig
-        #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
-    end
-    println(norm(Paux.xT.q-X.yy[end].q))
 
     # saving objects
     objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
@@ -93,6 +84,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
     resultᵒ = DiffResults.GradientResult(xᵒ)
 
     if makefig
+        #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
         xobs0comp1 = extractcomp(xobs0,1)
         xobs0comp2 = extractcomp(xobs0,2)
         xobsTcomp1 = extractcomp(xobsT,1)
@@ -126,12 +118,11 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
             γᵒ = getγ(P) * exp(σ_γ * randn())
             if isa(P,MarslandShardlow)
                 Pᵒ = MarslandShardlow(aᵒ,cᵒ,γᵒ,P.λ, P.n)
-                Pauxᵒ = MarslandShardlowAux(Pᵒ,Paux.xT)
             elseif isa(P,Landmarks)
                 nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
                 Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
-                Pauxᵒ = LandmarksAux(Pᵒ,Paux.xT)
             end
+            Pauxᵒ = auxiliary(Pᵒ,Paux.xT)
 
             Qᵒ = construct_guidedproposal!(tt_, (Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), Pᵒ, Pauxᵒ)
             llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), W, Qᵒ; skip=sk)
@@ -142,17 +133,6 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
                     logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a)+
                     logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
                     logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
-
-            # println("γ ", γ)
-            # println("γᵒ ", γᵒ)
-            # println("P ",P)
-            # println("Pcirc ", Pᵒ)
-            # println("ratio prior a ",logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a))
-            # println("ratio prior γ ",  logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)))
-            # println("ratio ll ",llᵒ - ll)
-            # println("proposal ratio a ",    logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a))
-            # println("proposal ratio γ ",logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ)))
-            #
 
             println("logaccept for parameter update ", round(A;digits=4))
             if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
@@ -166,15 +146,15 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
             end
         end
 
-
         println()
         # save some of the results
         if i in subsamples
             #push!(Xsave, copy(X))
             push!(Xsave, convert_samplepath(X))
             push!(parsave, [P.a, P.c, getγ(P)])
+            push!(objvals, obj)
         end
-        push!(objvals, obj)
+
         if makefig && (i==ITER)
             drawpath(ITER,P.n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
         end
@@ -280,6 +260,9 @@ function convert_samplepath(X)
     vec(convert(Array,VA))
 end
 
+"""
+plot initial and final shape, given by xobs0 and xobsT respectively
+"""
 function plotshapes(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2)
     # plot initial and final shapes
     pp = Plots.plot(xobs0comp1, xobs0comp2,seriestype=:scatter, color=:black,label="q0", title="Landmark evolution")

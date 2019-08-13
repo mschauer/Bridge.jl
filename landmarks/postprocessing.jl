@@ -1,7 +1,6 @@
 ## postprocessing
 
-
-# write mcmc iterates to csv file
+######### write mcmc iterates of bridges to csv file
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
 # Ordering in each column is as follows:
 # 1) time
@@ -21,12 +20,7 @@ write(f, head)
 writedlm(f,out)
 close(f)
 
-println("Average acceptance percentage: ",perc_acc,"\n")
-println("Elapsed time: ",round(elapsed;digits=3))
-
-
-
-# write info to txt file
+########### write info to txt file
 fn = outdir*"info.txt"
 f = open(fn,"w")
 write(f, "Dataset: ", string(dataset),"\n")
@@ -44,28 +38,24 @@ write(f, "Average acceptance percentage (path - initial state): ",string(perc_ac
 #write(f, "Backward type parametrisation in terms of nu and H? ",string(Î½Hparam),"\n")
 close(f)
 
+######## write observations to file
+obsdf = DataFrame(x=vcat( extractcomp(xobs0,1), extractcomp(xobsT,1)),
+                y= vcat( extractcomp(xobs0,2), extractcomp(xobsT,2)),
+                time=repeat(["0","T"], inner=P.n))
+CSV.write(outdir*"observations.csv", obsdf; delim=";")
 
+######## write parameter iterates to file
+parsdf = DataFrame(a=extractcomp(parsave,1),c=extractcomp(parsave,2),
+            gamma=extractcomp(parsave,3), iterate=subsamples)
+CSV.write(outdir*"parameters.csv", parsdf; delim=";")
 
-# pardf = DataFrame(a=extractcomp(parsave,1),c=extractcomp(parsave,2),
-#             gamma=extractcomp(parsave,3), subsamples=subsamples)
-# @rput pardf
-# R"""
-# library(ggplot2)
-# library(tidyverse)
-# pardf %>% ggplot(aes(x=a,y=gamma,colour=subsamples)) + geom_point()
-# """
-
-pp1 = Plots.plot(subsamples, extractcomp(parsave,1),label="a")
-xlabel!(pp1,"iteration")
-pp2 = Plots.plot(subsamples, extractcomp(parsave,2),label="c")
-xlabel!(pp2,"iteration")
-pp3 = Plots.plot(subsamples, extractcomp(parsave,3),label="γ")
-xlabel!(pp3,"iteration")
-# pp3 = Plots.plot(extractcomp(parsave,1), extractcomp(parsave,2),seriestype=:scatter,label="")
-# xlabel!(pp3,"a")
-# ylabel!(pp3,"γ")
-l = @layout [a  b c]
-pp = Plots.plot(pp1,pp2,pp3,background_color = :ivory,layout=l , size = (900, 500) )
-
-cd(outdir)
-Plots.savefig(pp,"me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*"tracepars.pdf")
+####### write noisefields to file
+if isa(P,Landmarks)
+    nfsloc = [P.nfs[j].δ for j in eachindex(P.nfs)]
+    nfsdf = DataFrame(locx =  extractcomp(nfsloc,1),
+                      locy =  extractcomp(nfsloc,2),
+                      nfstd=fill(nfstd,length(P.nfs)))
+elseif isa(P,MarslandShardlow)
+    nfsdf =DataFrame(locx=Int64[], locy=Int64[], nfstd=Int64[])
+end
+CSV.write(outdir*"noisefields.csv", nfsdf; delim=";")

@@ -18,8 +18,6 @@ struct MarslandShardlowAux{S,T} <: ContinuousTimeProcess{State{PointF}}
     n::Int
 end
 
-MarslandShardlowAux(P::MarslandShardlow, xT) = MarslandShardlowAux(P.a,P.c, P.γ, P.λ, xT, P.n)
-
 struct Noisefield{T}
     δ::Point{T}   # locations of noise field
     γ::Point{T}  # scaling at noise field (used to be called lambda)
@@ -44,7 +42,18 @@ struct LandmarksAux{S,T} <: ContinuousTimeProcess{State{PointF}}
 end
 
 
+MarslandShardlowAux(P::MarslandShardlow, xT) = MarslandShardlowAux(P.a,P.c, P.γ, P.λ, xT, P.n)
 LandmarksAux(P::Landmarks, xT) = LandmarksAux(P.a,P.c, xT, P.n, P.nfs)
+
+function auxiliary(P::Union{MarslandShardlow, Landmarks}, xT)
+    if isa(P,MarslandShardlow)
+        Paux = MarslandShardlowAux(P,xT)
+    elseif isa(P,Landmarks)
+        Paux = LandmarksAux(P,xT)
+    end
+    Paux
+end
+
 
 const LandmarkModel = Union{Landmarks, LandmarksAux, MarslandShardlow, MarslandShardlowAux}
 

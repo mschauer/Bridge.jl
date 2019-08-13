@@ -55,9 +55,7 @@ end
 
 struct Lm  end
 
-
-
-function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
+function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT); implicit=true, lowrank=false)
     Mt⁺[end] .= ΣT
     Lt[end] .= LT
     μt[end] .= μT
@@ -66,36 +64,39 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT))
     β = vec(Bridge.β(0,Paux))       # does not depend on time
 
     # various ways to compute ã (which does not depend on time);
-    # low rank appoximation really makes sense here
-     aa = Matrix(Bridge.a(0, Paux))        # vanilla, no lr approx
-
-#           @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))))      # low rank approx default
-        #   @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))),rank=400)  # fix rank
-
-    # @time  aalr = pheigfact(deepmat(Matrix(Bridge.a(0, Paux))), rtol=1e-10)  # control accuracy of lr approx
-    # println("Rank ",size(aalr[:vectors],2), " approximation to ã")
-#     sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
-
+    aa = Bridge.a(0, Paux) # vanilla, no (possibly enclose with Matrix)
+    if !lowrank
+        oldtemp = 0.5* Lt[end]* aa * Matrix(Lt[end]') * dt
+    else
+        #aalr = pheigfact(deepmat(aa), rtol=1e-8)  # control accuracy of lr approx
+        aalr = pheigfact(deepmat(aa))  # control accuracy of lr approx
+        # println("Rank ",size(aalr[:vectors],2), " approximation to ã")
+        sqrt_aalr = deepmat2unc(aalr[:vectors] * diagm(0=> sqrt.(aalr[:values])))
+    end
 
     for i in length(t)-1:-1:1
         dt = t[i+1]-t[i]
-#       Lt[i] .=  Lt[i+1] * (I + BB * dt)  # explicit
-        Lt[i] .= Lt[i+1]/(I - dt* BB)  # implicit, similar computational cost
-       Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1]* aa * Matrix(Lt[i+1]') * dt
-#        Mt⁺[i] .= Mt⁺[i+1] + Bridge.outer(Lt[i+1] * sqrt_aalr) * dt  # does not run with nstate, matmul of Array{Unc,2} with Adjoint(Array{Unc,2}) not defined
-#        Mt⁺[i] .= Mt⁺[i+1] + Lt[i+1] * sqrt_aalr * conj!(Lt[i+1] * sqrt_aalr) * dt
-
-        μt[i] .= μt[i+1] + Lt[i+1] * β * dt
-
+        if implicit
+            Lt[i] .= Lt[i+1]/(I - dt* BB)
+        else
+            Lt[i] .=  Lt[i+1] * (I + BB * dt)
+        end
+        if !lowrank
+            temp = 0.5 * Lt[i]* aa * Matrix(Lt[i]') * dt
+            Mt⁺[i] .= Mt⁺[i+1] + oldtemp + temp
+            oldtemp = temp
+        else
+            C = (0.5 * dt) * Bridge.outer(Lt[i+1] * sqrt_aalr)
+            Mt⁺[i] .= Mt⁺[i+1] + (C+C')
+        end
+        μt[i] .= μt[i+1] + 0.5 * (Lt[i] + Lt[i+1]) * β * dt  # trapezoid rule
     end
     (Lt[1], Mt⁺[1], μt[1])
 end
 
 target(Q::GuidedProposall!) = Q.target
 auxiliary(Q::GuidedProposall!) = Q.aux
-
 constdiff(Q::GuidedProposall!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
-
 
 function _b!((i,t), x::State, out::State, Q::GuidedProposall!)
     Bridge.b!(t, x, out, Q.target)
@@ -105,7 +106,6 @@ end
 
 σ!(t, x, dw, out, Q::GuidedProposall!) = σ!(t, x, dw, out, Q.target)
 
-# in following x is of type state
 function _r!((i,t), x::State, out::State, Q::GuidedProposall!)
     out .= vecofpoints2state(Q.Lt[i]' * (Q.Mt[i] *(Q.xobsT-Q.μt[i]-Q.Lt[i]*vec(x))))
     out
