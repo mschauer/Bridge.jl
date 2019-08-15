@@ -39,7 +39,7 @@
   shapes <- ggplot() +
     geom_path(data=v0, aes(x=x,y=y), colour='black')+
     geom_path(data=vT, aes(x=x,y=y), colour='orange') +
-    geom_point(data=noisefields, aes(x=locx, y=locy), color="Grey")+
+    geom_point(data=nfsdf, aes(x=locx, y=locy), color="Grey")+
     geom_circle(aes(x0 = locx, y0 = locy, r = nfstd), data = nfsdf,color="Grey",linetype="dashed")+ 
       theme(axis.title.x=element_blank(), axis.title.y=element_blank()) + 
     geom_label(data=dlabel0, aes(x=x,y=y,label=landmarkid))+
@@ -99,10 +99,12 @@
   # plot paths of landmarks momenta
 pmom <-  d %>% dplyr::filter(time==0) %>% ggplot(aes(x=mom1,y=mom2,colour=iterate)) + geom_point() +
   #  geom_path(aes(group=interaction(landmarkid,iteratenr),colour=iterate)) +
-    facet_wrap(~landmarkid)  +scale_colour_gradient(low="orange",high="darkblue")+theme(axis.title.x=element_blank(), axis.title.y=element_blank()) 
-pdf("momenta-faceted.pdf",width=7,height=3)  
+    facet_wrap(~landmarkid)  +scale_colour_gradient(low="orange",high="darkblue")+theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
+  geom_hline(yintercept=0, linetype="dashed")+geom_vline(xintercept=0, linetype="dashed")
+  pdf("momenta-faceted.pdf",width=7,height=5)  
 show(pmom)
 dev.off()
+
 
 
 

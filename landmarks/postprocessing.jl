@@ -1,6 +1,6 @@
 ## postprocessing
 
-fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
+fn = "_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
 gif(anim, outdir*fn*".gif", fps = 100)
 mp4(anim, outdir*fn*".mp4", fps = 100)
 

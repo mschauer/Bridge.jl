@@ -10,9 +10,10 @@ Returns
 - xobs0, xobsT: (observed initial and final states with noise)
 - Xf: forward simulated path
 - P: only adjusted in case of 'real' data, like the bearskull data
+- pb: plotting bounds used in animation
 
 Example
-    x0, xobs0, xobsT, Xf, P = generatedata(dataset,P,t,σobs)
+    x0, xobs0, xobsT, Xf, P, pb = generatedata(dataset,P,t,σobs)
 
 """
 function generatedata(dataset,P,t,σobs)
@@ -25,6 +26,7 @@ function generatedata(dataset,P,t,σobs)
         Wf, Xf = landmarksforward(t, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
         xobsT = [Xf.yy[end].q[i] for i in 1:P.n ] + σobs * randn(PointF,n)
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
     end
     if dataset in ["shifted","shiftedextreme"] # first stretch, then rotate, then shift; finally add noise
         q0 = [PointF(2.0cos(t), sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -32,12 +34,19 @@ function generatedata(dataset,P,t,σobs)
         x0 = State(q0, p0)
         @time Wf, Xf = landmarksforward(t, x0, P)
         xobs0 = x0.q + σobs * randn(PointF,n)
-        if dataset == "shifted" θ, η =  π/10, 0.2 end
-        if dataset == "shiftedextreme" θ, η =  π/5, 0.4 end
+        if dataset == "shifted"
+            θ, η =  π/10, 0.2
+            pb = Lmplotbounds(-3.0,3.0,-2.0,2.0) # verified
+        end
+        if dataset == "shiftedextreme"
+            θ, η =  π/5, 0.4
+            pb = Lmplotbounds(-3.0,3.0,-3.0,3.0)
+        end
         rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
         stretch = SMatrix{2,2}(1.0 + η, 0.0, 0.0, 1.0 - η)
         shift =  PointF(0.1,-0.1)
         xobsT = [rot * stretch * xobs0[i] + shift  for i in 1:P.n ] + σobs * randn(PointF,n)
+
     end
     if dataset=="bear"
         cd("/Users/Frank/github/BridgeLandmarks/landmarks/beardata")
@@ -55,6 +64,7 @@ function generatedata(dataset,P,t,σobs)
         end
         x0 = State(xobs0, rand(PointF,P.n))
         Wf, Xf = landmarksforward(t, x0, P)
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
     end
     if dataset=="heart"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -66,6 +76,7 @@ function generatedata(dataset,P,t,σobs)
         heart_ycoord(s) = 0.2*16(sin(s)^3)
         qT = [PointF(heart_xcoord(t), heart_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
     end
     if dataset=="peach"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -77,6 +88,7 @@ function generatedata(dataset,P,t,σobs)
         peach_ycoord(s) = (2.0 + sin(s)^3) * sin(s)
         qT = [PointF(peach_xcoord(t), peach_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
     end
     if dataset=="generatedstefan"
         cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
@@ -87,7 +99,7 @@ function generatedata(dataset,P,t,σobs)
         p0vec = get(testshapes,"p",0)
         nb = div(length(xobs0vec),2)
 
-        subs = 1:8:nb#1:5:nb
+        subs = 1:6:nb#1:5:nb
         xobs0 = [PointF(xobs0vec[2i-1],xobs0vec[2i]) for i in subs]
         xobsT = [PointF(xobsTvec[2i-1],xobsTvec[2i]) for i in subs]
         p0 = [PointF(p0vec[2i-1],p0vec[2i]) for i in subs]
@@ -102,9 +114,9 @@ function generatedata(dataset,P,t,σobs)
         x0 = State(xobs0, p0)
         Wf, Xf = landmarksforward(t, x0, P)
 #        plotlandmarkpositions(Xf,P,xobs0,xobsT;db=4)
-
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5) # verified
     end
-    x0, xobs0, xobsT, Xf, P
+    x0, xobs0, xobsT, Xf, P, pb
 end
 
 if false

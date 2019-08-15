@@ -37,7 +37,7 @@ include("lm_mcmc.jl")
 ################################# start settings #################################
 n = 8  # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println("model: ",model)
 
 ITER = 750#1_0 # nr of sgd iterations
@@ -67,7 +67,7 @@ end
 
 datasets =["forwardsimulated", "shifted","shiftedextreme",
         "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[3]
+dataset = datasets[7]
 println("dataset: ",dataset)
 
 σobs = 0.1   # noise on observations
