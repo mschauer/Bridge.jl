@@ -90,12 +90,17 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
         xobsTcomp1 = extractcomp(xobsT,1)
         xobsTcomp2 = extractcomp(xobsT,2)
         pp1 = plotshapes(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2)
-        cd(outdir)
-        Plots.savefig(pp1,"me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*"shapes.pdf")
+        # cd(outdir)
+        # Plots.savefig(pp1,"anim"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*"shapes.pdf")
     end
 
     # start iterations
     anim =    @animate for i in 1:ITER
+
+        # if i == div(ITER,2)
+        #     σobs = σobs/sqrt(10)
+        #     Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+        # end
         if makefig
             #drawpath(i,P.n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1,xobsTcomp2))
             drawpath(i-1,P.n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
@@ -160,15 +165,9 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
         end
     end
 
-    fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
-    gif(anim, outdir*fn*".gif", fps = 20)
-    mp4(anim, outdir*fn*".mp4", fps = 20)
-
-    # drawobjective(objvals)
-
     perc_acc = 100acc/ITER
     println("Acceptance percentages (bridgepath - inital state - parameters): ",perc_acc)
-    Xsave, parsave, objvals, perc_acc
+    anim, Xsave, parsave, objvals, perc_acc
 end
 
 struct Lmplotbounds

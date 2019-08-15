@@ -1,5 +1,9 @@
 ## postprocessing
 
+fn = "me"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
+gif(anim, outdir*fn*".gif", fps = 100)
+mp4(anim, outdir*fn*".mp4", fps = 100)
+
 ######### write mcmc iterates of bridges to csv file
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
 # Ordering in each column is as follows:
@@ -21,7 +25,7 @@ writedlm(f,out)
 close(f)
 
 ########### write info to txt file
-fn = outdir*"info.txt"
+fn = outdir*  "info_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*".txt"
 f = open(fn,"w")
 write(f, "Dataset: ", string(dataset),"\n")
 write(f, "Sampler: ", string(sampler), "\n")
@@ -54,7 +58,7 @@ if isa(P,Landmarks)
     nfsloc = [P.nfs[j].δ for j in eachindex(P.nfs)]
     nfsdf = DataFrame(locx =  extractcomp(nfsloc,1),
                       locy =  extractcomp(nfsloc,2),
-                      nfstd=fill(nfstd,length(P.nfs)))
+                      nfstd=fill(P.nfstd,length(P.nfs)))
 elseif isa(P,MarslandShardlow)
     nfsdf =DataFrame(locx=Int64[], locy=Int64[], nfstd=Int64[])
 end

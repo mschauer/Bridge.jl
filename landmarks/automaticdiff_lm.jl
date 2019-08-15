@@ -60,7 +60,8 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, result�
         ll_incl0 = DiffResults.value(result)
         ∇x .=  DiffResults.gradient(result)
 
-        xᵒ .= x .+ .5*δ * mask.* (∇x .+ sqrt(δ) * randn(length(x)))
+        #xᵒ .= x .+ .5*δ * mask.* (∇x .+ sqrt(δ) * randn(length(x)))
+        xᵒ .= x .+ .5*δ * mask.* ∇x .+ sqrt(δ) * mask .* randn(length(x))
         cfgᵒ = ForwardDiff.GradientConfig(slogρ(Q, W, Xᵒ), xᵒ, ForwardDiff.Chunk{2*d*P.n}()) # 2*d*P.n is maximal
         ForwardDiff.gradient!(resultᵒ, slogρ(Q, W, Xᵒ),xᵒ,cfgᵒ) # X gets overwritten but does not change
         ll_incl0ᵒ = DiffResults.value(resultᵒ)
