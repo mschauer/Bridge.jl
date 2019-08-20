@@ -2,15 +2,15 @@ workdir = "/Users/Frank/.julia/dev/Bridge/landmarks/"
 cd(workdir)
 # THIS SCRIPT REPLACES THE OLDER 'lmpar.jl'
 using Bridge, StaticArrays, Distributions
-using Bridge:logpdfnormal
+using Bridge: logpdfnormal
 using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff #: GradientConfig, Chunk, gradient!, gradient, Dual, value
-using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
+#using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
 using DiffResults
-using TimerOutputs #undeclared
+#using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
 using DataFrames
@@ -40,7 +40,7 @@ models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 750#1_0 # nr of sgd iterations
+ITER = 7#1_0 # nr of sgd iterations
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
