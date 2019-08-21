@@ -16,20 +16,9 @@ function lmgpupdate(Lt0₊, Mt⁺0₊::Array{Pnt,2}, μt0₊, (L0, Σ0, xobs0)) 
     Lt0, Mt⁺0, μt0
 end
 
-"""
-    Initialise arrays for (L,M,μ) where each value is copied length(t) times
-"""
-function initLMμH(t,(L,M,μ))
-    Lt =  [copy(L) for s in t]
-    Mt⁺ = [copy(M) for s in t]
-    μt = [copy(μ) for s in t]
-    H = L' * (M * L )
-    Ht = [copy(H) for s in t]
-    Lt, Mt⁺ , μt, Ht
-end
 
 """
-Construct guided proposal on a single segment with times in tt from precomputed ν and H
+Construct guided proposal on a single segment
 """
 struct GuidedProposall!{T,Ttarget,Taux,TL,TM,Tμ,TH,Txobs0,TxobsT,TLt0,TMt⁺0,Tμt0,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
@@ -185,6 +174,17 @@ function llikelihood(::LeftRule,  Xᵒ, Q::GuidedProposall!; skip = 0)
     som
 end
 
+"""
+    Initialise arrays for (L,M,μ) where each value is copied length(t) times
+"""
+function initLMμH(t,(L,M,μ))
+    Lt =  [copy(L) for s in t]
+    Mt⁺ = [copy(M) for s in t]
+    μt = [copy(μ) for s in t]
+    H = L' * (M * L )
+    Ht = [copy(H) for s in t]
+    Lt, Mt⁺ , μt, Ht
+end
 
 
 function construct_guidedproposal!(tt_, (Lt, Mt⁺ , μt, Ht), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
