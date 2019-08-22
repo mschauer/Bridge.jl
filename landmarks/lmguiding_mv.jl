@@ -317,6 +317,114 @@ function simguidedlm_llikelihood_mv!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec; skip 
 end
 
 
+### below: function from automaticdiff_lm split up, making that file obsolete
+
+# convert dual to float, while retaining float if type is float
+deepvalue(x::Float64) = x
+deepvalue(x::ForwardDiff.Dual) = ForwardDiff.value(x)
+deepvalue(x) = deepvalue.(x)
+function deepvalue(x::State)
+    State(deepvalue.(x.x))
+end
+
+
+
+"""
+    update bridges (only in case the method is mcmc)
+
+    W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
+"""
+function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, δ, ρ, acc)
+    if sampler==:mcmc
+        # From current state (x,W) with loglikelihood ll, update to (x, Wᵒ)
+        sample!(Wnew, Wiener{Vector{PointF}}())
+        Wᵒ.yy .= ρ * W.yy + sqrt(1-ρ^2) * Wnew.yy
+        llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), Wᵒ, Q;skip=sk)
+        if log(rand()) <= llᵒ - ll
+            for i in eachindex(X.yy)
+                X.yy[i] .= Xᵒ.yy[i]
+                W.yy[i] .= Wᵒ.yy[i]
+            end
+            println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  accepted")
+            ll = llᵒ
+            acc[1] +=1
+        else
+            println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  rejected")
+        end
+    end
+    W, X, ll, acc
+end
+
+
+function slogρ_mv(x0deepv, Qvec, Wvec,Xvec) # stochastic approx to log(ρ)
+    x0 = deepvec2state(x0deepv)
+    ll = simguidedlm_llikelihood_mv!(LeftRule(), Xvec, x0, Wvec, Qvec; skip=sk)
+    sum(ll)
+end
+slogρ_mv(Q, W, X) = (x) -> slogρ_mv(x, Q, W,X)
+
+
+"""
+    update initial state
+
+    x , W, X, ll, obj, acc = update_initialstate!(X,Xᵒ,W,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+                    sampler, Q,mask, mask_id, δ, ρ, acc)
+"""
+function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+                sampler, Qvec, mask, mask_id, δ, ρ, acc)
+    n = Qvec[1].target.n
+    if sampler in [:sgd, :sgld] # ADJUST LATER
+        sample!(W, Wiener{Vector{StateW}}())
+        cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+        ForwardDiff.gradient!(∇x, slogρ(Q, W, X),x,cfg) # X gets overwritten but does not change
+        if sampler==:sgd
+            x .+= δ * mask .* ∇x
+        end
+        if sampler==:sgld
+            x .+= .5*δ*mask.*∇x + sqrt(δ)*mask.*randn(2d*Q.target.n)
+        end
+        obj = simguidedlm_llikelihood!(LeftRule(), X, deepvec2state(x), W, Q; skip=sk)
+        println("obj ", obj)
+    end
+    if sampler==:mcmc
+        # MALA step (update x, for fixed W)
+        cfg = ForwardDiff.GradientConfig(slogρ_mv(Qvec, Wvec, Xvec), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+        ForwardDiff.gradient!(result, slogρ_mv(Qvec, Wvec, Xvec),x,cfg) # X gets overwritten but does not change
+        ll_incl0 = DiffResults.value(result)
+        ∇x .=  DiffResults.gradient(result)
+
+        xᵒ .= x .+ .5*δ * mask.* ∇x .+ sqrt(δ) * mask .* randn(length(x))
+        cfgᵒ = ForwardDiff.GradientConfig(slogρ_mv(Qvec, Wvec, Xvecᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+        ForwardDiff.gradient!(resultᵒ, slogρ_mv(Qvec, Wvec, Xvecᵒ),xᵒ,cfgᵒ) # X gets overwritten but does not change
+        ll_incl0ᵒ = DiffResults.value(resultᵒ)
+        ∇xᵒ =  DiffResults.gradient(resultᵒ)
+
+        xstate = deepvec2state(x)
+        xᵒstate = deepvec2state(xᵒ)
+        accinit = ll_incl0ᵒ - ll_incl0
+                 - logpdf(MvNormal(d*n,sqrt(δ)),(xᵒ - x - .5*δ* mask.* ∇x)[mask_id]) +
+                logpdf(MvNormal(d*n,sqrt(δ)),(x - xᵒ - .5*δ* mask.* ∇xᵒ)[mask_id])
+
+        # compute acc prob
+        if log(rand()) <= accinit
+            x .= xᵒ
+            for k in 1:nshapes
+                for i in eachindex(X.yy)
+                    Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
+                end
+            end
+            println("update initial state; accinit: ", accinit, "  accepted")
+            acc[2] +=1
+            obj = ll_incl0ᵒ
+            ll = obj
+        else
+            println("update initial state; accinit: ", accinit, "  rejected")
+            obj = ll_incl0
+        end
+    end
+    x, Xvec, ll, obj, acc
+end
+
 
 if TEST # first run lm_main.jl
     StateW = PointF
@@ -355,7 +463,7 @@ if TEST # first run lm_main.jl
 # from here can follow lm_mcmc.jl and try to adjust
 
 
-    Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
+    Qvecᵒ = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
 
     # saving objects
@@ -368,10 +476,12 @@ if TEST # first run lm_main.jl
     # push!(objvals, ll)
     # push!(parsave,[P.a, P.c, getγ(P)])
 
-
-    mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
+    if obs_atzero
+        mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
+    else # only update momenta
+        mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
+    end
     mask_id = (mask .> 0.1) # get indices that correspond to momenta
-
     # initialisation
     Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
     Wvecᵒ = [initSamplePath(tt_,  zeros(StateW, dwiener))  for i in 1:nshapes]
@@ -384,11 +494,18 @@ if TEST # first run lm_main.jl
     resultᵒ = DiffResults.GradientResult(xᵒ)
 
     for i in 1:ITER
+        # updates paths separately
         for k in 1:nshapes
-                (x , Wvec[k], Xvec[k]), ll[k], obj, acc  = updatepath!(Xvec[k],Xvecᵒ[k],Wvec[k],Wvecᵒ[k],Wnewvec[k],ll[k],x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
-                                    sampler,Qvec[k],
-                                    mask, mask_id, δ, ρ, acc)
+            Wvec[k], Xvec[k], ll[k], acc = update_path!(Xvec[k],Xvecᵒ[k],Wvec[k],Wvecᵒ[k],Wnewvec[k],ll[k],x,sampler, Qvec[k], δ, ρ, acc)
         end
+        # update initial state
+        x, Xvec, ll, obj, acc = update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+                            sampler, Qvec,mask, mask_id, δ, ρ, acc)
+
+        # parameter updating
+
+
+
 
     end
-end
+end # TEST

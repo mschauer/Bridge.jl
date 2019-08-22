@@ -291,7 +291,7 @@ slogρ(Q, W, X) = (x) -> slogρ(x, Q, W,X)
 
     W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
 """
-function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
+function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, δ, ρ, acc)
     if sampler==:mcmc
         # From current state (x,W) with loglikelihood ll, update to (x, Wᵒ)
         sample!(Wnew, Wiener{Vector{PointF}}())
