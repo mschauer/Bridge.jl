@@ -42,8 +42,8 @@ include("chol.jl")
 using StaticArrays
 using Distributions
 using Colors
-
-
+using Trajectories
+include("unroll1.jl")
 
 
 import Base: rand
