@@ -82,7 +82,8 @@ function updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, result�
             println("update initial state; accinit: ", accinit, "  accepted")
             acc[2] +=1
             obj = ll_incl0ᵒ
-            ll = llᵒ
+            #ll = llᵒ # 22/08/2019 don't understand, guess should be as in the next line
+            ll = obj
         else
             println("update initial state; accinit: ", accinit, "  rejected")
             obj = ll_incl0

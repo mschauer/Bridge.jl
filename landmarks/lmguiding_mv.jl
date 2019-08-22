@@ -26,7 +26,7 @@ struct GuidedProposalnew!{T,Ttarget,Taux,TL,Txobs0,TxobsT,F} <: ContinuousTimePr
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
-    guidrec::TL # recursions on grid tt
+    guidrec::TL # guided recursions on grid tt
     xobs0::Txobs0   # observation at time 0
     xobsT::TxobsT  # observation at time T
     endpoint::F
@@ -190,8 +190,7 @@ end
 """
     Simulate guided proposal and compute loglikelihood
 
-    solve sde inplace and return loglikelihood;
-    thereby avoiding 'double' computations
+    solve sde inplace and return loglikelihood (thereby avoiding 'double' computations)
 """
 function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposalnew!; skip = 0, ll0 = true)
     Pnt = eltype(x0)
@@ -247,42 +246,149 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposalnew
     som + logρ0
 end
 
+"""
+    Simulate guided proposal and compute loglikelihood (vector version)
+
+    solve sde inplace and return loglikelihood (thereby avoiding 'double' computations)
+
+    simguidedlm_llikelihood!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
+"""
+function simguidedlm_llikelihood_mv!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec; skip = 0, ll0 = true) # rather would like to dispatch on type and remove '_mv' from function name
+    nshapes = length(Xvecᵒ)
+    Pnt = eltype(x0)
+    tt =  Xvecᵒ[1].tt
+    for k in 1:nshapes
+        Xvecᵒ[k].yy[1] .= deepvalue(x0)
+    end
+    x = copy(x0)
+    som::deepeltype(x0)  = 0.
+    somvec = [copy(som) for i in 1:nshapes]
+
+    # initialise objects to write into
+    # srout and strout are vectors of Points
+    dwiener = dimwiener(Qvec[1].target)
+    srout = zeros(Pnt, dwiener)
+    strout = zeros(Pnt, dwiener)
+
+    rout = copy(x0)
+    bout = copy(x0)
+    btout = copy(x0)
+    wout = copy(x0)
+
+    for k in 1:nshapes
+        Q = Qvec[k]
+        if !constdiff(Q)
+            At = Bridge.a((1,0), x0, auxiliary(Q))  # auxtimehomogeneous switch
+            A = zeros(Unc{deepeltype(x0)}, 2Q.target.n,2Q.target.n)
+        end
+
+        for i in 1:length(tt)-1
+            dt = tt[i+1]-tt[i]
+            b!(tt[i], x, bout, target(Q)) # b(t,x)
+            _r!((i,tt[i]), x, rout, Q) # tilder(t,x)
+            σt!(tt[i], x, rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x) for target(Q)
+            Bridge.σ!(tt[i], x, srout*dt + Wvec[k].yy[i+1] - Wvec[k].yy[i], wout, target(Q)) # σ(t,x) (σ(t,x)' * tilder(t,x) + dW(t))
+
+            # likelihood terms
+            if i<=length(tt)-1-skip
+                _b!((i,tt[i]), x, btout, auxiliary(Q))
+                som += dot(bout-btout, rout) * dt
+                if !constdiff(Q)
+                    σt!(tt[i], x, rout, strout, auxiliary(Q))  #  tildeσ(t,x)' * tilder(t,x) for auxiliary(Q)
+                    som += 0.5*Bridge.inner(srout) * dt    # |σ(t,x)' * tilder(t,x)|^2
+                    som -= 0.5*Bridge.inner(strout) * dt   # |tildeσ(t,x)' * tilder(t,x)|^2
+                    Bridge.a!((i,tt[i]), x, A, target(Q))
+                    som += 0.5*(dot(At,Q.guidrec.Ht[i]) - dot(A,Q.guidrec.Ht[i])) * dt
+                end
+            end
+            x.= x + dt * bout +  wout
+            Xvecᵒ[k].yy[i+1] .= deepvalue(x)
+        end
+        if ll0
+            logρ0 = lptilde(x0,Q)
+        else
+            logρ0 = 0.0 # don't compute
+        end
+        copyto!(Xvecᵒ[k].yy[end], Bridge.endpoint(Xvecᵒ[k].yy[end],Q))
+        somvec[k] = som + logρ0
+        som .* 0
+    end
+    somvec
+end
+
+
 
 if TEST # first run lm_main.jl
     StateW = PointF
     dwiener = dimwiener(P)
-    L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
-    Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+    obs_atzero = true
+    if obs_atzero
+        L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
+        Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+    else
+        L0 = Array{UncF}(undef,0,2*P.n)
+        Σ0 = Array{UncF}(undef,0,0)
+        xobs0 = Array{PointF}(undef,0)
+        LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
+        ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+    end
     μT = zeros(PointF,P.n)
 
     # now the new stuff:
     nshapes = 2
     xobsTvec = [xobsT, 2*xobsT] # just a simple example
-    guidres = init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0)
-    guidrecvec = [guidres for i in 1:nshapes]  # memory allocation for each shape
+    guidrecvec = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
     Pauxvec = [auxiliary(P,State(xobsTvec[i],mT)) for i in 1:nshapes] # auxiliary process for each shape
     Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
 
 
-    X = [initSamplePath(tt_, xinit) for i in 1:nshapes]
-    W = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
+    Xvec = [initSamplePath(tt_, xinit) for i in 1:nshapes]
+    Wvec = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
     for i in 1:nshapes
-        sample!(W[i], Wiener{Vector{StateW}}())
+        sample!(Wvec[i], Wiener{Vector{StateW}}())
     end
-    ll = [simguidedlm_llikelihood!(LeftRule(), X[i], xinit, W[i], Qvec[i]; skip=sk) for i in 1:nshapes]
+    #ll = [simguidedlm_llikelihood!(LeftRule(), Xvec[i], xinit, Wvec[i], Qvec[i]; skip=sk) for i in 1:nshapes]
+    ll = simguidedlm_llikelihood_mv!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 
-    guidrecvecᵒ = [init_guidrec(tt_,LT,ΣT,μT,Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
+    guidrecvecᵒ = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
 # from here can follow lm_mcmc.jl and try to adjust
 
-    # what if no observations at time 0?
-    L0 = Array{UncF}(undef,0,2*P.n)
-    Σ0 = Array{UncF}(undef,0,0)
-    xobs0 = Array{PointF}(undef,0)
 
-    guidrec = init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0)
-    guidrecvec = [guidrec for i in 1:nshapes]  # memory allocation for each shape
     Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
 
+    # saving objects
+    # objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
+    acc = zeros(3) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta, 3rd parameter updates)
+    # #Xsave = zeros(length(subsamples), length(tt_) * P.n * 2 * d )
+    # Xsave = typeof(zeros(length(tt_) * P.n * 2 * d))[]
+    # parsave = Vector{Float64}[]
+    # push!(Xsave, convert_samplepath(X))
+    # push!(objvals, ll)
+    # push!(parsave,[P.a, P.c, getγ(P)])
+
+
+    mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
+    mask_id = (mask .> 0.1) # get indices that correspond to momenta
+
+    # initialisation
+    Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
+    Wvecᵒ = [initSamplePath(tt_,  zeros(StateW, dwiener))  for i in 1:nshapes]
+    Wnewvec = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
+    x = deepvec(xinit)
+    xᵒ = deepcopy(x)
+    ∇x = deepcopy(x)
+    ∇xᵒ = deepcopy(x)
+    result = DiffResults.GradientResult(x) # allocate
+    resultᵒ = DiffResults.GradientResult(xᵒ)
+
+    for i in 1:ITER
+        for k in 1:nshapes
+                (x , Wvec[k], Xvec[k]), ll[k], obj, acc  = updatepath!(Xvec[k],Xvecᵒ[k],Wvec[k],Wvecᵒ[k],Wnewvec[k],ll[k],x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+                                    sampler,Qvec[k],
+                                    mask, mask_id, δ, ρ, acc)
+        end
+
+    end
 end

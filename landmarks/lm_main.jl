@@ -8,9 +8,9 @@ using Bridge.Models
 using DelimitedFiles,  DataFrames,  CSV, RCall
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff #: GradientConfig, Chunk, gradient!, gradient, Dual, value
-using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
+#using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
 using DiffResults
-using TimerOutputs #undeclared
+#using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
 using DataFrames
@@ -30,17 +30,17 @@ include("models.jl")
 include("patches.jl")
 include("lmguiding.jl")
 include("plotlandmarks.jl")
-include("automaticdiff_lm.jl")
+#include("automaticdiff_lm.jl")
 include("generatedata.jl")
 include("lm_mcmc.jl")
 
 ################################# start settings #################################
-n = 8  # nr of landmarks
+n = 6  # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 750#1_0 # nr of sgd iterations
+ITER = 50#1_0 # nr of sgd iterations
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -67,7 +67,7 @@ end
 
 datasets =["forwardsimulated", "shifted","shiftedextreme",
         "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[7]
+dataset = datasets[3]
 println("dataset: ",dataset)
 
 σobs = 0.1   # noise on observations

@@ -111,9 +111,14 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
             δ = 0.01*ϵstep(i)
         end
 
-        (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
-                                    sampler,Q,
-                                    mask, mask_id, δ, ρ, acc)
+        W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
+
+        x, X, ll, obj, acc = update_initialstate!(X,Xᵒ,W,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+                        sampler, Q,mask, mask_id, δ, ρ, acc)
+
+        # (x , W, X), ll, obj, acc  = updatepath!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+        #                             sampler,Q,
+        #                             mask, mask_id, δ, ρ, acc)
 
         # HERE updatepars!, i.e. an update on (P, Paux, Q)
 
