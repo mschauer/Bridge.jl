@@ -44,8 +44,7 @@ using StaticArrays
 using Distributions
 using Colors
 using Trajectories
-include(joinpath(dirname(Base.find_package(string(Trajectories))), "unroll1.jl"))
-
+include("unroll1.jl")
 
 
 import Base: rand
