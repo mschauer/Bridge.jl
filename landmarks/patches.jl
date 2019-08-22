@@ -309,7 +309,7 @@ function landmarksforward(t, x0::State{Pnt}, P) where Pnt
     sample!(W, Wiener{Vector{Pnt}}())
     # forward simulate landmarks
     X = initSamplePath(t,x0)
-    println("Solve for forward provess:")
+    println("Solve for forward process:")
     solve!(EulerMaruyama!(), X, x0, W, P)  #@time solve!(StratonovichHeun!(), X, x0, W, P)
     W, X
 end

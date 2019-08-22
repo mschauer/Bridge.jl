@@ -1,22 +1,28 @@
-workdir = "/Users/Frank/.julia/dev/Bridge/landmarks/"
-cd(workdir)
 # THIS SCRIPT REPLACES THE OLDER 'lmpar.jl'
+#] add StaticArrays Distributions DelimitedFiles DataFrames CSV RCall SparseArrays LowRankApprox Trajectories
+#] add ForwardDiff DiffResults TimerOutputs Plots RecursiveArrayTools NPZ
 using Bridge, StaticArrays, Distributions
 using Bridge:logpdfnormal
 using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
-using DelimitedFiles,  DataFrames,  CSV, RCall
+using DelimitedFiles, DataFrames, CSV, RCall
+# install.packages(ggforce)
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff #: GradientConfig, Chunk, gradient!, gradient, Dual, value
-using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
+#using ReverseDiff #: GradientConfig,  gradient!, gradient, Dual, value
 using DiffResults
 using TimerOutputs #undeclared
-using Plots,  PyPlot #using Makie
+using Plots#,  PyPlot #using Makie
 using RecursiveArrayTools
-using DataFrames
+
 using NPZ # for reading python datafiles
 
-pyplot()
+workdir = @__DIR__
+println(workdir)
+#workdir = "/Users/Frank/.julia/dev/Bridge/landmarks/"
+cd(workdir)
+
+#pyplot()
 
 const sk=1  # entries to skip for likelihood evaluation
 const itostrat = true# false#true
@@ -40,7 +46,7 @@ models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 750#1_0 # nr of sgd iterations
+ITER = 50#1_0 # nr of sgd iterations
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -82,9 +88,9 @@ dt = 0.01
 t = 0.0:dt:T  # time grid
 tt_ =  tc(t,T)                          #tc(t,T)# 0:dtimp:(T)
 
-outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"
+outdir = "./figs/"
 if false # to use later on, when plotting is transferred from R to Julia
-    outdir = "/Users/Frank/.julia/dev/Bridge/landmarks/figs/"* string(model) * "_" * string(sampler) *"_" * string(dataset) * "/"
+    outdir = "./figs/"* string(model) * "_" * string(sampler) *"_" * string(dataset) * "/"
     if !isdir(outdir) mkdir(outdir) end
 end
 ################################# end settings #################################
@@ -142,4 +148,4 @@ elapsed = time() - start
 println("Average acceptance percentage: ",perc_acc,"\n")
 println("Elapsed time: ",round(elapsed/60;digits=2), " minutes")
 
-include("/Users/Frank/.julia/dev/Bridge/landmarks/postprocessing.jl")
+include("./postprocessing.jl")

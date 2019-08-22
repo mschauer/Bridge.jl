@@ -49,9 +49,8 @@ function generatedata(dataset,P,t,σobs)
 
     end
     if dataset=="bear"
-        cd("/Users/Frank/github/BridgeLandmarks/landmarks/beardata")
-        bear0 = readdlm("bear1.csv",',')
-        bearT = readdlm("bear2.csv",',')
+        bear0 = readdlm(joinpath(@__DIR__,"data-stefan", "bear1.csv"), ',')
+        bearT = readdlm(joinpath(@__DIR__,"data-stefan", "bear2.csv"), ',')
         nb = size(bear0)[1]
         avePoint = Point(414.0, 290.0)  # average of (x,y)-coords for bear0 to center figure at origin
         xobs0 = [Point(bear0[i,1], bear0[i,2]) - avePoint for i in 1:nb]/200.
@@ -91,9 +90,7 @@ function generatedata(dataset,P,t,σobs)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
     end
     if dataset=="generatedstefan"
-        cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
-
-        testshapes = npzread("match.npy.npz")
+        testshapes = npzread(joinpath(@__DIR__,"data-stefan", "match.npy.npz"))
         xobs0vec =  get(testshapes,"q0",0)
         xobsTvec =  get(testshapes,"v",0)
         p0vec = get(testshapes,"p",0)
@@ -120,8 +117,7 @@ function generatedata(dataset,P,t,σobs)
 end
 
 if false
-    cd("/Users/Frank/.julia/dev/Bridge/landmarks/data-stefan")
-    cc = npzread("cc.npy") # corpus callosum data
-    cardiac = npzread("cardiac.npy")  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
+    cc = npzread(joinpath(@__DIR__,"data-stefan","cc.npy")) # corpus callosum data
+    cardiac = npzread(joinpath(@__DIR__,"data-stefan","cardiac.npy"))  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
 
 end
