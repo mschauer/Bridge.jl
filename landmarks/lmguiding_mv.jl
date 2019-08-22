@@ -409,7 +409,7 @@ function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,resul
         if log(rand()) <= accinit
             x .= xᵒ
             for k in 1:nshapes
-                for i in eachindex(X.yy)
+                for i in eachindex(Xvec[k].yy)
                     Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
                 end
             end
@@ -477,9 +477,9 @@ if TEST # first run lm_main.jl
     # push!(parsave,[P.a, P.c, getγ(P)])
 
     if obs_atzero
-        mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
-    else # only update momenta
         mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
+    else # only update momenta
+        mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
     end
     mask_id = (mask .> 0.1) # get indices that correspond to momenta
     # initialisation
@@ -504,6 +504,52 @@ if TEST # first run lm_main.jl
 
         # parameter updating
 
+        if updatepars  # should be adjusted to vector case and wrapped up in a function
+            aᵒ = P.a * exp(σ_a * randn())
+            cᵒ = P.c * exp(σ_c * randn())
+            γᵒ = getγ(P) * exp(σ_γ * randn())
+            if isa(P,MarslandShardlow)
+                Pᵒ = MarslandShardlow(aᵒ,cᵒ,γᵒ,P.λ, P.n)
+            elseif isa(P,Landmarks)
+                nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
+                Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
+            end
+            Pauxᵒ = auxiliary(Pᵒ,Paux.xT)
+
+            Qᵒ = construct_guidedproposal!(tt_, (Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), Pᵒ, Pauxᵒ)
+            llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), W, Qᵒ; skip=sk)
+            A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
+                logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
+                logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
+                    llᵒ - ll +
+                    logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a)+
+                    logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
+                    logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
+
+            println("logaccept for parameter update ", round(A;digits=4))
+            if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
+                print("  accepted")
+                P, Pᵒ = Pᵒ, P
+                X, Xᵒ = Xᵒ, X
+                Paux, Pauxᵒ = Pauxᵒ, Paux
+                Q, Qᵒ = Qᵒ, Q
+                Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ, Lt, Mt⁺, μt, Ht = Lt, Mt⁺, μt, Ht, Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ
+                acc[3] +=1
+            end
+        end
+
+        println()
+        # save some of the results
+        # if i in subsamples
+        #     #push!(Xsave, copy(X))
+        #     push!(Xsave, convert_samplepath(X))
+        #     push!(parsave, [P.a, P.c, getγ(P)])
+        #     push!(objvals, obj)
+        # end
+        #
+        # if makefig && (i==ITER)
+        #     drawpath(ITER,P.n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
+        # end
 
 
 
