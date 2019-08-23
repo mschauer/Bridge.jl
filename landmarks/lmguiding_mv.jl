@@ -352,7 +352,8 @@ function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, ρ, acc)
             println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  rejected")
         end
     end
-    W, X, ll, acc
+    #W, X, ll, acc
+    ll, acc
 end
 
 
@@ -372,6 +373,7 @@ slogρ_mv(Q, W, X) = (x) -> slogρ_mv(x, Q, W,X)
 """
 function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                 sampler, Qvec, mask, mask_id, δ, acc)
+    nshapes = length(Xvec)
     n = Qvec[1].target.n
     if sampler in [:sgd, :sgld] # ADJUST LATER
         sample!(W, Wiener{Vector{StateW}}())
@@ -534,8 +536,8 @@ function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
 
     # initialisation
     Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
-    Wvecᵒ = [initSamplePath(tt_,  zeros(StateW, dwiener))  for i in 1:nshapes]
-    Wnewvec = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
+    Wvecᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
+    Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
     x = deepvec(xinit)
     xᵒ = deepcopy(x)
     ∇x = deepcopy(x)
@@ -565,8 +567,9 @@ function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
         # updates paths separately
         for k in 1:nshapes
 
-             Wvec[k], Xvec[k], ll[k], acc = update_path!(Xvec[k], Xvecᵒ[k], Wvec[k], Wvecᵒ[k], Wnewvec[k],
-                                     ll[k], x, sampler, Qvec[k], ρ, acc)
+             # Wvec[k], Xvec[k], ll[k], acc =
+             ll[k], acc = update_path!(Xvec[k], Xvecᵒ[k], Wvec[k], Wvecᵒ, Wnew,
+                                      ll[k], x, sampler, Qvec[k], ρ, acc)
         end
         # update initial state
         x, Xvec, ll, obj, acc = update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
