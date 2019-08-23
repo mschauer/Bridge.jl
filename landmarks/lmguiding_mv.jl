@@ -334,7 +334,7 @@ end
 
     W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
 """
-function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, δ, ρ, acc)
+function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, ρ, acc)
     if sampler==:mcmc
         # From current state (x,W) with loglikelihood ll, update to (x, Wᵒ)
         sample!(Wnew, Wiener{Vector{PointF}}())
@@ -371,7 +371,7 @@ slogρ_mv(Q, W, X) = (x) -> slogρ_mv(x, Q, W,X)
                     sampler, Q,mask, mask_id, δ, ρ, acc)
 """
 function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
-                sampler, Qvec, mask, mask_id, δ, ρ, acc)
+                sampler, Qvec, mask, mask_id, δ, acc)
     n = Qvec[1].target.n
     if sampler in [:sgd, :sgld] # ADJUST LATER
         sample!(W, Wiener{Vector{StateW}}())
@@ -426,10 +426,65 @@ function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,resul
 end
 
 
-if TEST # first run lm_main.jl
+function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsTvec),
+            Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+    nshapes = length(xobsTvec)
+    aᵒ = P.a * exp(σ_a * randn())
+    cᵒ = P.c * exp(σ_c * randn())
+    γᵒ = getγ(P) * exp(σ_γ * randn())
+    if isa(P,MarslandShardlow)
+        Pᵒ = MarslandShardlow(aᵒ,cᵒ,γᵒ,P.λ, P.n)
+    elseif isa(P,Landmarks)
+        nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
+        Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
+    end
+    Pauxvecᵒ = [auxiliary(Pᵒ,State(xobsTvec[k],mT)) for k in 1:nshapes] # auxiliary process for each shape
+    Qvecᵒ = [construct_guidedproposalnew!(tt_, guidrecvecᵒ[i], (LT,ΣT,μT), (L0, Σ0),
+        (xobs0, xobsTvec[i]), Pᵒ, Pauxvecᵒ[i]) for i in 1:nshapes]
+    llᵒ = simguidedlm_llikelihood_mv!(LeftRule(), Xvecᵒ, deepvec2state(x), Wvec, Qvecᵒ; skip=sk)
+    A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
+            logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
+            logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
+                sum(llᵒ) - sum(ll) +
+                logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a)+
+                logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
+                logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
+
+    println("logaccept for parameter update ", round(A;digits=4))
+    if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
+        print("  accepted")
+        # P, Pᵒ = Pᵒ, P
+        # Xvec, Xvecᵒ = Xvecᵒ, Xvec
+        # Pauxvec, Pauxvecᵒ = Pauxvecᵒ, Pauxvec
+        # Qvec, Qvecᵒ = Qvecᵒ, Qvec
+        # ll, llᵒ = llᵒ, ll
+        P = Pᵒ
+        Xvec = Xvecᵒ
+        Qvec = Qvecᵒ
+        ll = llᵒ
+        acc[3] +=1
+    end
+    P, Xvec, Qvec, ll, acc
+end
+
+
+
+"""
+
+    anim, Xsave, parsave, objvals, perc_acc = lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
+             sampler, dataset, obs_atzero,
+             xinit, ITER, subsamples,
+            (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+            outdir, pb; updatepars = true, makefig=true, showmomenta=false)
+"""
+function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
+         sampler, dataset, obs_atzero,
+         xinit, ITER, subsamples,
+        (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+        outdir, pb; updatepars = true, makefig=true, showmomenta=false)
+
     StateW = PointF
     dwiener = dimwiener(P)
-    obs_atzero = true
     if obs_atzero
         L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
         Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
@@ -443,14 +498,12 @@ if TEST # first run lm_main.jl
     μT = zeros(PointF,P.n)
 
     # now the new stuff:
-    nshapes = 2
-    xobsTvec = [xobsT, 2*xobsT] # just a simple example
+    nshapes = length(xobsTvec)
     guidrecvec = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
-    Pauxvec = [auxiliary(P,State(xobsTvec[i],mT)) for i in 1:nshapes] # auxiliary process for each shape
-    Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
-            (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
-
-
+    guidrecvecᵒ = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for k in 1:nshapes]  # memory allocation for each shape
+    Pauxvec = [auxiliary(P,State(xobsTvec[k],mT)) for k in 1:nshapes] # auxiliary process for each shape
+    Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[k], (LT,ΣT,μT), (L0, Σ0),
+            (xobs0, xobsTvec[k]), P, Pauxvec[k]) for k in 1:nshapes]
     Xvec = [initSamplePath(tt_, xinit) for i in 1:nshapes]
     Wvec = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
     for i in 1:nshapes
@@ -459,22 +512,18 @@ if TEST # first run lm_main.jl
     #ll = [simguidedlm_llikelihood!(LeftRule(), Xvec[i], xinit, Wvec[i], Qvec[i]; skip=sk) for i in 1:nshapes]
     ll = simguidedlm_llikelihood_mv!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 
-    guidrecvecᵒ = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
-# from here can follow lm_mcmc.jl and try to adjust
-
-
     Qvecᵒ = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
 
     # saving objects
-    # objvals =   Float64[]  # keep track of (sgd approximation of the) loglikelihood
+    objvals = Float64[]  # keep track of (sgd approximation of the) loglikelihood
     acc = zeros(3) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta, 3rd parameter updates)
-    # #Xsave = zeros(length(subsamples), length(tt_) * P.n * 2 * d )
-    # Xsave = typeof(zeros(length(tt_) * P.n * 2 * d))[]
-    # parsave = Vector{Float64}[]
-    # push!(Xsave, convert_samplepath(X))
-    # push!(objvals, ll)
-    # push!(parsave,[P.a, P.c, getγ(P)])
+
+    Xsave = typeof(zeros(length(tt_) * P.n * 2 * d))[]
+    parsave = Vector{Float64}[]
+    push!(Xsave, convert_samplepath(Xvec[1]))
+    push!(objvals, sum(ll))
+    push!(parsave,[P.a, P.c, getγ(P)])
 
     if obs_atzero
         mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
@@ -482,6 +531,7 @@ if TEST # first run lm_main.jl
         mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
     end
     mask_id = (mask .> 0.1) # get indices that correspond to momenta
+
     # initialisation
     Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
     Wvecᵒ = [initSamplePath(tt_,  zeros(StateW, dwiener))  for i in 1:nshapes]
@@ -493,65 +543,63 @@ if TEST # first run lm_main.jl
     result = DiffResults.GradientResult(x) # allocate
     resultᵒ = DiffResults.GradientResult(xᵒ)
 
+    if makefig
+        #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
+        xobs0comp1 = extractcomp(xobs0,1)
+        xobs0comp2 = extractcomp(xobs0,2)
+        xobsTcomp1 = extractcomp(xobsTvec[1],1)
+        xobsTcomp2 = extractcomp(xobsTvec[1],2)
+        pp1 = plotshapes(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2)
+        # cd(outdir)
+        # Plots.savefig(pp1,"anim"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*"shapes.pdf")
+    end
+
+
     for i in 1:ITER
+    #anim =    @animate for i in 1:ITER
+        if makefig
+            drawpath(i-1,P.n,x,Xvec[1],objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
+        end
+        println("iteration $i")
+
         # updates paths separately
         for k in 1:nshapes
-            Wvec[k], Xvec[k], ll[k], acc = update_path!(Xvec[k],Xvecᵒ[k],Wvec[k],Wvecᵒ[k],Wnewvec[k],ll[k],x,sampler, Qvec[k], δ, ρ, acc)
+
+             Wvec[k], Xvec[k], ll[k], acc = update_path!(Xvec[k], Xvecᵒ[k], Wvec[k], Wvecᵒ[k], Wnewvec[k],
+                                     ll[k], x, sampler, Qvec[k], ρ, acc)
         end
         # update initial state
         x, Xvec, ll, obj, acc = update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
-                            sampler, Qvec,mask, mask_id, δ, ρ, acc)
+                            sampler, Qvec, mask, mask_id, δ, acc)
 
-        # parameter updating
+        # update parameters
+        P, Xvec, Qvec, ll, acc = update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsTvec),
+                    Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
 
-        if updatepars  # should be adjusted to vector case and wrapped up in a function
-            aᵒ = P.a * exp(σ_a * randn())
-            cᵒ = P.c * exp(σ_c * randn())
-            γᵒ = getγ(P) * exp(σ_γ * randn())
-            if isa(P,MarslandShardlow)
-                Pᵒ = MarslandShardlow(aᵒ,cᵒ,γᵒ,P.λ, P.n)
-            elseif isa(P,Landmarks)
-                nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
-                Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
-            end
-            Pauxᵒ = auxiliary(Pᵒ,Paux.xT)
-
-            Qᵒ = construct_guidedproposal!(tt_, (Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ), (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), Pᵒ, Pauxᵒ)
-            llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), W, Qᵒ; skip=sk)
-            A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
-                logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
-                logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
-                    llᵒ - ll +
-                    logpdf(LogNormal(log(Pᵒ.a),σ_a),P.a)- logpdf(LogNormal(log(P.a),σ_a),Pᵒ.a)+
-                    logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
-                    logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
-
-            println("logaccept for parameter update ", round(A;digits=4))
-            if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
-                print("  accepted")
-                P, Pᵒ = Pᵒ, P
-                X, Xᵒ = Xᵒ, X
-                Paux, Pauxᵒ = Pauxᵒ, Paux
-                Q, Qᵒ = Qᵒ, Q
-                Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ, Lt, Mt⁺, μt, Ht = Lt, Mt⁺, μt, Ht, Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ
-                acc[3] +=1
-            end
-        end
 
         println()
         # save some of the results
-        # if i in subsamples
-        #     #push!(Xsave, copy(X))
-        #     push!(Xsave, convert_samplepath(X))
-        #     push!(parsave, [P.a, P.c, getγ(P)])
-        #     push!(objvals, obj)
-        # end
+        if i in subsamples
+            push!(Xsave, convert_samplepath(Xvec[1]))
+            push!(parsave, [P.a, P.c, getγ(P)])
+            push!(objvals, obj)
+        end
         #
-        # if makefig && (i==ITER)
-        #     drawpath(ITER,P.n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
-        # end
-
-
-
+        if makefig && (i==ITER)
+            drawpath(ITER,P.n,x,Xvec[1],objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
+        end
     end
-end # TEST
+    perc_acc = 100acc/ITER
+    println("Acceptance percentages (bridgepath - inital state - parameters): ",perc_acc)
+    anim, Xsave, parsave, objvals, perc_acc
+end
+
+
+obs_atzero = true
+xobsTvec = [xobsT, 2*xobsT] # just a simple example
+
+anim, Xsave, parsave, objvals, perc_acc = lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
+         sampler, dataset, obs_atzero,
+         xinit, ITER, subsamples,
+        (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+        outdir, pb; updatepars = true, makefig=true, showmomenta=false)

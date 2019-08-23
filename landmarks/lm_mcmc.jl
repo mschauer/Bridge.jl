@@ -153,6 +153,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
                 Q, Qᵒ = Qᵒ, Q
                 Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ, Lt, Mt⁺, μt, Ht = Lt, Mt⁺, μt, Ht, Ltᵒ, Mt⁺ᵒ, μtᵒ, Htᵒ
                 acc[3] +=1
+                ll = llᵒ # ADDED 22/08/2019 (bug???)
             end
         end
 
