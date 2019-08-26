@@ -6,8 +6,11 @@
 
 # Bridge.jl
 
-Stochastic calculus and univariate and multivariate stochastic processes/Markov processes in continuous time.
-See [./example/tutorial.jl](./example/tutorial.jl) for an introduction. I am personally interested in simulating diffusion bridges and doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome.
+Statistics and stochastic calculus for Markov processes in continuous time, include univariate and multivariate stochastic processes such as stochastic differential equations or diffusions (SDE's) or Levy processes.
+
+I am personally interested in doing Bayesian inference on discretely observed diffusion processes, but this package is written to be of general use and contributions are welcome.
+Specifically for our code for parameter inference for diffusion processes from discrete data or passage times, check out the dependent package [BridgeSDEInference.jl](https://github.com/mmider/BridgeSDEInference.jl).
+The statistical method relies a lot on simulating conditional diffusions (so called "difffusion bridges"). See [./example/tutorial.jl](./example/tutorial.jl) for a more general introduction into working with this package. 
 
 - [x] Define and simulate diffusion processes in one or more dimension
 - [x] Continuous and discrete likelihood using Girsanovs theorem and transition densities
