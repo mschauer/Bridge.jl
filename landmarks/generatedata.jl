@@ -27,6 +27,7 @@ function generatedata(dataset,P,t,σobs)
         xobs0 = x0.q + σobs * randn(PointF,n)
         xobsT = [Xf.yy[end].q[i] for i in 1:P.n ] + σobs * randn(PointF,n)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+        obs_atzero = true
     end
     if dataset in ["shifted","shiftedextreme"] # first stretch, then rotate, then shift; finally add noise
         q0 = [PointF(2.0cos(t), sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -46,7 +47,7 @@ function generatedata(dataset,P,t,σobs)
         stretch = SMatrix{2,2}(1.0 + η, 0.0, 0.0, 1.0 - η)
         shift =  PointF(0.1,-0.1)
         xobsT = [rot * stretch * xobs0[i] + shift  for i in 1:P.n ] + σobs * randn(PointF,n)
-
+        obs_atzero = true
     end
     if dataset=="bear"
         bear0 = readdlm(joinpath(@__DIR__,"data-stefan", "bear1.csv"), ',')
@@ -64,6 +65,7 @@ function generatedata(dataset,P,t,σobs)
         x0 = State(xobs0, rand(PointF,P.n))
         Wf, Xf = landmarksforward(t, x0, P)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+        obs_atzero = true
     end
     if dataset=="heart"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -76,6 +78,7 @@ function generatedata(dataset,P,t,σobs)
         qT = [PointF(heart_xcoord(t), heart_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+        obs_atzero = true
     end
     if dataset=="peach"
         q0 = [PointF(2.0cos(t), 2.0sin(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
@@ -88,6 +91,7 @@ function generatedata(dataset,P,t,σobs)
         qT = [PointF(peach_xcoord(t), peach_ycoord(t))  for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
         xobsT = qT + σobs * randn(PointF,n)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+        obs_atzero = true
     end
     if dataset=="generatedstefan"
         testshapes = npzread(joinpath(@__DIR__,"data-stefan", "match.npy.npz"))
@@ -112,8 +116,9 @@ function generatedata(dataset,P,t,σobs)
         Wf, Xf = landmarksforward(t, x0, P)
 #        plotlandmarkpositions(Xf,P,xobs0,xobsT;db=4)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5) # verified
+        obs_atzero = true
     end
-    x0, xobs0, xobsT, Xf, P, pb
+    x0, xobs0, xobsT, Xf, P, pb, obs_atzero 
 end
 
 if false

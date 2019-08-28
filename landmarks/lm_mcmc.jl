@@ -176,12 +176,6 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
     anim, Xsave, parsave, objvals, perc_acc
 end
 
-struct Lmplotbounds
-    xmin::Float64
-    xmax::Float64
-    ymin::Float64
-    ymax::Float64
-end
 
 
 function drawpath(i,n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb;showmomenta=false)

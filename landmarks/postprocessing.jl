@@ -1,8 +1,8 @@
 ## postprocessing
 
 fn = "_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
-gif(anim, outdir*fn*".gif", fps = 100)
-mp4(anim, outdir*fn*".mp4", fps = 100)
+gif(anim, outdir*fn*".gif", fps = 50)
+mp4(anim, outdir*fn*".mp4", fps = 50)
 
 ######### write mcmc iterates of bridges to csv file
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
@@ -43,9 +43,16 @@ write(f, "Average acceptance percentage (path - initial state): ",string(perc_ac
 close(f)
 
 ######## write observations to file
-obsdf = DataFrame(x=vcat( extractcomp(xobs0,1), extractcomp(xobsT,1)),
+if obs_atzero
+    obsdf = DataFrame(x=vcat( extractcomp(xobs0,1), extractcomp(xobsT,1)),
                 y= vcat( extractcomp(xobs0,2), extractcomp(xobsT,2)),
                 time=repeat(["0","T"], inner=P.n))
+else
+    obsdf = DataFrame(x=extractcomp(xobsT,1),
+                y= extractcomp(xobsT,2),
+                time=repeat(["T"], inner=P.n))
+
+end
 CSV.write(outdir*"observations.csv", obsdf; delim=";")
 
 ######## write parameter iterates to file

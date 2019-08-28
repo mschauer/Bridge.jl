@@ -1,3 +1,4 @@
+# first run lm_main.jl
 import Bridge: kernelr3!, R3!, target, auxiliary, constdiff, llikelihood, _b!, B!, σ!, b!
 
 """
@@ -22,7 +23,7 @@ end
 """
 Construct guided proposal on a single segment for a single shape
 """
-struct GuidedProposalnew!{T,Ttarget,Taux,TL,Txobs0,TxobsT,F} <: ContinuousTimeProcess{T}
+struct GuidedProposal!{T,Ttarget,Taux,TL,Txobs0,TxobsT,F} <: ContinuousTimeProcess{T}
     target::Ttarget   # P
     aux::Taux      # Ptilde
     tt::Vector{Float64}  # grid of time points on single segment (S,T]
@@ -31,7 +32,7 @@ struct GuidedProposalnew!{T,Ttarget,Taux,TL,Txobs0,TxobsT,F} <: ContinuousTimePr
     xobsT::TxobsT  # observation at time T
     endpoint::F
 
-    function GuidedProposalnew!(target, aux, tt_, guidrec, xobs0, xobsT,  endpoint=Bridge.endpoint)
+    function GuidedProposal!(target, aux, tt_, guidrec, xobs0, xobsT,  endpoint=Bridge.endpoint)
         tt = collect(tt_)
         new{Bridge.valtype(target),typeof(target),typeof(aux),typeof(guidrec),typeof(xobs0),typeof(xobsT),typeof(endpoint)}(target, aux, tt, guidrec, xobs0, xobsT, endpoint)
     end
@@ -68,7 +69,7 @@ end
     Values just after time zero, (Lt0₊, Mt⁺0₊, μt0₊) are updated to time zero, the result being
     written into (Lt0, Mt⁺0, μt0)
 """
-function lmgpupdatenew!(Lt0₊, Mt⁺0₊::Array{Pnt,2}, μt0₊, (L0, Σ0, xobs0), Lt0, Mt⁺0, μt0) where Pnt
+function lm_gpupdate!(Lt0₊, Mt⁺0₊::Array{Pnt,2}, μt0₊, (L0, Σ0, xobs0), Lt0, Mt⁺0, μt0) where Pnt
     # should check what happens when there is no observation at time zero!!!
     Lt0 .= [L0; Lt0₊]
     m = size(Σ0)[1]
@@ -84,14 +85,14 @@ end
 """
     Construct guided proposal for a single shape on grid tt_
 """
-function construct_guidedproposalnew!(tt_, guidrec, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
+function construct_guidedproposal!(tt_, guidrec, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsT), P, Paux)
     Lt0₊, Mt⁺0₊, μt0₊ =  guidingbackwards!(Lm(), tt_, (guidrec.Lt, guidrec.Mt⁺,guidrec.μt), Paux, (LT, ΣT, μT))
-    lmgpupdatenew!(Lt0₊, Mt⁺0₊, μt0₊, (L0, Σ0, xobs0),guidrec.Lt0, guidrec.Mt⁺0, guidrec.μt0)
+    lm_gpupdate!(Lt0₊, Mt⁺0₊, μt0₊, (L0, Σ0, xobs0),guidrec.Lt0, guidrec.Mt⁺0, guidrec.μt0)
     guidrec.Mt = map(X -> InverseCholesky(lchol(X)),guidrec.Mt⁺)
     for i in 1:length(tt_)
         guidrec.Ht[i] .= guidrec.Lt[i]' * (guidrec.Mt[i] * guidrec.Lt[i] )
     end
-    GuidedProposalnew!(P, Paux, tt_, guidrec, xobs0, xobsT)
+    GuidedProposal!(P, Paux, tt_, guidrec, xobs0, xobsT)
 end
 
 
@@ -143,25 +144,25 @@ function guidingbackwards!(::Lm, t, (Lt, Mt⁺, μt), Paux, (LT, ΣT , μT); imp
     (Lt[1], Mt⁺[1], μt[1])
 end
 
-target(Q::GuidedProposalnew!) = Q.target
-auxiliary(Q::GuidedProposalnew!) = Q.aux
-constdiff(Q::GuidedProposalnew!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
+target(Q::GuidedProposal!) = Q.target
+auxiliary(Q::GuidedProposal!) = Q.aux
+constdiff(Q::GuidedProposal!) = constdiff(target(Q)) && constdiff(auxiliary(Q))
 
-function _b!((i,t), x::State, out::State, Q::GuidedProposalnew!)
+function _b!((i,t), x::State, out::State, Q::GuidedProposal!)
     Bridge.b!(t, x, out, Q.target)
     out .+= amul(t,x,Q.guidrec.Lt[i]' * (Q.guidrec.Mt[i] *(Q.xobsT-Q.guidrec.μt[i]-Q.guidrec.Lt[i]*vec(x))),Q.target)
     out
 end
 
-σ!(t, x, dw, out, Q::GuidedProposalnew!) = σ!(t, x, dw, out, Q.target)
+σ!(t, x, dw, out, Q::GuidedProposal!) = σ!(t, x, dw, out, Q.target)
 
-function _r!((i,t), x::State, out::State, Q::GuidedProposalnew!)
+function _r!((i,t), x::State, out::State, Q::GuidedProposal!)
     out .= vecofpoints2state(Q.guidrec.Lt[i]' * (Q.guidrec.Mt[i] *(Q.xobsT-Q.guidrec.μt[i]-Q.guidrec.Lt[i]*vec(x))))
     out
 end
 # need function that multiplies square unc with state and outputs state
 
-function guidingterm((i,t),x,Q::GuidedProposalnew!)
+function guidingterm((i,t),x,Q::GuidedProposal!)
     #Bridge.b(t,x,Q.target) +
     amul(t,x,Q.guidrec.Lt[i]' * (Q.guidrec.Mt[i] *(Q.xobsT-Q.guidrec.μt[i]-Q.guidrec.Lt[i]*vec(x))),Q.target)
 end
@@ -170,7 +171,7 @@ Returns the guiding terms a(t,x)*r̃(t,x) along the path of a guided proposal
 for each value in X.tt.
 Hence, it returns an Array of type State
 """
-function guidingterms(X,Q::GuidedProposalnew!)
+function guidingterms(X,Q::GuidedProposal!)
     i = first(1:length(X.tt))
     out = [guidingterm((i,X.tt[i]),X.yy[i],Q)]
     for i in 2:length(X.tt)
@@ -179,7 +180,7 @@ function guidingterms(X,Q::GuidedProposalnew!)
     out
 end
 
-function Bridge.lptilde(x, Q)
+function lptilde_mv(x, Q)
   y = deepvec([Q.xobs0; Q.xobsT] - Q.guidrec.μt0 - Q.guidrec.Lt0*vec(x))
   M⁺0deep = deepmat(Q.guidrec.Mt⁺0)
   -0.5*logdet(M⁺0deep) -0.5*dot(y, M⁺0deep\y)
@@ -192,7 +193,7 @@ end
 
     solve sde inplace and return loglikelihood (thereby avoiding 'double' computations)
 """
-function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposalnew!; skip = 0, ll0 = true)
+function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposal!; skip = 0, ll0 = true)
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
     Xᵒ.yy[1] .= deepvalue(x0)
@@ -238,7 +239,7 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposalnew
         Xᵒ.yy[i+1] .= deepvalue(x)
     end
     if ll0
-        logρ0 = lptilde(x0,Q)
+        logρ0 = lptilde_mv(x0,Q)
     else
         logρ0 = 0.0 # don't compute
     end
@@ -253,7 +254,7 @@ end
 
     simguidedlm_llikelihood!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 """
-function simguidedlm_llikelihood_mv!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec; skip = 0, ll0 = true) # rather would like to dispatch on type and remove '_mv' from function name
+function simguidedlm_llikelihood!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec::Vector; skip = 0, ll0 = true) # rather would like to dispatch on type and remove '_mv' from function name
     nshapes = length(Xvecᵒ)
     Pnt = eltype(x0)
     tt =  Xvecᵒ[1].tt
@@ -305,7 +306,7 @@ function simguidedlm_llikelihood_mv!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec; skip 
             Xvecᵒ[k].yy[i+1] .= deepvalue(x)
         end
         if ll0
-            logρ0 = lptilde(x0,Q)
+            logρ0 = lptilde_mv(x0,Q)
         else
             logρ0 = 0.0 # don't compute
         end
@@ -332,37 +333,50 @@ end
 """
     update bridges (only in case the method is mcmc)
 
-    W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q,mask, mask_id, δ, ρ, acc)
+    W, X, ll, acc = update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Qvec,mask, mask_id, δ, ρ, acc)
 """
-function update_path!(X,Xᵒ,W,Wᵒ,Wnew,ll,x,sampler, Q, ρ, acc)
+function update_path!(Xvec,Xvecᵒ,Wvec,Wᵒ,Wnew,ll,x,sampler, Qvec, ρ, acc)
+    nshapes = length(Xvec)
     if sampler==:mcmc
         # From current state (x,W) with loglikelihood ll, update to (x, Wᵒ)
-        sample!(Wnew, Wiener{Vector{PointF}}())
-        Wᵒ.yy .= ρ * W.yy + sqrt(1-ρ^2) * Wnew.yy
-        llᵒ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, deepvec2state(x), Wᵒ, Q;skip=sk)
-        if log(rand()) <= llᵒ - ll
-            for i in eachindex(X.yy)
-                X.yy[i] .= Xᵒ.yy[i]
-                W.yy[i] .= Wᵒ.yy[i]
+        for k in 1:nshapes
+            sample!(Wnew, Wiener{Vector{PointF}}())
+            Wᵒ.yy .= ρ * Wvec[k].yy + sqrt(1-ρ^2) * Wnew.yy # can get rid of Wnew (inplace)
+            llᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ[k], deepvec2state(x), Wᵒ, Qvec[k];skip=sk)
+            if log(rand()) <= llᵒ - ll[k]
+                for i in eachindex(Xvec[k].yy)
+                    Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
+                    Wvec[k].yy[i] .= Wᵒ.yy[i]
+                end
+                ll[k] = llᵒ
+                println("update innovation: ll $ll[k] $llᵒ, diff_ll: ",round(llᵒ-ll[k];digits=3),"  accepted")
+                #boolacc = true
+                acc[1] +=1
+            else
+                println("update innovation: ll[k] $ll $llᵒ, diff_ll: ",round(llᵒ-ll[k];digits=3),"  rejected")
             end
-            println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  accepted")
-            ll = llᵒ
-            acc[1] +=1
-        else
-            println("update innovation: ll $ll $llᵒ, diff_ll: ",round(llᵒ-ll;digits=3),"  rejected")
         end
     end
-    #W, X, ll, acc
-    ll, acc
+    nothing
 end
 
-
+# ORIGINAL VERSION
 function slogρ_mv(x0deepv, Qvec, Wvec,Xvec) # stochastic approx to log(ρ)
     x0 = deepvec2state(x0deepv)
-    ll = simguidedlm_llikelihood_mv!(LeftRule(), Xvec, x0, Wvec, Qvec; skip=sk)
-    sum(ll)
+    lltemp = simguidedlm_llikelihood!(LeftRule(), Xvec, x0, Wvec, Qvec; skip=sk)#overwrites Xvec
+
+    sum(lltemp)
 end
 slogρ_mv(Q, W, X) = (x) -> slogρ_mv(x, Q, W,X)
+
+
+function slogρ_mv!(x0deepv, Qvec, Wvec,Xvec,llout) # stochastic approx to log(ρ)
+    x0 = deepvec2state(x0deepv)
+    lltemp = simguidedlm_llikelihood!(LeftRule(), Xvec, x0, Wvec, Qvec; skip=sk)#overwrites Xvec
+    llout .= ForwardDiff.value.(lltemp)
+    sum(lltemp)
+end
+slogρ_mv!(Q, W, X, llout) = (x) -> slogρ_mv!(x, Q, W,X,llout)
 
 
 """
@@ -371,10 +385,15 @@ slogρ_mv(Q, W, X) = (x) -> slogρ_mv(x, Q, W,X)
     x , W, X, ll, obj, acc = update_initialstate!(X,Xᵒ,W,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                     sampler, Q,mask, mask_id, δ, ρ, acc)
 """
-function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,llout, lloutᵒ,
                 sampler, Qvec, mask, mask_id, δ, acc)
     nshapes = length(Xvec)
     n = Qvec[1].target.n
+    if obs_atzero
+        δvec = repeat([ones(d);fill(δ[2],d)],n)
+    else
+        δvec = repeat([fill(δ[1],d);fill(δ[2],d)],n)
+    end
     if sampler in [:sgd, :sgld] # ADJUST LATER
         sample!(W, Wiener{Vector{StateW}}())
         cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
@@ -389,23 +408,24 @@ function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,resul
         println("obj ", obj)
     end
     if sampler==:mcmc
-        # MALA step (update x, for fixed W)
-        cfg = ForwardDiff.GradientConfig(slogρ_mv(Qvec, Wvec, Xvec), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        ForwardDiff.gradient!(result, slogρ_mv(Qvec, Wvec, Xvec),x,cfg) # X gets overwritten but does not change
-        ll_incl0 = DiffResults.value(result)
+        cfg = ForwardDiff.GradientConfig(slogρ_mv!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+        ForwardDiff.gradient!(result, slogρ_mv!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
+        ll_incl0 = sum(llout) #ll_incl0 = DiffResults.value(result)
         ∇x .=  DiffResults.gradient(result)
 
-        xᵒ .= x .+ .5*δ * mask.* ∇x .+ sqrt(δ) * mask .* randn(length(x))
-        cfgᵒ = ForwardDiff.GradientConfig(slogρ_mv(Qvec, Wvec, Xvecᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        ForwardDiff.gradient!(resultᵒ, slogρ_mv(Qvec, Wvec, Xvecᵒ),xᵒ,cfgᵒ) # X gets overwritten but does not change
-        ll_incl0ᵒ = DiffResults.value(resultᵒ)
-        ∇xᵒ =  DiffResults.gradient(resultᵒ)
+        xᵒ .= x .+ .5 * δvec .* mask.* ∇x .+ sqrt.(δvec) .* mask .* randn(length(x))
+        cfgᵒ = ForwardDiff.GradientConfig(slogρ_mv!(Qvec, Wvec, Xvec,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+        ForwardDiff.gradient!(resultᵒ, slogρ_mv!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
+        ll_incl0ᵒ = sum(lloutᵒ)
+        ∇xᵒ .=  DiffResults.gradient(resultᵒ)
 
-        xstate = deepvec2state(x)
-        xᵒstate = deepvec2state(xᵒ)
+        # xstate = deepvec2state(x)
+        # xᵒstate = deepvec2state(xᵒ)
+        dn = sum(mask_id.>0)
+        ndistr = MvNormal(zeros(dn),sqrt.(δvec)[mask_id])
         accinit = ll_incl0ᵒ - ll_incl0
-                 - logpdf(MvNormal(d*n,sqrt(δ)),(xᵒ - x - .5*δ* mask.* ∇x)[mask_id]) +
-                logpdf(MvNormal(d*n,sqrt(δ)),(x - xᵒ - .5*δ* mask.* ∇xᵒ)[mask_id])
+                 - logpdf(ndistr,(xᵒ - x - .5*δvec .* mask.* ∇x)[mask_id]) +
+                logpdf(ndistr,(x - xᵒ - .5*δvec .* mask.* ∇xᵒ)[mask_id])
 
         # compute acc prob
         if log(rand()) <= accinit
@@ -418,19 +438,21 @@ function update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,resul
             println("update initial state; accinit: ", accinit, "  accepted")
             acc[2] +=1
             obj = ll_incl0ᵒ
-            ll = obj
+            ll .= lloutᵒ
         else
             println("update initial state; accinit: ", accinit, "  rejected")
             obj = ll_incl0
+            ll .= llout
         end
     end
-    x, Xvec, ll, obj, acc
+    obj
+#    x, Xvec, ll, obj, acc
 end
 
 
-function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsTvec),
+function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
             Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
-    nshapes = length(xobsTvec)
+    nshapes = length(Xvec)
     aᵒ = P.a * exp(σ_a * randn())
     cᵒ = P.c * exp(σ_c * randn())
     γᵒ = getγ(P) * exp(σ_γ * randn())
@@ -440,10 +462,10 @@ function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0,
         nfs = construct_nfs(P.db, P.nfstd, γᵒ) # need ot add db and nfstd to struct Landmarks
         Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
     end
-    Pauxvecᵒ = [auxiliary(Pᵒ,State(xobsTvec[k],mT)) for k in 1:nshapes] # auxiliary process for each shape
-    Qvecᵒ = [construct_guidedproposalnew!(tt_, guidrecvecᵒ[i], (LT,ΣT,μT), (L0, Σ0),
-        (xobs0, xobsTvec[i]), Pᵒ, Pauxvecᵒ[i]) for i in 1:nshapes]
-    llᵒ = simguidedlm_llikelihood_mv!(LeftRule(), Xvecᵒ, deepvec2state(x), Wvec, Qvecᵒ; skip=sk)
+    Pauxvecᵒ = [auxiliary(Pᵒ,Qvec[k].aux.xT) for k in 1:nshapes] # auxiliary process for each shape
+    Qvecᵒ .= [construct_guidedproposal!(tt_, guidrecvecᵒ[k], (LT,ΣT,μT), (L0, Σ0),
+        (Qvec[k].xobs0, Qvec[k].xobsT), Pᵒ, Pauxvecᵒ[k]) for k in 1:nshapes]
+    llᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, deepvec2state(x), Wvec, Qvecᵒ; skip=sk)
     A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
             logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
             logpdf(prior_γ,γᵒ) - logpdf(prior_γ,getγ(P)) +
@@ -452,26 +474,62 @@ function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0,
                 logpdf(LogNormal(log(Pᵒ.c),σ_c),P.c)- logpdf(LogNormal(log(P.c),σ_c),Pᵒ.c)+
                 logpdf(LogNormal(log(getγ(Pᵒ)),σ_γ),getγ(P))- logpdf(LogNormal(log(getγ(P)),σ_γ),getγ(Pᵒ))
 
-    println("logaccept for parameter update ", round(A;digits=4))
+    print("logaccept for parameter update ", round(A;digits=4))
     if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
         print("  accepted")
-        # P, Pᵒ = Pᵒ, P
+         #P, Pᵒ = Pᵒ, P
         # Xvec, Xvecᵒ = Xvecᵒ, Xvec
         # Pauxvec, Pauxvecᵒ = Pauxvecᵒ, Pauxvec
         # Qvec, Qvecᵒ = Qvecᵒ, Qvec
         # ll, llᵒ = llᵒ, ll
-        P = Pᵒ
-        Xvec = Xvecᵒ
-        Qvec = Qvecᵒ
-        ll = llᵒ
+         P = Pᵒ
+         Xvec .= Xvecᵒ
+         Qvec .= Qvecᵒ
+         ll .= llᵒ
         acc[3] +=1
+    else
+                print("  rejected")
     end
-    P, Xvec, Qvec, ll, acc
+    P, acc
 end
 
 
 
 """
+    Perform mcmc or sgd for landmarks model using the LM-parametrisation
+    tt_:      time grid
+    (xobs0,xobsT): observations at times 0 and T
+    σobs: standard deviation of Gaussian noise assumed on xobs0 and xobsT
+    mT: vector of momenta at time T used for constructing guiding term
+    P: target process
+
+    sampler: either sgd (stochastic gradient descent) or mcmc (Markov Chain Monte Carlo)
+    dataset: dataset to extract xobs0 and xobsT
+    xinit: initial guess on starting state
+
+    ITER: number of iterations
+    subsamples: vector of indices of iterations that are to be saved
+
+    δ: parameter for Langevin updates on initial state
+    prior_a: prior on parameter a
+    prior_c: prior on parameter c
+    prior_γ: prior on parameter γ
+    σ_a: parameter determining update proposal for a [update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())]
+    σ_c: parameter determining update proposal for c [update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())]
+    σ_γ: parameter determining update proposal for γ [update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())]
+
+    outdir: output directory for animation
+    pb:: Lmplotbounds (axis used for plotting landmarks evolution)
+    updatepars: logical flag for updating pars a, c, γ
+    makefig: logical flag for making figures
+    showmomenta: logical flag if momenta are also drawn in figures
+
+    Returns:
+    Xsave: saved iterations of all states at all times in tt_
+    parsave: saved iterations of all parameter updates ,
+    objvals: saved values of stochastic approximation to loglikelihood
+    perc_acc: acceptance percentages (bridgepath - inital state)
+
 
     anim, Xsave, parsave, objvals, perc_acc = lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
              sampler, dataset, obs_atzero,
@@ -479,7 +537,7 @@ end
             (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
             outdir, pb; updatepars = true, makefig=true, showmomenta=false)
 """
-function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
+function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
          sampler, dataset, obs_atzero,
          xinit, ITER, subsamples,
         (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
@@ -490,60 +548,57 @@ function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
     if obs_atzero
         L0 = LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
         Σ0 = ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+        mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
     else
         L0 = Array{UncF}(undef,0,2*P.n)
         Σ0 = Array{UncF}(undef,0,0)
         xobs0 = Array{PointF}(undef,0)
         LT = [(i==j)*one(UncF) for i in 1:2:2P.n, j in 1:2P.n]
         ΣT = [(i==j)*σobs^2*one(UncF) for i in 1:P.n, j in 1:P.n]
+        mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize positions and momenta
     end
     μT = zeros(PointF,P.n)
+    mask_id = (mask .> 0.1) # get indices that correspond to momenta
 
     # now the new stuff:
     nshapes = length(xobsTvec)
     guidrecvec = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
     guidrecvecᵒ = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for k in 1:nshapes]  # memory allocation for each shape
     Pauxvec = [auxiliary(P,State(xobsTvec[k],mT)) for k in 1:nshapes] # auxiliary process for each shape
-    Qvec = [construct_guidedproposalnew!(tt_, guidrecvec[k], (LT,ΣT,μT), (L0, Σ0),
+    Qvec = [construct_guidedproposal!(tt_, guidrecvec[k], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[k]), P, Pauxvec[k]) for k in 1:nshapes]
     Xvec = [initSamplePath(tt_, xinit) for i in 1:nshapes]
     Wvec = [initSamplePath(tt_,  zeros(StateW, dwiener)) for i in 1:nshapes]
     for i in 1:nshapes
         sample!(Wvec[i], Wiener{Vector{StateW}}())
     end
-    #ll = [simguidedlm_llikelihood!(LeftRule(), Xvec[i], xinit, Wvec[i], Qvec[i]; skip=sk) for i in 1:nshapes]
-    ll = simguidedlm_llikelihood_mv!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
+    ll = simguidedlm_llikelihood!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 
-    Qvecᵒ = [construct_guidedproposalnew!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
+
+    Qvecᵒ = [construct_guidedproposal!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
             (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
 
     # saving objects
     objvals = Float64[]  # keep track of (sgd approximation of the) loglikelihood
     acc = zeros(3) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for langevin update on initial momenta, 3rd parameter updates)
-
     Xsave = typeof(zeros(length(tt_) * P.n * 2 * d))[]
     parsave = Vector{Float64}[]
     push!(Xsave, convert_samplepath(Xvec[1]))
     push!(objvals, sum(ll))
     push!(parsave,[P.a, P.c, getγ(P)])
 
-    if obs_atzero
-        mask = deepvec(State(0 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
-    else # only update momenta
-        mask = deepvec(State(1 .- 0*xinit.q, 1 .- 0*(xinit.p)))  # only optimize momenta
-    end
-    mask_id = (mask .> 0.1) # get indices that correspond to momenta
-
-    # initialisation
+    # memory allocations
     Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
-    Wvecᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
+    Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
     Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
     x = deepvec(xinit)
     xᵒ = deepcopy(x)
     ∇x = deepcopy(x)
     ∇xᵒ = deepcopy(x)
-    result = DiffResults.GradientResult(x) # allocate
+    result = DiffResults.GradientResult(x)
     resultᵒ = DiffResults.GradientResult(xᵒ)
+    llout = copy(ll)
+    lloutᵒ = copy(ll)
 
     if makefig
         #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
@@ -552,33 +607,27 @@ function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
         xobsTcomp1 = extractcomp(xobsTvec[1],1)
         xobsTcomp2 = extractcomp(xobsTvec[1],2)
         pp1 = plotshapes(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2)
-        # cd(outdir)
-        # Plots.savefig(pp1,"anim"*"_" * string(model) * "_" * string(sampler) *"_" * string(dataset)*"shapes.pdf")
     end
 
-
-    for i in 1:ITER
-    #anim =    @animate for i in 1:ITER
+#    for i in 1:ITER
+    anim =    @animate for i in 1:ITER
         if makefig
             drawpath(i-1,P.n,x,Xvec[1],objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
         end
         println("iteration $i")
 
-        # updates paths separately
-        for k in 1:nshapes
+        # updates paths
+        update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, sampler, Qvec, ρ, acc)
 
-             # Wvec[k], Xvec[k], ll[k], acc =
-             ll[k], acc = update_path!(Xvec[k], Xvecᵒ[k], Wvec[k], Wvecᵒ, Wnew,
-                                      ll[k], x, sampler, Qvec[k], ρ, acc)
-        end
         # update initial state
-        x, Xvec, ll, obj, acc = update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
+        obj = update_initialstate_mv!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,llout, lloutᵒ,
                             sampler, Qvec, mask, mask_id, δ, acc)
 
-        # update parameters
-        P, Xvec, Qvec, ll, acc = update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0), (xobs0, xobsTvec),
-                    Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+#print(Xvec[1].yy[1])
 
+        # update parameters
+        P, acc= update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
+                    Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
 
         println()
         # save some of the results
@@ -592,17 +641,7 @@ function lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
             drawpath(ITER,P.n,x,Xvec[1],objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
         end
     end
-    perc_acc = 100acc/ITER
+    perc_acc = 100acc/(nshapes*ITER)
     println("Acceptance percentages (bridgepath - inital state - parameters): ",perc_acc)
     anim, Xsave, parsave, objvals, perc_acc
 end
-
-
-obs_atzero = true
-xobsTvec = [xobsT, 2*xobsT] # just a simple example
-
-anim, Xsave, parsave, objvals, perc_acc = lm_mcmc_mv(tt_, (xobs0,xobsTvec), σobs, mT, P,
-         sampler, dataset, obs_atzero,
-         xinit, ITER, subsamples,
-        (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-        outdir, pb; updatepars = true, makefig=true, showmomenta=false)
