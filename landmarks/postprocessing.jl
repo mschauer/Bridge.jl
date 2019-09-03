@@ -46,19 +46,25 @@ write(f, "Average acceptance percentage (path - initial state): ",string(perc_ac
 close(f)
 
 ######## write observations to file
-if obs_atzero
-    obsdf = DataFrame(x=vcat( extractcomp(xobs0,1), extractcomp(xobsT,1)),
-                y= vcat( extractcomp(xobs0,2), extractcomp(xobsT,2)),
-                time=repeat(["0","T"], inner=P.n))
-else
-    println("Still need to fix writing observations to file in case no observations at time zero")
-    # obsdf = DataFrame(x=extractcomp(xobsT,1),
-    #             y= extractcomp(xobsT,2),
-    #             time=repeat(["T"], inner=P.n))
-    obsdf = []
+# if obs_atzero
+#     obsdf = DataFrame(x=vcat( extractcomp(xobs0,1), extractcomp(xobsT,1)),
+#                 y= vcat( extractcomp(xobs0,2), extractcomp(xobsT,2)),
+#                 time=repeat(["0","T"], inner=P.n))
+#     CSV.write(outdir*"observations.csv", obsdf; delim=";")
+# else
+    valueT = vcat(map(x->deepvec(x), xobsTvec)...) # merge all observations at time T in one vector
+    posT = repeat(["pos1","pos2"], P.n*nshapes)
+    shT = repeat(1:nshapes, inner=d*P.n)
+    obsTdf = DataFrame(pos=posT,shape=shT, value=valueT,landmark=repeat(1:P.n,inner=d,outer=nshapes))
 
-end
-CSV.write(outdir*"observations.csv", obsdf; delim=";")
+    q0 = map(x->vec(x),x0.q)
+    p0 = map(x->vec(x),x0.p)
+    obs0df = DataFrame(pos1=extractcomp(q0,1), pos2=extractcomp(q0,2), mom1=extractcomp(p0,1) , mom2=extractcomp(p0,2),landmark=1:P.n)
+
+    CSV.write(outdir*"obs0.csv", obs0df; delim=";")
+    CSV.write(outdir*"obsT.csv", obsTdf; delim=";")
+# end
+
 
 ######## write parameter iterates to file
 parsdf = DataFrame(a=extractcomp(parsave,1),c=extractcomp(parsave,2),

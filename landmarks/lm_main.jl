@@ -32,7 +32,7 @@ include("state.jl")
 include("models.jl")
 include("patches.jl")
 include("lmguiding_mv.jl")
-include("plotlandmarks.jl")
+#include("plotlandmarks.jl")  # keep, but presently unused as all is transferred to plotting in R
 include("generatedata.jl")
 include("plotting.jl")
 
@@ -42,7 +42,7 @@ models = [:ms, :ahs]
 model = models[2]
 println("model: ",model)
 
-ITER = 50
+ITER = 500
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
