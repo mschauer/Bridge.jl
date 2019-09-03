@@ -118,7 +118,32 @@ function generatedata(dataset,P,t,σobs)
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5) # verified
         obs_atzero = true
     end
-    x0, xobs0, xobsT, Xf, P, pb, obs_atzero 
+
+    if dataset=="forwardsimulated_multiple"
+        nshapes = 3
+        q0 = [PointF(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
+        p0 = [Point(0.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
+        x0 = State(q0, p0)
+        xobsT = Vector{PointF}[]
+        for k in 1:nshapes
+            a = P.a * exp(0.01*randn())
+            c = P.c * exp(0.01*randn())
+            γ = 0.1*getγ(P) * exp(0.01*randn())
+            if model == :ms
+                P = MarslandShardlow(a, c, γ, P.λ, P.n)
+            elseif model == :ahs
+                nfs = construct_nfs(P.db, P.nfstd, γ)
+                P = Landmarks(a, c, P.n, P.db, P.nfstd, nfs)
+            end
+            Wf, Xf = landmarksforward(t, x0, P)
+            xobs0 = []
+            push!(xobsT, [Xf.yy[end].q[i] for i in 1:P.n ] + σobs * randn(PointF,n))
+        end
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
+        obs_atzero = false
+    end
+
+    x0, xobs0, xobsT, Xf, P, pb, obs_atzero
 end
 
 if false

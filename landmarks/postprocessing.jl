@@ -5,17 +5,20 @@ gif(anim, outdir*fn*".gif", fps = 50)
 mp4(anim, outdir*fn*".mp4", fps = 50)
 
 ######### write mcmc iterates of bridges to csv file
-iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n, length(subsamples)) # each column contains samplepath of an iteration
+nshapes = length(xobsTvec)
+iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n*nshapes, length(subsamples)) # each column contains samplepath of an iteration
 # Ordering in each column is as follows:
+# 0) shape
 # 1) time
 # 2) landmark nr
 # 3) for each landmark: q1, q2 p1, p2
-pqtype = repeat(["pos1", "pos2", "mom1", "mom2"], length(tt_)*P.n)
-times = repeat(tt_,inner=2d*P.n)
-landmarkid = repeat(1:P.n, inner=2d, outer=length(tt_))
+pqtype = repeat(["pos1", "pos2", "mom1", "mom2"], length(tt_)*P.n*nshapes)
+times = repeat(tt_,inner=2d*P.n*nshapes)
+landmarkid = repeat(1:P.n, inner=2d, outer=length(tt_)*nshapes)
+shapes = repeat(1:nshapes, inner=length(tt_)*2d*P.n)
 
-out = hcat(times,pqtype,landmarkid,iterates)
-head = "time " * "pqtype " * "landmarkid " * prod(map(x -> "iter"*string(x)*" ",subsamples))
+out = hcat(times,pqtype,landmarkid,shapes,iterates)
+head = "time " * "pqtype " * "landmarkid " * "shapes " * prod(map(x -> "iter"*string(x)*" ",subsamples))
 head = chop(head,tail=1) * "\n"
 
 fn = outdir*"iterates.csv"
@@ -48,9 +51,11 @@ if obs_atzero
                 y= vcat( extractcomp(xobs0,2), extractcomp(xobsT,2)),
                 time=repeat(["0","T"], inner=P.n))
 else
-    obsdf = DataFrame(x=extractcomp(xobsT,1),
-                y= extractcomp(xobsT,2),
-                time=repeat(["T"], inner=P.n))
+    println("Still need to fix writing observations to file in case no observations at time zero")
+    # obsdf = DataFrame(x=extractcomp(xobsT,1),
+    #             y= extractcomp(xobsT,2),
+    #             time=repeat(["T"], inner=P.n))
+    obsdf = []
 
 end
 CSV.write(outdir*"observations.csv", obsdf; delim=";")

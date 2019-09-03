@@ -57,6 +57,12 @@ println("sampler: ",sampler)
 prior_a = Exponential(5.0)
 prior_c = Exponential(5.0)
 prior_γ = Exponential(5.0)
+#------------------------------------------------------------------
+
+datasets =["forwardsimulated", "shifted","shiftedextreme","bear",
+            "heart","peach", "generatedstefan", "forwardsimulated_multiple"]
+dataset = datasets[8]
+println("dataset: ",dataset)
 
 #------------------------------------------------------------------
 # for sgd (FIX LATER)
@@ -68,24 +74,13 @@ prior_γ = Exponential(5.0)
 # pcN-step
 ρ = 0.9
 
-
 # step-size on initial state
-if obs_atzero
-    δ = [0.0, 0.25] # in this case first comp is not used
-else
-    δ = [0.0025, 0.001]
-end
+δ = [0.0, 0.25] # in this case first comp is not used
 
 # proposal for θ = (a, c, γ)
 σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
 σ_c = 0.1  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
 σ_γ = 0.1  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
-#------------------------------------------------------------------
-
-datasets =["forwardsimulated", "shifted","shiftedextreme",
-        "bear", "heart","peach", "generatedstefan"]
-dataset = datasets[3]
-println("dataset: ",dataset)
 
 #------------------------------------------------------------------
 σobs = 0.05   # noise on observations
@@ -124,6 +119,11 @@ if (model == :ahs) & showplotσq
 end
 
 x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σobs)
+if !obs_atzero
+    δ = [0.0025, 0.001]
+end
+
+δ = 0.1*δ
 
 if startPtrue
     P = Ptrue
@@ -152,8 +152,8 @@ if obs_atzero
     xobsTvec = [xobsT]
         xinit = State(xobs0, zeros(PointF,P.n))
 else
-    xobsTvec = [xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
-    xinit = State(0.2*xobsTvec[1], zeros(PointF,P.n))
+    xobsTvec = xobsT #xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
+    xinit = State(xobsTvec[1], zeros(PointF,P.n))
 end
 
 anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,

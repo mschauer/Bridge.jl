@@ -89,6 +89,27 @@ function convert_samplepath(X)
 end
 
 """
+    Useful for storage of a samplepath of states
+    Ordering is as follows:
+    0) shape
+    1) time
+    2) landmark nr
+    3) for each landmark: q1, q2 p1, p2
+
+    With m time-steps, n landmarks, this entails a vector of length m * n * 2 * d
+"""
+function convert_samplepath(Xvec::Vector)
+    nshapes = length(Xvec)
+    out = [convert_samplepath(Xvec[1])]
+    for k in 2:nshapes
+        push!(out,convert_samplepath(Xvec[k]))
+    end
+    vcat(out...)
+end
+
+
+
+"""
 plot initial and final shape, given by xobs0 and xobsT respectively
 """
 function plotshapes(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2)
