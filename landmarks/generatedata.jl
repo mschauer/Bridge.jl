@@ -126,9 +126,9 @@ function generatedata(dataset,P,t,σobs)
         x0 = State(q0, p0)
         xobsT = Vector{PointF}[]
         for k in 1:nshapes
-            a = P.a * exp(0.05*randn())
-            c = P.c * exp(0.05*randn())
-            γ = 0.3*getγ(P) * exp(0.01*randn())
+            a = P.a * exp(0.15*randn())
+            c = P.c * exp(0.15*randn())
+            γ = 0.4*getγ(P) * exp(0.01*randn())
             if model == :ms
                 P = MarslandShardlow(a, c, γ, P.λ, P.n)
             elseif model == :ahs

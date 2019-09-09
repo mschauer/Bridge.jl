@@ -5,11 +5,12 @@ using Bridge, StaticArrays, Distributions
 using Bridge:logpdfnormal
 using Test, Statistics, Random, LinearAlgebra
 using Bridge.Models
-using DelimitedFiles, DataFrames, CSV, RCall
+using DelimitedFiles, DataFrames, RCall
+using CSV
 # install.packages(ggforce)
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff
-using DiffResults
+#using DiffResults
 #using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
@@ -32,17 +33,17 @@ include("state.jl")
 include("models.jl")
 include("patches.jl")
 include("lmguiding_mv.jl")
-#include("plotlandmarks.jl")  # keep, but presently unused as all is transferred to plotting in R
+include("plotlandmarks.jl")  # keep, but presently unused as all is transferred to plotting in R
 include("generatedata.jl")
 include("plotting.jl")
 
 ################################# start settings #################################
-n = 6  # nr of landmarks
+n = 10  # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println("model: ",model)
 
-ITER = 500
+ITER = 239
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -150,7 +151,7 @@ start = time() # to compute elapsed time
 
 if obs_atzero
     xobsTvec = [xobsT]
-        xinit = State(xobs0, zeros(PointF,P.n))
+    xinit = State(xobs0, zeros(PointF,P.n))
 else
     xobsTvec = xobsT #xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
     xinit = State(xobsTvec[1], zeros(PointF,P.n))

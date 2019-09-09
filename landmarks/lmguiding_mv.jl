@@ -390,7 +390,7 @@ slogρ!(Q, W, X, llout) = (x) -> slogρ!(x, Q, W,X,llout)
     x , W, X, ll, obj, acc = update_initialstate!(X,Xᵒ,W,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,
                     sampler, Q,mask, mask_id, δ, ρ, acc)
 """
-function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,llout, lloutᵒ,
+function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
                 sampler, Qvec, mask, mask_id, δ, acc)
     nshapes = length(Xvec)
     n = Qvec[1].target.n
@@ -414,25 +414,83 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, 
     end
     if sampler==:mcmc
         cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        ForwardDiff.gradient!(result, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
-        ll_incl0 = sum(llout) #ll_incl0 = DiffResults.value(result)
-        ∇x .=  DiffResults.gradient(result)
+        ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
+        ll_incl0 = sum(llout)
 
-        xᵒ .= x .+ .5 * δvec .* mask.* ∇x .+ sqrt.(δvec) .* mask .* randn(length(x))
-        cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        ForwardDiff.gradient!(resultᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
-        ll_incl0ᵒ = sum(lloutᵒ)
-        ∇xᵒ .=  DiffResults.gradient(resultᵒ)
+        updatekernel = :landmarksforward#  :mala
 
-        println("∇x ",∇x)
-        println("----------")
-        println("∇xᵒ ",∇xᵒ)
+        if updatekernel==:mala
+            b_grad = 1000.0
+            Dx = b_grad * ∇x / max(b_grad,norm(∇x))
+            #xᵒ .= x .+ .5 * δvec .* mask.* ∇x .+ sqrt.(δvec) .* mask .* randn(length(x))
+            xᵒ .= x .+ .5 * δvec .* mask.* Dx .+ sqrt.(δvec) .* mask .* randn(length(x))
+            cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
+            ll_incl0ᵒ = sum(lloutᵒ)
+            Dxᵒ = b_grad * ∇xᵒ / max(b_grad,norm(∇xᵒ))
 
-        dn = sum(mask_id)
-        ndistr = MvNormal(zeros(dn),sqrt.(δvec)[mask_id])
-        accinit = ll_incl0ᵒ - ll_incl0
-                 - logpdf(ndistr,(xᵒ - x - .5*δvec .* mask.* ∇x)[mask_id]) +
-                logpdf(ndistr,(x - xᵒ - .5*δvec .* mask.* ∇xᵒ)[mask_id])
+            println("∇x ",∇x)
+            println("----------")
+            println("∇xᵒ ",∇xᵒ)
+
+            dn = sum(mask_id)
+            ndistr = MvNormal(zeros(dn),sqrt.(δvec)[mask_id])
+            accinit = ll_incl0ᵒ - ll_incl0 -
+                    #  -logpdf(ndistr,(xᵒ - x - .5*δvec .* mask.* ∇x)[mask_id]) +
+                    # logpdf(ndistr,(x - xᵒ - .5*δvec .* mask.* ∇xᵒ)[mask_id])
+                     logpdf(ndistr,(xᵒ - x - .5*δvec .* mask.* Dx)[mask_id]) +
+                   logpdf(ndistr,(x - xᵒ - .5*δvec .* mask.* Dxᵒ)[mask_id])
+        elseif updatekernel==:amala
+            nx = length(x)
+            ϵ0 = 0.01
+            δamala  = 0.001#0.01
+            b_grad = 1.0
+            Dx = b_grad * ∇x / max(b_grad,norm(∇x))
+            Ndistr = MvNormal(δamala * ( Diagonal(fill(ϵ0,nx)) .+ Bridge.outer(Dx)))
+            N = rand(Ndistr)
+            xᵒ .= x .+ δamala * Dx .+ N
+            cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
+            ll_incl0ᵒ = sum(lloutᵒ)
+            Dxᵒ = b_grad * ∇xᵒ / max(b_grad,norm(∇xᵒ))
+            Ndistrᵒ = MvNormal(δamala * ( Diagonal(fill(ϵ0,nx)) .+ Bridge.outer(Dxᵒ)))
+
+             accinit = ll_incl0ᵒ - ll_incl0 - logpdf(Ndistr,N) +
+                     logpdf(Ndistrᵒ,x - xᵒ - δamala * Dxᵒ)
+            elseif updatekernel==:landmarksforward
+
+                P = Qvec[1].target
+                ptemp = randn(PointF,P.n)
+                xs = NState(deepvec2state(x).q, ptemp)
+                #xs = deepvec2state(x)
+                # tt = Wvec[1].tt
+                # nsub = div(length(tt),2)
+                # tsub = tt[1:nsub]
+                tsub = 0:0.001:0.1
+
+                Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(P)))
+                sample!(Wtemp, Wiener{Vector{PointF}}())
+                # forward simulate landmarks
+                Xtemp = initSamplePath(tsub,xs)
+                Pdeterm = MarslandShardlow(P.a, P.c, 0.0, 0.0, P.n)
+                solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
+                plotlandmarkpositions(Xtemp,Pdeterm,xs.q,Xtemp.yy[end].q;db=2.0)
+                ptempᵒ = -Xtemp.yy[end].p  # make proposal reversible
+                xᵒ = NState(Xtemp.yy[end].q, deepvec2state(x).p)
+                # s = 0.0
+                # for i in 1:Pdeterm.n, j in 1:Pdeterm.n
+                #     global s
+                #     s += 1/2*dot(X.yy[i].p, X.yy[j].p)*kernel(X.yy[i].q - X.yy[j].q, Pdeterm)
+                # end
+                # s
+
+                llout = simguidedlm_llikelihood!(LeftRule(), Xvec, deepvec2state(x), Wvec, Qvec; skip=sk)
+                lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒ, Wvec, Qvec; skip=sk)
+                ll_incl0 = sum(llout)
+                ll_incl0ᵒ = sum(lloutᵒ)
+                accinit = ll_incl0ᵒ - ll_incl0 - 0.5 * norm(ptempᵒ)^2 + 0.5 * norm(ptemp)^2
+                xᵒ = deepvec(xᵒ)
+            end
 
         # compute acc prob
         if log(rand()) <= accinit
@@ -596,8 +654,6 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     xᵒ = deepcopy(x)
     ∇x = deepcopy(x)
     ∇xᵒ = deepcopy(x)
-    result = DiffResults.GradientResult(x)
-    resultᵒ = DiffResults.GradientResult(xᵒ)
     llout = copy(ll)
     lloutᵒ = copy(ll)
 
@@ -618,10 +674,12 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         println("iteration $i")
 
         # updates paths
-        update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, sampler, Qvec, ρ, acc)
+    #    if mod(i,10)==0
+            update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, sampler, Qvec, ρ, acc)
+    #    end
 
         # update initial state
-        obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,result, resultᵒ,llout, lloutᵒ,
+        obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
                             sampler, Qvec, mask, mask_id, δ, acc)
 
         # update parameters
