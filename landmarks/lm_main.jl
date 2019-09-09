@@ -38,12 +38,12 @@ include("generatedata.jl")
 include("plotting.jl")
 
 ################################# start settings #################################
-n = 10  # nr of landmarks
+n = 7  # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 239
+ITER = 250
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -73,7 +73,7 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 0.9
+ρ = 0.7
 
 # step-size on initial state
 δ = [0.0, 0.25] # in this case first comp is not used
@@ -154,13 +154,13 @@ if obs_atzero
     xinit = State(xobs0, zeros(PointF,P.n))
 else
     xobsTvec = xobsT #xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
-    xinit = State(xobsTvec[1], zeros(PointF,P.n))
+    xinit = 0.8*State(xobsTvec[1], zeros(PointF,P.n))
 end
 
 anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
          sampler, dataset, obs_atzero,
          xinit, ITER, subsamples,
-        (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
+        (ρ, δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
         outdir, pb; updatepars = true, makefig=true, showmomenta=false)
 
 elapsed = time() - start

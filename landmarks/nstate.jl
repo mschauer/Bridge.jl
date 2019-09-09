@@ -21,7 +21,7 @@
     q(x::NState, i) = x.x[1, i]
     p(x::NState, i) = x.x[2, i]
     eltype(x::NState) = eltype(x.x)
-    deepeltype(x::NState) = eltype(eltype(x))
+    deepeltype(x::Union{NState,Vector}) = eltype(eltype(x))
     q(x::NState) = @view x.x[1:2:end]
     p(x::NState) = @view x.x[2:2:end]
 
@@ -38,7 +38,9 @@
     size(s::NState) = size(s.x)
     axes(s::NState, i) = axes(s.x, i)
     deepvec(x::NState) = vec(reinterpret(deepeltype(x), x.x))
-    deepvec(x::Vector) = deepvec(vecofpoints2state(x)) # CHECK, might be done more efficiently
+#    deepvec(x::Vector) = vcat(x...)
+    deepvec(x::Vector) = reinterpret(deepeltype(x), x)
+
     function deepvec2state(x::Vector)
         x = reinterpret(Point{eltype(x)}, x)
         #dump(length(x))
