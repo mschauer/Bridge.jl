@@ -25,9 +25,9 @@ function drawpath(i,n,x,X,objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xob
         outg = [Any[X.tt[i], [X.yy[i][CartesianIndex(c, k)][l] for l in 1:d, c in 1:2]..., "point$k"] for k in 1:n, i in eachindex(X.tt) ][:]
         dfg = DataFrame(time=extractcomp(outg,1),pos1=extractcomp(outg,2),pos2=extractcomp(outg,3),mom1=extractcomp(outg,4),mom2=extractcomp(outg,5),pointID=extractcomp(outg,6))
         for j in 1:n
-            el1 = dfg[:pointID].=="point"*"$j"
+            el1 = dfg[!,:pointID].=="point"*"$j"
             dfg1 = dfg[el1,:]
-            Plots.plot!(pp1,dfg1[:pos1], dfg1[:pos2],label="")
+            Plots.plot!(pp1,dfg1[!,:pos1], dfg1[!,:pos2],label="")
         end
 
         pp2 = Plots.plot(collect(0:i), objvals[1:i+1],seriestype=:scatter ,color=:blue,markersize=1.5,label="",title="Loglikelihood approximation")

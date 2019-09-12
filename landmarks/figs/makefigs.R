@@ -35,11 +35,11 @@ dsub <- d1 %>% dplyr::filter(iterate %in% c(0,5,100,400,600,700)) %>%
     mutate(iteratenr = fct_relevel(iteratenr, c("0","5","100","400")))
 
 # v0 <- obsdf[1:n,] 
-dlabel0 <- v0; dlabel0$landmarkid <- unique(d$landmarkid)
+dlabel0 <- obs0df; dlabel0$landmarkid <- unique(d$landmarkid)
 # v0 <- rbind(v0,v0[1,])
 #   
 # vT = obsdf[seq(n+1,2*n),]
-dlabelT <- vT; dlabelT$landmarkid <- unique(d$landmarkid)
+dlabelT <- obsTdf; dlabelT$landmarkid <- unique(d$landmarkid)
 # vT <- rbind(vT,vT[1,])
   
   
@@ -111,23 +111,27 @@ dev.off()
 
 
 # plot initial positions for all shapes (only interesting in case initial shape is unobserved)
-dtime0 <- d %>% dplyr::filter(time==0) 
+dtime0 <- d %>% dplyr::filter(time==0)# ,iterate>200) 
+
+# add factor for determining which phase of sampling
+dtime0 <-  dtime0 %>% mutate(phase = 
+    case_when(iterate < quantile(iterate,1/3) ~ "initial",
+              between(iterate,quantile(iterate,1/3),quantile(iterate,2/3)) ~ "middle",
+              iterate >= quantile(iterate,1/3) ~ "end")  ) %>% # reorder factor levels
+  mutate(phase = fct_relevel(phase, "initial", "middle"))
 dtimeT <- d %>% dplyr::filter(time==1) 
-initshapes0 <- ggplot()  + geom_path(data=bind_rows(dtime0,dtime0),aes(x=pos1,y=pos2,colour=iterate)) +
-   geom_point(data=v0, aes(x=pos1,y=pos2), colour='yellow')+
-  geom_path(data=v0, aes(x=pos1,y=pos2), colour='yellow',size=1.1) +
-  geom_point(data=vT, aes(x=pos1,y=pos2), colour='orange')+
-  geom_path(data=vT, aes(x=pos1,y=pos2,group=shape), colour='orange',size=1.1) 
+initshapes0 <- ggplot()  + 
+  geom_point(data=vT, aes(x=pos1,y=pos2), colour='grey')+
+  geom_path(data=vT, aes(x=pos1,y=pos2,group=shape), colour='grey', linetype="dashed",size=0.4) +
+    geom_point(data=v0, aes(x=pos1,y=pos2), colour='red')+
+  geom_path(data=v0, aes(x=pos1,y=pos2), colour='red',size=0.8,alpha=0.8) +
+    geom_path(data=bind_rows(dtime0,dtime0),aes(x=pos1,y=pos2,colour=iterate)) +
+  facet_wrap(~phase)
 initshapes0
 
-# initshapesT <- ggplot()  + geom_path(data=bind_rows(dtimeT,dtimeT),aes(x=pos1,y=pos2,colour=iterate)) +
-#     geom_point(data=v0, aes(x=pos1,y=pos2), colour='yellow')+
-#   geom_path(data=v0, aes(x=pos1,y=pos2), colour='yellow',size=1.1)
-# 
 
 
-pdf("initial-shapes.pdf",width=7,height=5)  
-initshapes0,initshapesT
+pdf("initial-shapes.pdf",width=7,height=7)  
+initshapes0
 dev.off()
 
-initshapes

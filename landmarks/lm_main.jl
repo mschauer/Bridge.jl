@@ -14,7 +14,6 @@ using ForwardDiff
 #using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
-
 using NPZ # for reading python datafiles
 
 workdir = @__DIR__
@@ -38,12 +37,12 @@ include("generatedata.jl")
 include("plotting.jl")
 
 ################################# start settings #################################
-n = 7  # nr of landmarks
+n = 10  # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 250
+ITER = 100
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -154,7 +153,12 @@ if obs_atzero
     xinit = State(xobs0, zeros(PointF,P.n))
 else
     xobsTvec = xobsT #xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
+    xinit = 1.2*State(xobsTvec[1], zeros(PointF,P.n))
+    θ = π/6
+    rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
     xinit = 0.8*State(xobsTvec[1], zeros(PointF,P.n))
+    #xinit = State(0.8*xobsTvec[1], x0.p)
+    xinit = 1.2*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
 end
 
 anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
@@ -164,7 +168,7 @@ anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, 
         outdir, pb; updatepars = true, makefig=true, showmomenta=false)
 
 elapsed = time() - start
-println("Average acceptance percentage: ",perc_acc,"\n")
+#println("Average acceptance percentage: ",perc_acc,"\n")
 println("Elapsed    time: ",round(elapsed/60;digits=2), " minutes")
 
 include("./postprocessing.jl")
