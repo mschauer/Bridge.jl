@@ -479,32 +479,39 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
             #Pdeterm = MarslandShardlow(1.25, 0.1, 0.0, 0.0, P.n)
             Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
             if true
-
+                κ  = 0.5
                 ∇xp = deepvec2state(∇x).p
-                xs = NState(x0.q, ∇xp)
-                #tsubend = rand(Uniform(0.01,0.15))  # 0.1
+                K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+                lcholK = lchol(K)
+                zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
+                cc =  0.5
+                ptempᵒ =  ptemp + κ * (cc * ∇xp - ptemp)  + sqrt(κ) * zz   # mala
+                #ptempᵒ =  ptemp + κ * (cc * ∇xp )  + sqrt(κ) * zz   # mala
+                xs = NState(x0.q, ptempᵒ)
                 nsteps = 1_00
-                Δt = 0.05
+                Δt = rand(Uniform(0.05, 0.1))
                 hh = Δt/nsteps
                 tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
                 Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
                 # forward simulate landmarks
                 Xtemp = initSamplePath(tsub,xs)
-
                 solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
+                ptempᵒ = - Xtemp.yy[end].p
                 xᵒState = NState(Xtemp.yy[end].q, x0.p)
-                xᵒ = deepvec(xᵒState)
-                #accinit = 1.0 # always accept
+                xᵒ .= deepvec(xᵒState)
+                cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+                ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfg)
+                mask = deepvec(State(0*x0.q, 1 .- 0*x0.p))  # optimize positions and momenta
+                mask_id = (mask .> 0.1) # get indices tha
+                ptempᵒ =  ptempᵒ - κ * (cc * reinterpret(PointF,∇xᵒ[mask_id]) - ptempᵒ)  - sqrt(κ) * zz   # mala
+                #ptempᵒ =  ptempᵒ - κ * (cc * reinterpret(PointF,∇xᵒ[mask_id]) )  - sqrt(κ) * zz   # mala
 
                 plotlandmarkpositions(Xtemp,Pdeterm,xs.q,xᵒState.q;db=2.0)
-                #plotlandmarkpositions(Xtemp,Pdeterm,xs.q,x0.q;db=2.0)
 
-                # ptemp = x0.p
-                # ptempᵒ = Xtemp.yy[end].p
-                lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
+#                lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
                 ll_incl0 = sum(llout)
                 ll_incl0ᵒ = sum(lloutᵒ)
-                accinit = ll_incl0ᵒ - ll_incl0 #+ 0.5*(norm(ptemp-∇xp)^2 -norm(ptempᵒ-∇xp)^2 )/hh^2
+                accinit = ll_incl0ᵒ - ll_incl0
             else # old stuff
 
                 h = 0.1
@@ -574,7 +581,7 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
             obj = ll_incl0ᵒ
             ll .= lloutᵒ
             if updatekernel == :lmforward_pos
-#                ptemp .= ptempᵒ
+                ptemp .= ptempᵒ
             end
         else
             println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
@@ -764,18 +771,18 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         #    updatekernel can be :mala_pos, :mala_mom, :mala_posandmom, :lmforward_pos
         #updatekernel = sample([:mala_mom,:lmforward_pos])
 
-if true
+
         obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
                                                  sampler, Qvec, δ, acc, :mala_mom, ptemp)
 
 
         obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
                             sampler, Qvec, δ, acc, :lmforward_pos, ptemp)
-else
 
-        obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                                                   sampler, Qvec, δ, acc, :mala_posandmom, ptemp)
-end
+
+        # obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+        #                                            sampler, Qvec, δ, acc, :mala_posandmom, ptemp)
+
 
         # update parameters
         P, acc= update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
