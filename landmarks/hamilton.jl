@@ -12,7 +12,7 @@ struct DoubleWellTilde
 end
 P = DoubleWell()
 P̃ = DoubleWellTilde()
-π(x, ::DoubleWell) = exp(-(x+2)^2/2) + exp(-(x-2)^2/2)
+π(x, ::DoubleWell) = exp(-(x+4)^2/2) + exp(-(x-4)^2/2)
 π(x, ::DoubleWellTilde) = exp(-(x)^2/(10*2))
 logϕ(p, P) = -inner(p)/2
 logπ(x, P) = log(π(x, P))
@@ -39,31 +39,22 @@ end
 function hmc!(X, P, P̃)
     t = X.t[end]
     q, p = X.x[end]
-    #ρ, ρᵒ = 0.8, 1.0
-    #ρ, ρᵒ = 1.0, 1.0
     if P == P̃
-        ρ, ρᵒ = 0.8, 1.0
-
-    #    ρᵒ0 = ρᵒ
+        ρ = 0.75
         flip = 1
-
         h = 0.0
+        σ = 0.0
     else
-        ρ, ρᵒ = 1.0, 0.98
-
-    #    ρᵒ0 = 1.0
-
+        ρ = 0.76
         flip = -1
-        h = 1 - ρᵒ^2
-        h = 0.0
-        ρ, ρᵒ = 0.8, 1.0
-
+        h = 0.3
+        σ = 0.0
     end
     subsample = 10
-    σ = 0.0
+
 
     m = 100
-    Δt = .3
+    Δt = .5
     acc = 0
 
 
@@ -74,18 +65,19 @@ function hmc!(X, P, P̃)
         tᵒ = t
         qᵒ, pᵒ = q, p
         Z = randn()
-        pᵒ = pᵒ + h*(0.5*Dlogπ(q, P) - pᵒ) + sqrt(h)*Z
-        #pᵒ = ρᵒ0*pᵒ + sqrt(1 - ρᵒ^2)*randn()
-        # pᵒbefore = pᵒ
+        #pᵒ = pᵒ + h*(Dlogπ(q, P) - 0pᵒ)
+        pᵒ = pᵒ + sqrt(h)*Z
+        tᵒ, (qᵒ, pᵒ) = leapfrog_step(tᵒ, (qᵒ, pᵒ), tᵒ + h, P, 0.0)
         h2 = (1 + 1rand())*Δt/m
+
         for i in 1:m
             tᵒ, (qᵒ, pᵒ) = leapfrog_step(tᵒ, (qᵒ, pᵒ), tᵒ + h2, P̃, σ)
         end
+        tᵒ, (qᵒ, pᵒ) = leapfrog_step(tᵒ, (qᵒ, pᵒ), tᵒ + h, P, 0.0)
+        pᵒ = pᵒ + sqrt(h)*Z
         pᵒ = flip*pᵒ
-        pᵒ = pᵒ - h*(0.5*Dlogπ(qᵒ, P) - pᵒ) - sqrt(h)*Z
+#        pᵒ = pᵒ - h*(Dlogπ(qᵒ, P) - 0pᵒ)
 
-#        pᵒ = ρᵒ*pᵒ + sqrt(1 - ρᵒ^2)*randn()
-        #pᵒ = ρᵒ0*pᵒ + sqrt(1 - ρᵒ^2)*randn()
 
         if P ≠ P̃
             ll = H(q, p, P) - H(qᵒ, pᵒ, P)
@@ -94,7 +86,6 @@ function hmc!(X, P, P̃)
             #ll += logϕ(Z + 2sqrt(h)*Dlogπ(q, P), P) - logϕ(Z, P)
 
             if log(rand()) ≤ ll
-
                 q, p = qᵒ, pᵒ
                 acc += 1
             end
@@ -102,12 +93,10 @@ function hmc!(X, P, P̃)
             q, p = qᵒ, pᵒ
             acc += 1
         end
-        pᵒ = flip*pᵒ # second flip
+        p = flip*p # second flip
         t = tᵒ
         i % subsample == 0 && push!(X, t=>(q, p))
     end
-    #p = ρ*p + sqrt(1-ρ^2)*randn()
-    #println(p, q)
     @show acc/n
 end
 
@@ -126,6 +115,11 @@ println("doubles ",  sum(first.(X.x)[1:end-1] .== first.(X.x)[2:end] )/length(X)
 #scatter(X.x, markersize=0.04, color=RGBA(1,0,1,0.1))
 #scatter!(Y.x, markersize=0.04, color=RGBA(1,1,0,0.1))
 
-scatter(X.x, markersize=0.04)
-scatter!([x .+ (0,4) for x in Y.x], color=:blue, markersize=0.04)
+p1a = scatter(X.x, markersize=0.04)
 lines!(X.x, linewidth=0.1)
+p1b = scatter(Y.x, color=:blue, markersize=0.04)
+lines!(Y.x, linewidth=0.08, color=:blue)
+
+p1 = hbox(p1a,p1b)
+p2 = hbox(lines(first.(X.x)), lines(first.(Y.x), color=:blue))
+vbox(p1, p2)
