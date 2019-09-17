@@ -391,7 +391,7 @@ slogρ!(Q, W, X, llout) = (x) -> slogρ!(x, Q, W,X,llout)
 
 """
 function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                sampler, Qvec, δ, acc,updatekernel,ptemp)
+                sampler, Qvec, δ, acc,updatekernel,ptemp, iter)
     nshapes = length(Xvec)
     n = Qvec[1].target.n
     x0 = deepvec2state(x)
@@ -476,92 +476,70 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
         #              logpdf(Ndistrᵒ,x - xᵒ - δamala * Dxᵒ)
         elseif updatekernel==:lmforward_pos
             P = Qvec[1].target
-            #Pdeterm = MarslandShardlow(1.25, 0.1, 0.0, 0.0, P.n)
             Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
-            if true
-                κ  = 0.5
-                ∇xp = deepvec2state(∇x).p
-                K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
-                lcholK = lchol(K)
-                zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
-                cc =  0.5
-                ptempᵒ =  ptemp + κ * (cc * ∇xp - ptemp)  + sqrt(κ) * zz   # mala
-                #ptempᵒ =  ptemp + κ * (cc * ∇xp )  + sqrt(κ) * zz   # mala
-                xs = NState(x0.q, ptempᵒ)
-                nsteps = 1_00
-                Δt = rand(Uniform(0.05, 0.1))
-                hh = Δt/nsteps
-                tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
-                Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
-                # forward simulate landmarks
-                Xtemp = initSamplePath(tsub,xs)
-                solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
-                ptempᵒ = - Xtemp.yy[end].p
-                xᵒState = NState(Xtemp.yy[end].q, x0.p)
-                xᵒ .= deepvec(xᵒState)
-                cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-                ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfg)
-                mask = deepvec(State(0*x0.q, 1 .- 0*x0.p))  # optimize positions and momenta
-                mask_id = (mask .> 0.1) # get indices tha
-                ptempᵒ =  ptempᵒ - κ * (cc * reinterpret(PointF,∇xᵒ[mask_id]) - ptempᵒ)  - sqrt(κ) * zz   # mala
-                #ptempᵒ =  ptempᵒ - κ * (cc * reinterpret(PointF,∇xᵒ[mask_id]) )  - sqrt(κ) * zz   # mala
+            # if iter < 20
+            #     κ  = 0.95
+            # else
+            #     κ = 0.1
+            # end
+            κ = 1.0
+            h = 1.0#sqrt(κ)
+            ∇xp = deepvec2state(∇x).p
+            K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+            lcholK = lchol(K)
+            zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
 
-                plotlandmarkpositions(Xtemp,Pdeterm,xs.q,xᵒState.q;db=2.0)
+            ptempᵒ = ptemp + κ * (∇xp - ptemp) + h * zz   # mala
+            xs = NState(x0.q, ptempᵒ)
+            nsteps = 1_00
+            Δt = rand(Uniform(0.005, 0.06))
+            hh = Δt/nsteps
+            tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
+            Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
+            # forward simulate landmarks
+            Xtemp = initSamplePath(tsub,xs)
+            solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
+            ptempᵒ = - Xtemp.yy[end].p
 
-#                lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
-                ll_incl0 = sum(llout)
-                ll_incl0ᵒ = sum(lloutᵒ)
-                accinit = ll_incl0ᵒ - ll_incl0
-            else # old stuff
+            xᵒState = NState(Xtemp.yy[end].q, x0.p)
+            xᵒ .= deepvec(xᵒState)
+            cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfg)
+            mask = deepvec(State(0*x0.q, 1 .- 0*x0.p))  # optimize positions and momenta
+            mask_id = (mask .> 0.1) # get indices tha
+            ∇xpᵒ = reinterpret(PointF,∇xᵒ[mask_id])
+            # ptempᵒ = ptempᵒ - κ * (∇xpᵒ-ptempᵒ) - hh * zz
 
-                h = 0.1
-                ρt = 0.9   #0.9
-                #pprime =  ρt * ptemp + sqrt(1-ρt^2) * randn(PointF,P.n)
-                K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
-                lcholK = lchol(K)
-                ptempᵒ =  ρt * ptemp + sqrt(1-ρt^2) * LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))   #reinterpret(PointF,rand(MvNormalCanon(deepmat(K))))
-                #ptempᵒ =  ptemp + h  * LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
-                # ptemp .=  ρt * ptemp + sqrt(1-ρt^2) * LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))   #reinterpret(PointF,rand(MvNormalCanon(deepmat(K))))
-                pprime = copy(ptempᵒ)
 
-                xs = NState(x0.q, pprime)           ##xs = deepvec2state(x)
-                #tsubend = rand(Uniform(0.01,0.15))  # 0.1
-                nsteps = 1_00
-                Δt = 0.07
-                hh = (1 + 1rand(Uniform(-0.5,0.5)))*Δt/nsteps
-                tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
-                Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
-                # forward simulate landmarks
-                Xtemp = initSamplePath(tsub,xs)
 
-                solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
-                plotlandmarkpositions(Xtemp,Pdeterm,xs.q,Xtemp.yy[end].q;db=2.0)
-                ptempᵒ = -Xtemp.yy[end].p  # make proposal reversible
-                ptempᵒ =  ρt * ptempᵒ + sqrt(1-ρt^2) * LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))   #reinterpret(PointF,rand(MvNormalCanon(deepmat(K))))
-                #ptempᵒ =  ptempᵒ + h  * LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
+#######################
+if false
+    # check that going backwards with negative shadow momentum returns to x0.q
+    Δt = 0.5; hh = Δt/nsteps;    tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
+    Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
+    Xtemp = initSamplePath(tsub,xs)
 
-                xpropState = NState(Xtemp.yy[end].q, x0.p)
+    hh = 1.0
+    zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
+    ptemp = ∇xp +  hh * zz   # mala
+    solve!(EulerMaruyama!(), Xtemp, NState(x0.q, ptemp), Wtemp, Pdeterm)
+    ptempᵒ = - Xtemp.yy[end].p
+    xᵒState = NState(Xtemp.yy[end].q, ptempᵒ)
 
-                #llout = ll# simguidedlm_llikelihood!(LeftRule(), Xvec, x0, Wvec, Qvec; skip=sk)
-                lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xpropState, Wvec, Qvec; skip=sk)
-                ll_incl0 = sum(llout)
-                ll_incl0ᵒ = sum(lloutᵒ)
+    solve!(EulerMaruyama!(), Xtemp, xᵒState, Wtemp, Pdeterm)
+    @show (x0.q .- Xtemp.yy[end].q)
+    @show (x0.p .- Xtemp.yy[end].p)
+end
+############################
 
-                accinit = ll_incl0ᵒ - ll_incl0 #+
-                    #(logϕ(x0.q, ptempᵒ, Pdeterm) - logϕ(x0.q, ptemp, Pdeterm))/(h^2)
-                #     logϕ(x0.q, ptempᵒ, Pdeterm) - logϕ(x0.q, ptemp, Pdeterm) +
-                #             (logϕ(x0.q, ptemp - ρt * pprime, Pdeterm) - logϕ(x0.q, pprime - ρt * ptemp, Pdeterm))/(1-ρt^2)
+            plotlandmarkpositions(Xtemp,Pdeterm,xs.q,xᵒState.q;db=2.0)
 
-    #                logpdf(MvNormal(ρt * deepvec(ptemp),(1-ρt^2)*I), pprime) + logpdf(MvNormal(ρt * deepvec(pprime),(1-ρt^2)*I), ptemp)
-                println("--------------------")
-                println("ll ", ll_incl0ᵒ - ll_incl0 )
-                println("phiterm ", logϕ(x0.q, ptempᵒ, Pdeterm) - logϕ(x0.q, ptemp, Pdeterm) )
-                #println("Qterm ", 0.5*(norm(pprime - ρt * ptemp)^2 - norm(ptemp - ρt * pprime)^2)/(1-ρt^2))
-                println("Qterm ", (logϕ(x0.q, ptemp - ρt * pprime, Pdeterm) - logϕ(x0.q, pprime - ρt * ptemp, Pdeterm))/(1-ρt^2))
-                println("--------------------")
-                xᵒ .= deepvec(xpropState)
-            end
-
+            lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
+            ll_incl0 = sum(llout)
+            ll_incl0ᵒ = sum(lloutᵒ)
+            accinit = ll_incl0ᵒ - ll_incl0 +
+                             (logϕ(x0.q, ptempᵒ-∇xpᵒ, P)  - logϕ(x0.q, ptemp-∇xp, P))/h^2
+#            #+ logϕ(ptempᵒ) - logϕ(ptemp)  # difference of target Hamiltonians
         end
 
         # compute acc prob
@@ -583,18 +561,21 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
             if updatekernel == :lmforward_pos
                 ptemp .= ptempᵒ
             end
+            accepted = 1
         else
             println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
             obj = ll_incl0
             ll .= llout
+            accepted = 0
         end
     end
-    obj
+    obj, (kernel = updatekernel, acc = accepted)
 end
+
 
 logϕ(p) = -0.5 * norm(p)^2
 logϕ(qfix, p, P) = -hamiltonian(NState(qfix,p),P)
-function hamiltonian(x::NState, P)
+function hamiltonian(x::NState, P::MarslandShardlow)
     s = 0.0
     for i in 1:P.n, j in 1:P.n
         s += dot(x.p[i], x.p[j])*kernel(x.q[i] - x.q[j], P)
@@ -755,6 +736,7 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     end
 
     ptemp = zeros(PointF,P.n)
+    initstate_accinfo = []
 
 #    for i in 1:ITER
     anim =    @animate for i in 1:ITER
@@ -772,21 +754,21 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         #updatekernel = sample([:mala_mom,:lmforward_pos])
 
 
-        obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                                                 sampler, Qvec, δ, acc, :mala_mom, ptemp)
+        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+                                                 sampler, Qvec, δ, acc, :mala_mom, ptemp, i)
+        push!(initstate_accinfo, accinfo)
 
-
-        obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                            sampler, Qvec, δ, acc, :lmforward_pos, ptemp)
-
+        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+                            sampler, Qvec, δ, acc, :lmforward_pos, ptemp, i)
+        push!(initstate_accinfo, accinfo)
 
         # obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-        #                                            sampler, Qvec, δ, acc, :mala_posandmom, ptemp)
+        #                                            sampler, Qvec, δ, acc, :mala_posandmom, ptemp, i)
 
 
         # update parameters
         P, acc= update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
-                    Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+                     Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
 
         println()
         # save some of the results
@@ -803,5 +785,5 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     end
     perc_acc = 100acc/(nshapes*ITER)
     println("Acceptance percentages (bridgepath - inital state momenta - parameters - initial state positions): ",perc_acc)
-    anim, Xsave, parsave, objvals, perc_acc
+    anim, Xsave, parsave, objvals, perc_acc, initstate_accinfo
 end

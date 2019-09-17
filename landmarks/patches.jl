@@ -302,7 +302,6 @@ end
     Forward simulate landmarks process specified by P on grid t.
     Returns driving motion W and landmarks process X
     t: time grid
-    dwiener: dimension of Wiener driving process
     x0: starting point
     P: landmarks specification
 """
@@ -316,5 +315,60 @@ function landmarksforward(t, x0::State{Pnt}, P) where Pnt
     W, X
 end
 
+# """
+#     Forward simulate landmarks process specified by P using Wiener process W.
+#     Writes into X
+#     x0: starting point
+#     P: landmarks specification
+#     W: driving Wiener process
+#     X: samplepath written into
+#
+#     Need that W.tt == X.tt
+# """
+# function landmarksforward!(x0::State{Pnt}, P, W, X) where Pnt
+#     N = length(W)
+#     N != length(X) && error("X and W differ in length.")
+#
+#     solve!(EulerMaruyama!(), X, x0, W, P)
+# end
+
+
 tc(t,T) = t.* (2 .-t/T)
 extractcomp(v,i) = map(x->x[i], v)
+
+"""
+    Adapting Radford Neal's R implementation of Hamiltonian Monte Carlo with
+    stepsize ϵ and L steps
+"""
+function HMC(U, ∇U, ϵ, L, current_q)
+    q = current_q
+    p = randn(length(q)) # independent standard normal variates
+    current_p = p
+    # Make a half step for momentum at the beginning
+    p = p - ϵ * ∇U(q) / 2
+    # Alternate full steps for position and momentum
+    for i in 1:L
+        # Make a full step for the position
+        q = q + ϵ * p
+        # Make a full step for the momentum, except at end of trajectory
+        if !(i==L)
+            p = p - ϵ * ∇U(q)
+        end
+    end
+    # Make a half step for momentum at the end.
+    p = p - ϵ * ∇U(q) / 2
+    # Negate momentum at end of trajectory to make the proposal symmetric
+    p = -p
+    # Evaluate potential and kinetic energies at start and end of trajectory
+    current_U = U(current_q)
+    current_K = sum(current_pˆ2) / 2
+    proposed_U = U(q)
+    proposed_K = sum(pˆ2) / 2
+    # Accept or reject the state at end of trajectory, returning either
+    # the position at the end of the trajectory or the initial position
+    if rand() < exp(current_U-proposed_U+current_K-proposed_K)
+        return q # accept
+    else
+        return current_q # reject
+    end
+end

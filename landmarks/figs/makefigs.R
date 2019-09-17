@@ -131,7 +131,7 @@ initshapes0
 
 
 
-pdf("initial-shapes.pdf",width=7,height=7)  
+pdf("initial-shapes.pdf",width=10,height=4)  
 initshapes0
 dev.off()
 

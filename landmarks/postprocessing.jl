@@ -18,12 +18,12 @@ landmarkid = repeat(1:P.n, inner=2d, outer=length(tt_)*nshapes)
 shapes = repeat(1:nshapes, inner=length(tt_)*2d*P.n)
 
 out = hcat(times,pqtype,landmarkid,shapes,iterates)
-head = "time " * "pqtype " * "landmarkid " * "shapes " * prod(map(x -> "iter"*string(x)*" ",subsamples))
-head = chop(head,tail=1) * "\n"
+headline = "time " * "pqtype " * "landmarkid " * "shapes " * prod(map(x -> "iter"*string(x)*" ",subsamples))
+headline = chop(headline,tail=1) * "\n"
 
 fn = outdir*"iterates.csv"
 f = open(fn,"w")
-write(f, head)
+write(f, headline)
 writedlm(f,out)
 close(f)
 
@@ -80,4 +80,4 @@ if isa(P,Landmarks)
 elseif isa(P,MarslandShardlow)
     nfsdf =DataFrame(locx=Int64[], locy=Int64[], nfstd=Int64[])
 end
-CSV.write(outdir*"noisefields.csv", nfsdf; delim=";")
+CSV.write(outdir*"noisefields.csv", nfsdf; delim

@@ -1,4 +1,3 @@
-# THIS SCRIPT REPLACES THE OLDER 'lmpar.jl'
 #] add StaticArrays Distributions DelimitedFiles DataFrames CSV RCall SparseArrays LowRankApprox Trajectories
 #] add ForwardDiff DiffResults TimerOutputs Plots RecursiveArrayTools NPZ
 using Bridge, StaticArrays, Distributions
@@ -37,12 +36,12 @@ include("generatedata.jl")
 include("plotting.jl")
 
 ################################# start settings #################################
-n = 10  # nr of landmarks
+n = 7  # nr of landmarks
 models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 100
+ITER = 40
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -60,7 +59,7 @@ prior_γ = Exponential(5.0)
 #------------------------------------------------------------------
 
 datasets =["forwardsimulated", "shifted","shiftedextreme","bear",
-            "heart","peach", "generatedstefan", "forwardsimulated_multiple"]
+            "heart","peach", "generatedstefan", "forwardsimulated_multiple", "cardiac"]
 dataset = datasets[8]
 println("dataset: ",dataset)
 
@@ -72,7 +71,7 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 0.7
+ρ = 0.5
 
 # step-size on initial state
 δ = [0.0, 0.25] # in this case first comp is not used
@@ -142,12 +141,6 @@ end
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
 
 start = time() # to compute elapsed time
-# anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
-#                                     sampler, dataset,
-#                                     xinit, ITER, subsamples,
-#                                     (δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-#                                       outdir,pb;makefig=true)
-
 if obs_atzero
     xobsTvec = [xobsT]
     xinit = State(xobs0, zeros(PointF,P.n))
@@ -161,7 +154,7 @@ else
     xinit = 1.2*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
 end
 
-anim, Xsave, parsave, objvals, perc_acc = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
+anim, Xsave, parsave, objvals, perc_acc, initstate_accinfo = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
          sampler, dataset, obs_atzero,
          xinit, ITER, subsamples,
         (ρ, δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
@@ -172,3 +165,10 @@ elapsed = time() - start
 println("Elapsed    time: ",round(elapsed/60;digits=2), " minutes")
 
 include("./postprocessing.jl")
+
+accdf = DataFrame(kernel = map(x->x.kernel, initstate_accinfo), acc = map(x->x.acc, initstate_accinfo), iter = 1:length(initstate_accinfo))
+@rput accdf
+R"""
+    accdf %>% mutate(kernel=as.character(kernel)) %>%
+        ggplot(aes(x=iter, y=acc, shape=kernel, colour=kernel)) + geom_point()
+"""

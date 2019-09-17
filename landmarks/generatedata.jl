@@ -122,11 +122,13 @@ function generatedata(dataset,P,t,σobs)
     if dataset=="forwardsimulated_multiple"
         nshapes = 5
         q0 = [PointF(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        p0 = [Point(0.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
+        #p0 = [Point(0.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [Point(4.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         xobsT = Vector{PointF}[]
         for k in 1:nshapes
-            a = P.a * exp(0.15*randn())
+            #a = P.a * exp(0.15*randn())
+            a = 5*P.a * exp(0.15*randn())
             c = P.c * exp(0.15*randn())
             γ = 0.6*getγ(P) * exp(0.01*randn())
             if model == :ms
@@ -136,18 +138,47 @@ function generatedata(dataset,P,t,σobs)
                 P = Landmarks(a, c, P.n, P.db, P.nfstd, nfs)
             end
             Wf, Xf = landmarksforward(t, x0, P)
-            xobs0 = []
+
             push!(xobsT, [Xf.yy[end].q[i] for i in 1:P.n ] + σobs * randn(PointF,n))
         end
+        xobs0 = []
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5)
         obs_atzero = false
     end
+    if dataset=="cardiac"
+        cardiac = npzread(joinpath(@__DIR__,"data-stefan","cardiac.npy"))  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
+        cardiac_shapes_left = cardiac[:,:,2]  # a guess; each row is a shape with 33 landmarks
+        nshapes = size(cardiac)[1]
+        xobsT = Vector{PointF}[]
+        n = div(size(cardiac)[2],2)
+        for k in 1:nshapes
+            push!(xobsT, [PointF(cardiac_shapes_left[k,2i-1],cardiac_shapes_left[k,2i]) for i in 1:n] )
+        end
+        xobs0 = []
+        pb = Lmplotbounds(-2.0,2.0,-1.5,1.5) # need to check
+        obs_atzero = false
+        x0 = "unknown"
+        Xf = 0
+        if model == :ms
+            P = MarslandShardlow(P.a,P.c, P.γ, P.λ, n)
+        elseif model== :ahs
+            P = Landmarks(P.a,P.c, n, P.db, P.nfstd, P.nfs)
+        end
 
+        xobsTdf = DataFrame(x=extractcomp(xobsT[1],1), y =extractcomp(xobsT[1],2))
+        @rput xobsTdf
+        R"""
+            library(tidyverse)
+            library(ggplot2)
+            xobsTdf %>% ggplot(aes(x=x,y=y)) + geom_point() + geom_path()
+        """
+
+    end
     x0, xobs0, xobsT, Xf, P, pb, obs_atzero
 end
 
 if false
     cc = npzread(joinpath(@__DIR__,"data-stefan","cc.npy")) # corpus callosum data
-    cardiac = npzread(joinpath(@__DIR__,"data-stefan","cardiac.npy"))  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
 
+                    # there are 14 cardiac images, in https://arxiv.org/pdf/1705.10943.pdf 17 landmarks are chosen
 end
