@@ -80,4 +80,4 @@ if isa(P,Landmarks)
 elseif isa(P,MarslandShardlow)
     nfsdf =DataFrame(locx=Int64[], locy=Int64[], nfstd=Int64[])
 end
-CSV.write(outdir*"noisefields.csv", nfsdf; delim
+CSV.write(outdir*"noisefields.csv", nfsdf; delim=";")

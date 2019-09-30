@@ -94,9 +94,6 @@ function construct_guidedproposal!(tt_, guidrec, (LT,ΣT,μT), (L0, Σ0), (xobs0
     GuidedProposal!(P, Paux, tt_, guidrec, xobs0, xobsT)
 end
 
-
-
-######################
 ##########################
 struct Lm  end
 
@@ -205,7 +202,6 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposal!; 
     Pnt = eltype(x0)
     tt =  Xᵒ.tt
     Xᵒ.yy[1] .= deepvalue(x0)
-    x = copy(x0)
     som::deepeltype(x0)  = 0.
 
     # initialise objects to write into
@@ -213,6 +209,8 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposal!; 
     dwiener = dimwiener(Q.target)
     srout = zeros(Pnt, dwiener)
     strout = zeros(Pnt, dwiener)
+
+    x = copy(x0)
 
     rout = copy(x0)
     bout = copy(x0)
@@ -231,6 +229,7 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposal!; 
         σt!(tt[i], x, rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x) for target(Q)
         Bridge.σ!(tt[i], x, srout*dt + W.yy[i+1] - W.yy[i], wout, target(Q)) # σ(t,x) (σ(t,x)' * tilder(t,x) + dW(t))
 
+
         # likelihood terms
         if i<=length(tt)-1-skip
             _b!((i,tt[i]), x, btout, auxiliary(Q))
@@ -243,7 +242,7 @@ function simguidedlm_llikelihood!(::LeftRule,  Xᵒ, x0, W, Q::GuidedProposal!; 
                 som += 0.5*(dot(At,Q.guidrec.Ht[i]) - dot(A,Q.guidrec.Ht[i])) * dt
             end
         end
-        x.= x + dt * bout +  wout
+        x .= x + dt * bout + wout
         Xᵒ.yy[i+1] .= deepvalue(x)
     end
     if ll0
@@ -263,67 +262,16 @@ end
     simguidedlm_llikelihood!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 """
 function simguidedlm_llikelihood!(::LeftRule,  Xvecᵒ, x0, Wvec, Qvec::Vector; skip = 0, ll0 = true) # rather would like to dispatch on type and remove '_mv' from function name
-    nshapes = length(Xvecᵒ)
-    Pnt = eltype(x0)
-    tt =  Xvecᵒ[1].tt
+    nshapes = length(Qvec)
+    soms  = zeros(deepeltype(x0), nshapes)
     for k in 1:nshapes
-        Xvecᵒ[k].yy[1] .= deepvalue(x0)
+        soms[k] = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ[k],x0,Wvec[k],Qvec[k] ;skip=skip,ll0=ll0)
     end
-    x = copy(x0)
-    som::deepeltype(x0)  = 0.
-    somvec = [copy(som) for i in 1:nshapes]
-
-    # initialise objects to write into
-    # srout and strout are vectors of Points
-    dwiener = dimwiener(Qvec[1].target)
-    srout = zeros(Pnt, dwiener)
-    strout = zeros(Pnt, dwiener)
-
-    rout = copy(x0)
-    bout = copy(x0)
-    btout = copy(x0)
-    wout = copy(x0)
-
-    for k in 1:nshapes
-        Q = Qvec[k]
-        if !constdiff(Q)
-            At = Bridge.a((1,0), x0, auxiliary(Q))  # auxtimehomogeneous switch
-            A = zeros(Unc{deepeltype(x0)}, 2Q.target.n,2Q.target.n)
-        end
-
-        for i in 1:length(tt)-1
-            dt = tt[i+1]-tt[i]
-            b!(tt[i], x, bout, target(Q)) # b(t,x)
-            _r!((i,tt[i]), x, rout, Q) # tilder(t,x)
-            σt!(tt[i], x, rout, srout, target(Q))      #  σ(t,x)' * tilder(t,x) for target(Q)
-            Bridge.σ!(tt[i], x, srout*dt + Wvec[k].yy[i+1] - Wvec[k].yy[i], wout, target(Q)) # σ(t,x) (σ(t,x)' * tilder(t,x) + dW(t))
-
-            # likelihood terms
-            if i<=length(tt)-1-skip
-                _b!((i,tt[i]), x, btout, auxiliary(Q))
-                som += dot(bout-btout, rout) * dt
-                if !constdiff(Q)
-                    σt!(tt[i], x, rout, strout, auxiliary(Q))  #  tildeσ(t,x)' * tilder(t,x) for auxiliary(Q)
-                    som += 0.5*Bridge.inner(srout) * dt    # |σ(t,x)' * tilder(t,x)|^2
-                    som -= 0.5*Bridge.inner(strout) * dt   # |tildeσ(t,x)' * tilder(t,x)|^2
-                    Bridge.a!((i,tt[i]), x, A, target(Q))
-                    som += 0.5*(dot(At,Q.guidrec.Ht[i]) - dot(A,Q.guidrec.Ht[i])) * dt
-                end
-            end
-            x.= x + dt * bout +  wout
-            Xvecᵒ[k].yy[i+1] .= deepvalue(x)
-        end
-        if ll0
-            logρ0 = lρtilde(x0,Q)
-        else
-            logρ0 = 0.0 # don't compute
-        end
-        copyto!(Xvecᵒ[k].yy[end], Bridge.endpoint(Xvecᵒ[k].yy[end],Q))
-        somvec[k] = som + logρ0
-        som .* 0
-    end
-    somvec
+    soms
 end
+
+
+
 
 # convert dual to float, while retaining float if type is float
 deepvalue(x::Float64) = x
@@ -340,25 +288,37 @@ end
     update_path!(Xvec,Xvecᵒ,Wvec,Wᵒ,Wnew,ll,x, Qvec, ρ, acc)
 """
 function update_path!(Xvec,Xvecᵒ,Wvec,Wᵒ,Wnew,ll,x, Qvec, ρ, acc)
+
     nshapes = length(Xvec)
     x0 = deepvec2state(x)
+
+
+    nn = length(Xvec[1].yy)
+    Xᵒ = initSamplePath(Xvec[1].tt, x0)
+
     # From current state (x,W) with loglikelihood ll, update to (x, Wᵒ)
     for k in 1:nshapes
         sample!(Wnew, Wiener{Vector{PointF}}())
-        Wᵒ.yy .= ρ * Wvec[k].yy + sqrt(1-ρ^2) * Wnew.yy
-        llᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ[k], x0, Wᵒ, Qvec[k];skip=sk)
-        if log(rand()) <= (llᵒ - ll[k])
-            for i in eachindex(Xvec[k].yy)
-                Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
+        for i in 1:nn
+            Wᵒ.yy[i] .= ρ * Wvec[k].yy[i] + sqrt(1-ρ^2) * Wnew.yy[i]
+        end
+        llᵒ_ = simguidedlm_llikelihood!(LeftRule(), Xᵒ, x0, Wᵒ, Qvec[k];skip=sk)
+
+        println(norm(Xᵒ.yy-Xvec[k].yy))
+        diff_ll = llᵒ_ - ll[k]
+        if log(rand()) <= diff_ll
+            for i in 1:nn
+                Xvec[k].yy[i] .= Xᵒ.yy[i]
                 Wvec[k].yy[i] .= Wᵒ.yy[i]
             end
-            println("update innovation: ll $ll[k] $llᵒ, diff_ll: ",round(llᵒ-ll[k];digits=3),"  accepted")
-            ll[k] = llᵒ
+            println("update innovation. diff_ll: ",round(diff_ll;digits=6),"  accepted")
+            ll[k] = llᵒ_
             acc[1] +=1
         else
-            println("update innovation: ll[k] $ll $llᵒ, diff_ll: ",round(llᵒ-ll[k];digits=3),"  rejected")
+            println("update innovation. diff_ll: ",round(diff_ll;digits=6),"  rejected")
         end
     end
+
     nothing
 end
 
@@ -381,211 +341,13 @@ end
 slogρ!(Q, W, X, llout) = (x) -> slogρ!(x, Q, W,X,llout)
 
 
-"""
-    update initial state
 
-    x , W, X, ll, obj, acc = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                    sampler, Qvec, δ, acc,updatekernel)
-
-    #    updatekernel can be :mala_pos, :mala_mom, :mala_posandmom, :lmforward_pos
-
-"""
-function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                sampler, Qvec, δ, acc,updatekernel,ptemp, iter)
-    nshapes = length(Xvec)
-    n = Qvec[1].target.n
-    x0 = deepvec2state(x)
-    if sampler in [:sgd, :sgld] # ADJUST LATER
-        sample!(W, Wiener{Vector{StateW}}())
-        cfg = ForwardDiff.GradientConfig(slogρ(Q, W, X), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        ForwardDiff.gradient!(∇x, slogρ(Q, W, X),x,cfg) # X gets overwritten but does not change
-        if sampler==:sgd
-            x .+= δ * mask .* ∇x
-        end
-        if sampler==:sgld
-            x .+= .5*δ*mask.*∇x + sqrt(δ)*mask.*randn(2d*Q.target.n)
-        end
-        obj = simguidedlm_llikelihood!(LeftRule(), X, deepvec2state(x), W, Q; skip=sk)
-        println("obj ", obj)
-    end
-    if sampler==:mcmc
-        accinit = ll_incl0 = ll_incl0ᵒ = 0.0 # define because of scoping rules
-
-                #b_grad = 1000.0
-                #Dx = b_grad * ∇x / max(b_grad,norm(∇x))
-                #xᵒ .= x .+ .5 * δvec .* mask.* Dx .+ sqrt.(δvec) .* mask .* randn(length(x))
-
-        if updatekernel==:mala_pos
-            cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
-            ll_incl0 = sum(llout)
-            mask = deepvec(State(1 .- 0*x0.q,  0*x0.p))  # optimize positions and momenta
-            mask_id = (mask .> 0.1) # get indices that correspond to momenta
-            xᵒ .= x .+ .5 * δ[1] * mask.* ∇x .+ sqrt(δ[1]) .* mask .* randn(length(x))                              # should be ".=" or just "="?
-            cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
-            ll_incl0ᵒ = sum(lloutᵒ)
-            ndistr = MvNormal(d * n,sqrt(δ[1]))
-            accinit = ll_incl0ᵒ - ll_incl0 -
-                      -logpdf(ndistr,(xᵒ - x - .5*δ[1] .* mask.* ∇x)[mask_id]) +
-                     logpdf(ndistr,(x - xᵒ - .5*δ[1] .* mask.* ∇xᵒ)[mask_id])
-        elseif updatekernel==:mala_mom
-            cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
-            ll_incl0 = sum(llout)
-            mask = deepvec(State(0*x0.q, 1 .- 0*x0.p))  # optimize positions and momenta
-            mask_id = (mask .> 0.1) # get indices that correspond to momenta
-            xᵒ .= x .+ .5 * δ[2] * mask.* ∇x .+ sqrt(δ[2]) .* mask .* randn(length(x))                              # should be ".=" or just "="?
-            cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
-            ll_incl0ᵒ = sum(lloutᵒ)
-            ndistr = MvNormal(d * n,sqrt(δ[2]))
-            accinit = ll_incl0ᵒ - ll_incl0 -
-                      -logpdf(ndistr,(xᵒ - x - .5*δ[2] .* mask.* ∇x)[mask_id]) +
-                     logpdf(ndistr,(x - xᵒ - .5*δ[2] .* mask.* ∇xᵒ)[mask_id])
-        elseif updatekernel==:mala_posandmom
-            δvec = repeat([fill(δ[1],d);fill(δ[2],d)],n)
-            cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
-            ll_incl0 = sum(llout)
-            xᵒ .= x .+ .5 .* δvec .* ∇x .+ sqrt.(δvec) .* randn(length(x))                              # should be ".=" or just "="?
-            cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
-            ll_incl0ᵒ = sum(lloutᵒ)
-            dn = length(δvec)
-            ndistr = MvNormal(diagm(0=>δvec))
-            accinit = ll_incl0ᵒ - ll_incl0 -
-                       -logpdf(ndistr,(xᵒ - x - .5 * δvec .* ∇x)) +
-                      logpdf(ndistr,(x - xᵒ - .5 * δvec .* ∇xᵒ))
-        # elseif updatekernel==:amala
-        #     nx = length(x)
-        #     ϵ0 = 0.01
-        #     δamala  = 0.001#0.01
-        #     b_grad = 1.0
-        #     Dx = b_grad * ∇x / max(b_grad,norm(∇x))
-        #     Ndistr = MvNormal(δamala * ( Diagonal(fill(ϵ0,nx)) .+ Bridge.outer(Dx)))
-        #     N = rand(Ndistr)
-        #     xᵒ .= x .+ δamala * Dx .+ N
-        #     cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-        #     ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
-        #     ll_incl0ᵒ = sum(lloutᵒ)
-        #     Dxᵒ = b_grad * ∇xᵒ / max(b_grad,norm(∇xᵒ))
-        #     Ndistrᵒ = MvNormal(δamala * ( Diagonal(fill(ϵ0,nx)) .+ Bridge.outer(Dxᵒ)))
-        #
-        #      accinit = ll_incl0ᵒ - ll_incl0 - logpdf(Ndistr,N) +
-        #              logpdf(Ndistrᵒ,x - xᵒ - δamala * Dxᵒ)
-        elseif updatekernel==:lmforward_pos
-            P = Qvec[1].target
-            Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
-            # if iter < 20
-            #     κ  = 0.95
-            # else
-            #     κ = 0.1
-            # end
-            κ = 1.0
-            h = 1.0#sqrt(κ)
-            ∇xp = deepvec2state(∇x).p
-            K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
-            lcholK = lchol(K)
-            zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
-
-            ptempᵒ = ptemp + κ * (∇xp - ptemp) + h * zz   # mala
-            xs = NState(x0.q, ptempᵒ)
-            nsteps = 1_00
-            Δt = rand(Uniform(0.005, 0.06))
-            hh = Δt/nsteps
-            tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
-            Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
-            # forward simulate landmarks
-            Xtemp = initSamplePath(tsub,xs)
-            solve!(EulerMaruyama!(), Xtemp, xs, Wtemp, Pdeterm)
-            ptempᵒ = - Xtemp.yy[end].p
-
-            xᵒState = NState(Xtemp.yy[end].q, x0.p)
-            xᵒ .= deepvec(xᵒState)
-            cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
-            ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfg)
-            mask = deepvec(State(0*x0.q, 1 .- 0*x0.p))  # optimize positions and momenta
-            mask_id = (mask .> 0.1) # get indices tha
-            ∇xpᵒ = reinterpret(PointF,∇xᵒ[mask_id])
-            # ptempᵒ = ptempᵒ - κ * (∇xpᵒ-ptempᵒ) - hh * zz
-
-
-
-#######################
-if false
-    # check that going backwards with negative shadow momentum returns to x0.q
-    Δt = 0.5; hh = Δt/nsteps;    tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
-    Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
-    Xtemp = initSamplePath(tsub,xs)
-
-    hh = 1.0
-    zz = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))
-    ptemp = ∇xp +  hh * zz   # mala
-    solve!(EulerMaruyama!(), Xtemp, NState(x0.q, ptemp), Wtemp, Pdeterm)
-    ptempᵒ = - Xtemp.yy[end].p
-    xᵒState = NState(Xtemp.yy[end].q, ptempᵒ)
-
-    solve!(EulerMaruyama!(), Xtemp, xᵒState, Wtemp, Pdeterm)
-    @show (x0.q .- Xtemp.yy[end].q)
-    @show (x0.p .- Xtemp.yy[end].p)
-end
-############################
-
-            plotlandmarkpositions(Xtemp,Pdeterm,xs.q,xᵒState.q;db=2.0)
-
-            lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
-            ll_incl0 = sum(llout)
-            ll_incl0ᵒ = sum(lloutᵒ)
-            accinit = ll_incl0ᵒ - ll_incl0 +
-                             (logϕ(x0.q, ptempᵒ-∇xpᵒ, P)  - logϕ(x0.q, ptemp-∇xp, P))/h^2
-#            #+ logϕ(ptempᵒ) - logϕ(ptemp)  # difference of target Hamiltonians
-        end
-
-        # compute acc prob
-        if log(rand()) <= accinit
-            x .= xᵒ
-            for k in 1:nshapes
-                for i in eachindex(Xvec[k].yy)
-                    Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
-                end
-            end
-            println("update initial state ", updatekernel, " accinit: ", accinit, "  accepted")
-            if updatekernel in [:mala_mom, :mala_posandmom]
-                acc[2] += 1
-            elseif updatekernel in [:mala_pos, :mala_posandmom, :lmforward_pos]
-                acc[4] += 1
-            end
-            obj = ll_incl0ᵒ
-            ll .= lloutᵒ
-            if updatekernel == :lmforward_pos
-                ptemp .= ptempᵒ
-            end
-            accepted = 1
-        else
-            println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
-            obj = ll_incl0
-            ll .= llout
-            accepted = 0
-        end
-    end
-    obj, (kernel = updatekernel, acc = accepted)
-end
-
-
-logϕ(p) = -0.5 * norm(p)^2
-logϕ(qfix, p, P) = -hamiltonian(NState(qfix,p),P)
-function hamiltonian(x::NState, P::MarslandShardlow)
-    s = 0.0
-    for i in 1:P.n, j in 1:P.n
-        s += dot(x.p[i], x.p[j])*kernel(x.q[i] - x.q[j], P)
-    end
-    0.5 * s
-end
-
-function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
+function update_pars!(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
             Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+    println("startf ",ll)
+
     nshapes = length(Xvec)
+
     aᵒ = P.a * exp(σ_a * randn())
     cᵒ = P.c * exp(σ_c * randn())
     γᵒ = getγ(P) * exp(σ_γ * randn())
@@ -596,8 +358,10 @@ function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
         Pᵒ = Landmarks(aᵒ,cᵒ,P.n,P.db,P.nfstd,nfs)
     end
     Pauxvecᵒ = [auxiliary(Pᵒ,Qvec[k].aux.xT) for k in 1:nshapes] # auxiliary process for each shape
-    Qvecᵒ .= [construct_guidedproposal!(tt_, guidrecvecᵒ[k], (LT,ΣT,μT), (L0, Σ0),
-        (Qvec[k].xobs0, Qvec[k].xobsT), Pᵒ, Pauxvecᵒ[k]) for k in 1:nshapes]
+    for k in 1:nshapes
+        Qvecᵒ[k] = construct_guidedproposal!(tt_, guidrecvecᵒ[k], (LT,ΣT,μT), (L0, Σ0),
+                                (Qvec[k].xobs0, Qvec[k].xobsT), Pᵒ, Pauxvecᵒ[k])
+    end
     llᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, deepvec2state(x), Wvec, Qvecᵒ; skip=sk)
     A = logpdf(prior_a,aᵒ) - logpdf(prior_a,P.a) +
             logpdf(prior_c,cᵒ) - logpdf(prior_c,P.c) +
@@ -610,15 +374,29 @@ function update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
     print("logaccept for parameter update ", round(A;digits=4))
     if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
         print("  accepted")
-        P = Pᵒ
-        Xvec .= Xvecᵒ
-        Qvec .= Qvecᵒ
-        ll .= llᵒ
         acc[3] +=1
+        println("endf ",llᵒ)
+        return( (Xvecᵒ,Qvecᵒ,Wvec,Pᵒ,llᵒ,acc))
+        # P = Pᵒ
+        # for k in 1:nshapes
+        #     for i in 1:length(Xvec[1].yy)
+        #         Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
+        #     end
+        #     Qvec[k] .= Qvecᵒ[k]
+        # end
+#        Xvec .= Xvecᵒ
+#        Qvec .= Qvecᵒ
+        #ll .= llᵒ
+        # ll, llᵒ = llᵒ,ll
+        # P, Pᵒ = Pᵒ, P
+        # Xvec, Xvecᵒ = Xvecᵒ, Xvec
+        # Qvec, Qvecᵒ = Qvecᵒ, Qvec
+
     else
         print("  rejected")
+        println("endf ",ll)
+        return( (Xvec,Qvec,Wvec,P,ll,acc))
     end
-    P, acc
 end
 
 
@@ -701,10 +479,6 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     end
     ll = simguidedlm_llikelihood!(LeftRule(), Xvec, xinit, Wvec, Qvec; skip=sk)
 
-
-    Qvecᵒ = [construct_guidedproposal!(tt_, guidrecvec[i], (LT,ΣT,μT), (L0, Σ0),
-            (xobs0, xobsTvec[i]), P, Pauxvec[i]) for i in 1:nshapes]
-
     # saving objects
     objvals = Float64[]  # keep track of (sgd approximation of the) loglikelihood
     acc = zeros(4) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for updates on initial momenta, 3rd parameter updates, 4th update on initial positions)
@@ -716,15 +490,16 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     push!(parsave,[P.a, P.c, getγ(P)])
 
     # memory allocations
-    Xvecᵒ = [initSamplePath(tt_, xinit)  for i in 1:nshapes]
+    Xvecᵒ = [initSamplePath(tt_, xinit)  for k in 1:nshapes]
+    Qvecᵒ = deepcopy(Qvec)
     Wᵒ = initSamplePath(tt_,  zeros(StateW, dwiener))
     Wnew = initSamplePath(tt_,  zeros(StateW, dwiener))
     x = deepvec(xinit)
     xᵒ = deepcopy(x)
     ∇x = deepcopy(x)
     ∇xᵒ = deepcopy(x)
-    llout = copy(ll)
-    lloutᵒ = copy(ll)
+    llout = deepcopy(ll)
+    lloutᵒ = deepcopy(ll)
 
     if makefig
         #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
@@ -745,35 +520,37 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         end
         println("iteration $i")
 
+
         # updates paths
         update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, Qvec, ρ, acc)
 
-
-        # update initial state
-        #    updatekernel can be :mala_pos, :mala_mom, :mala_posandmom, :lmforward_pos
         #updatekernel = sample([:mala_mom,:lmforward_pos])
 
+        # obj, accinfo, x, ∇x, Xvec, ll = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+        #                                           sampler, Qvec, δ, acc, :mala_mom, ptemp, i)
+        # push!(initstate_accinfo, accinfo)
 
-        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                                                 sampler, Qvec, δ, acc, :mala_mom, ptemp, i)
-        push!(initstate_accinfo, accinfo)
-
-        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                            sampler, Qvec, δ, acc, :lmforward_pos, ptemp, i)
-        push!(initstate_accinfo, accinfo)
-
-        # obj = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-        #                                            sampler, Qvec, δ, acc, :mala_posandmom, ptemp, i)
+        # obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+        #                     sampler, Qvec, δ, acc, :lmforward, ptemp, i)
+        # push!(initstate_accinfo, accinfo)
 
 
+
+          # obj, accinfo, x, ∇x, Xvec, ll = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+          #                                             sampler, Qvec, δ, acc, :mala_posandmom, ptemp, i)
+         #
+         # obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+         #                                     sampler, Qvec, δ, acc, :lmforward_postest, ptemp, i)
+
+obj=0
+accinfo=""
         # update parameters
-        P, acc= update_pars(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
-                     Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+         (Xvec,Qvec,Wvec,P,ll,acc) = update_pars!(P, tt_, mT, guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
+                       Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
 
         println()
         # save some of the results
         if i in subsamples
-            #push!(Xsave, convert_samplepath(Xvec[1]))
             push!(Xsave, convert_samplepath(Xvec))
             push!(parsave, [P.a, P.c, getγ(P)])
             push!(objvals, obj)

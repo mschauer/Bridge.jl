@@ -34,14 +34,15 @@ include("lmguiding_mv.jl")
 include("plotlandmarks.jl")  # keep, but presently unused as all is transferred to plotting in R
 include("generatedata.jl")
 include("plotting.jl")
+include("update_initialstate.jl")
 
 ################################# start settings #################################
-n = 7  # nr of landmarks
+n = 4  # nr of landmarks
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 println("model: ",model)
 
-ITER = 40
+ITER = 50
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -71,10 +72,8 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 0.5
+ρ = 1.0# 0.9# 1.0#0.9
 
-# step-size on initial state
-δ = [0.0, 0.25] # in this case first comp is not used
 
 # proposal for θ = (a, c, γ)
 σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
@@ -118,11 +117,15 @@ if (model == :ahs) & showplotσq
 end
 
 x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σobs)
-if !obs_atzero
-    δ = [0.0025, 0.001]
+
+# step-size on initial state
+if obs_atzero
+    δ = [0.0, 0.25] # in this case first comp is not used
+else
+    δ = [0.00025, 0.1]
 end
 
-δ = 0.1*δ
+
 
 if startPtrue
     P = Ptrue
@@ -139,19 +142,20 @@ else
 end
 
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
+#mT = randn(PointF,P.n)
 
 start = time() # to compute elapsed time
 if obs_atzero
     xobsTvec = [xobsT]
     xinit = State(xobs0, zeros(PointF,P.n))
 else
-    xobsTvec = xobsT #xobsT, xobsT + 0.1*rand(PointF,n)] # just a simple example
+    xobsTvec = xobsT
     xinit = 1.2*State(xobsTvec[1], zeros(PointF,P.n))
     θ = π/6
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-    xinit = 0.8*State(xobsTvec[1], zeros(PointF,P.n))
-    #xinit = State(0.8*xobsTvec[1], x0.p)
-    xinit = 1.2*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
+    #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
+    xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
+    #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], randn(PointF,P.n))
 end
 
 anim, Xsave, parsave, objvals, perc_acc, initstate_accinfo = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
@@ -161,14 +165,17 @@ anim, Xsave, parsave, objvals, perc_acc, initstate_accinfo = lm_mcmc(tt_, (xobs0
         outdir, pb; updatepars = true, makefig=true, showmomenta=false)
 
 elapsed = time() - start
-#println("Average acceptance percentage: ",perc_acc,"\n")
+
 println("Elapsed    time: ",round(elapsed/60;digits=2), " minutes")
 
 include("./postprocessing.jl")
-
+#
 accdf = DataFrame(kernel = map(x->x.kernel, initstate_accinfo), acc = map(x->x.acc, initstate_accinfo), iter = 1:length(initstate_accinfo))
 @rput accdf
 R"""
-    accdf %>% mutate(kernel=as.character(kernel)) %>%
+library(tidyverse)
+library(ggplot2)
+p <-    accdf %>% mutate(kernel=as.character(kernel)) %>%
         ggplot(aes(x=iter, y=acc, shape=kernel, colour=kernel)) + geom_point()
+ggsave("acceptance.pdf",p)
 """

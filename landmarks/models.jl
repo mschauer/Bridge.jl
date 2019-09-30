@@ -185,7 +185,8 @@ end
     compute σ(t,x) * dm and write to out
 """
 function Bridge.σ!(t, x, dm, out, P::Union{MarslandShardlow, MarslandShardlowAux})
-    zero!(out.q)
+    #zero!(out.q)
+    zero!(out)
     out.p .= dm*P.γ
     out
 end
@@ -454,8 +455,9 @@ end
     compute σ(t,x)' y, where y::State
     the result is a vector of points that is written to out
 """
-function σt!(t, x_, y::State{Pnt}, out, P::Union{MarslandShardlow}) where Pnt
-    out.= P.γ * y.p
+function σt!(t, x_, y::State{Pnt}, out, P::MarslandShardlow) where Pnt
+    zero!(out)
+    out .= P.γ * y.p
     out
 end
 
