@@ -37,9 +37,9 @@ include("plotting.jl")
 include("update_initialstate.jl")
 
 ################################# start settings #################################
-n = 4  # nr of landmarks
+n = 7  # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println("model: ",model)
 
 ITER = 50
@@ -72,13 +72,13 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 1.0# 0.9# 1.0#0.9
+ρ = 0.8#.8# 0.9# 1.0#0.9
 
 
 # proposal for θ = (a, c, γ)
-σ_a = 0.1  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
-σ_c = 0.1  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
-σ_γ = 0.1  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
+σ_a = 0.05  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
+σ_c = 0.05  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
+σ_γ = 0.05  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
 
 #------------------------------------------------------------------
 σobs = 0.05   # noise on observations
@@ -122,7 +122,7 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 if obs_atzero
     δ = [0.0, 0.25] # in this case first comp is not used
 else
-    δ = [0.00025, 0.1]
+    δ = [0.0005, 0.02]
 end
 
 

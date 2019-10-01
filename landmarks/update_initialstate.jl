@@ -162,7 +162,7 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
         elseif updatekernel==:lmforward # simply forward simulate the deterministic system for a while, not using any gradient information
             Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
             nsteps = 1_00
-            Δt = rand(Uniform(0.005, 0.025))
+            Δt = rand(Uniform(0.005, 0.01))
             hh = Δt/nsteps
             tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
             Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
@@ -213,28 +213,16 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
         end
         # compute acc prob
         if log(rand()) <= accinit
-            # x .= xᵒ
-            # ∇x .= ∇xᵒ
-            # for k in 1:nshapes
-            #     for i in eachindex(Xvec[k].yy)
-            #         Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
-            #     end
-            # end
             obj = ll_incl0ᵒ
-            # ll .= lloutᵒ
-            x, xᵒ = xᵒ, x
-            ∇x, ∇xᵒ = ∇xᵒ, ∇x
-            Xvecᵒ, Xvec = Xvec, Xvecᵒ
-            ll .= llout
+            boolacc = true
+            llout .= lloutᵒ
+#            println("check within update_initialstate! ", ll_incl0ᵒ-sum(lloutᵒ))
             println("update initial state ", updatekernel, " accinit: ", accinit, "  accepted")
-
-
-            # if updatekernel in [:mala_mom, :mala_posandmom]
-            #     acc[2] += 1
-            # elseif updatekernel in [:mala_pos, :mala_posandmom, :lmforward_pos]
-            #     acc[4] += 1
-            # end
-
+            for k in 1:nshapes
+                for i in 1:length(Xvec[1].yy)
+                    Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
+                end
+            end
             if updatekernel == :lmforward_pos
                 #ptemp .= ptempᵒ
             end
@@ -242,11 +230,13 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
         else
             println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
             obj = ll_incl0
-            ll .= llout
+
+        #    println("check within update_initialstate! ", ll_incl0-sum(llout))
+            boolacc = false
             accepted = 0
         end
     end
-    obj, (kernel = updatekernel, acc = accepted), x, ∇x, Xvec, ll
+    boolacc, obj, (kernel = updatekernel, acc = accepted), xᵒ, ∇xᵒ, llout
 end
 
 
@@ -259,4 +249,3 @@ function hamiltonian(x::NState, P::MarslandShardlow)
     end
     0.5 * s
 end
-8888
