@@ -321,8 +321,7 @@ function update_path!(Xvec,Xᵒ,Wvec,Wᵒ,Wnew,ll,x, Qvec, ρ, acc)
             println("update innovation. diff_ll: ",round(diff_ll;digits=6),"  rejected")
         end
     end
-    Xvec, Wvec, ll
-    #nothing
+    nothing
 end
 
 
@@ -378,7 +377,7 @@ function update_pars!(guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
     if log(rand()) <= A  # assume symmetric proposal and uniform prior, adjust later
         println("logaccept for parameter update ", round(A;digits=4), "  accepted")
         acc[3] +=1
-        #println("endf ",llᵒ, norm(Xvecᵒ[2].yy))
+        ll .= llᵒ
         println()
         #return( (Xvecᵒ,Qvecᵒ,Wvec,Pᵒ,llᵒ,acc, simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, deepvec2state(x), Wvec, Qvecᵒ; skip=sk)))
         # P = Pᵒ
@@ -394,7 +393,7 @@ function update_pars!(guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
         boolacc = false
         #return( (Xvec,Qvec,Wvec,P,ll,acc,simguidedlm_llikelihood!(LeftRule(), Xvec, deepvec2state(x), Wvec, Qvec; skip=sk)))
     end
-    boolacc, Qvecᵒ, llᵒ
+    boolacc, Qvecᵒ, (kernel = "parameterupdate", acc = boolacc*1)
 end
 
 
@@ -462,7 +461,6 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     end
     μT = zeros(PointF,P.n)
 
-
     # now the new stuff:
     nshapes = length(xobsTvec)
     guidrecvec = [init_guidrec(tt_, LT, ΣT, μT, L0, Σ0, xobs0) for i in 1:nshapes]  # memory allocation for each shape
@@ -483,7 +481,6 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     acc = zeros(4) # keep track of mcmc accept probs (first comp is for CN update; 2nd component for updates on initial momenta, 3rd parameter updates, 4th update on initial positions)
     Xsave = typeof(zeros(length(tt_) * P.n * 2 * d * nshapes))[]
     parsave = Vector{Float64}[]
-    #push!(Xsave, convert_samplepath(Xvec[1]))
     push!(Xsave, convert_samplepath(Xvec))
     push!(objvals, sum(ll))
     push!(parsave,[P.a, P.c, getγ(P)])
@@ -499,8 +496,8 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
     xᵒ = deepcopy(x)
     ∇x = deepcopy(x)
     ∇xᵒ = deepcopy(x)
-    llout = deepcopy(ll)
-    lloutᵒ = deepcopy(ll)
+    # llout = deepcopy(ll)
+    # lloutᵒ = deepcopy(ll)
 
     if makefig
         #plotlandmarkpositions(X,P,xobs0,xobsT;db=4)
@@ -523,36 +520,24 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         println("iteration $i")
 
         # updates paths
-        Xvec, Wvec, ll = update_path!(Xvec, Xᵒ, Wvec, Wᵒ, Wnew, ll, x, Qvec, ρ, acc)
+        update_path!(Xvec, Xᵒ, Wvec, Wᵒ, Wnew, ll, x, Qvec, ρ, acc)
 
         # update initial state
-        boolacc, obj, accinfo, xacc, ∇xacc, llout = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                                                      sampler, Qvec, δ, acc, :mala_mom, ptemp, i)
+        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Qvec, δ, acc, :mala_mom, ptemp, i)
         push!(initstate_accinfo, accinfo)
-        ll .= llout
-        if boolacc
-            x .= xacc
-            ∇x .= ∇xacc
-        end
 
-        boolacc, obj, accinfo, xacc, ∇xacc, llacc = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
-                                                      sampler, Qvec, δ, acc, :lmforward, ptemp, i)
+        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Qvec, δ, acc, :lmforward_pos, ptemp, i)
         push!(initstate_accinfo, accinfo)
-        ll .= llacc
-        if boolacc
-            x .= xacc
-            ∇x .= ∇xacc
-        end
 
-
+        obj, accinfo = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Qvec, δ, acc, :mala_posandmom, ptemp, i)
+        push!(initstate_accinfo, accinfo)
 
         # update parameters
-        boolacc, Qvecacc, llout = update_pars!(guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),
-                    Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
+        boolacc, Qvecacc, accinfo = update_pars!(guidrecvecᵒ, (LT,ΣT,μT), (L0, Σ0),Xvec, Xvecᵒ,Wvec, Qvec, Qvecᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ), acc)
         if boolacc
-            ll .= llout
             Qvec = deepcopy(Qvecacc) # seems crucial to have a deepcopy here
         end
+        push!(initstate_accinfo, accinfo)
 
         # save some of the results
         P = Qvec[1].target

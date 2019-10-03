@@ -120,10 +120,10 @@ function generatedata(dataset,P,t,σobs)
     end
 
     if dataset=="forwardsimulated_multiple"
-        nshapes = 5
+        nshapes = 3
         q0 = [PointF(2.0cos(t), sin(t)) for t in (0:(2pi/n):2pi)[1:n]]  #q0 = circshift(q0, (1,))
-        #p0 = [Point(0.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
-        p0 = [Point(4.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
+        p0 = [Point(0.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
+        #p0 = [Point(4.1, -0.4) for i in 1:n]/n  # #p0 = [randn(Point) for i in 1:n]
         x0 = State(q0, p0)
         xobsT = Vector{PointF}[]
         for k in 1:nshapes

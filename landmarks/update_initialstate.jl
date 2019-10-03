@@ -7,12 +7,16 @@
     #    updatekernel can be :mala_pos, :mala_mom, :mala_posandmom, :lmforward_pos
 
 """
-function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, lloutᵒ,
+function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
                 sampler, Qvec, δ, acc,updatekernel,ptemp, iter)
     nshapes = length(Xvec)
     n = Qvec[1].target.n
     x0 = deepvec2state(x)
     P = Qvec[1].target
+
+    llout = copy(ll)
+    lloutᵒ = copy(ll)
+
 
     if sampler in [:sgd, :sgld] # ADJUST LATER
         sample!(W, Wiener{Vector{StateW}}())
@@ -170,11 +174,11 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
             solve!(EulerMaruyama!(), Xtemp, NState(x0.q,deepvec2state(∇x).q), Wtemp, Pdeterm)
             xᵒState = NState(Xtemp.yy[end].q, x0.p)
             xᵒ .= deepvec(xᵒState)
-            # lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
+            lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
             ll_incl0 = sum(llout)
-            #ll_incl0ᵒ = sum(lloutᵒ)
+            ll_incl0ᵒ = sum(lloutᵒ)
 
-            ll_incl0ᵒ = ll_incl0
+
             plotlandmarkpositions(Xtemp,Pdeterm,x0.q,xᵒState.q;db=2.5)
 
 
@@ -223,20 +227,24 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,llout, l
                     Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
                 end
             end
+            x .= xᵒ
+            ∇x .= ∇xᵒ
+            ll .= lloutᵒ
             if updatekernel == :lmforward_pos
                 #ptemp .= ptempᵒ
             end
             accepted = 1
+
         else
             println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
             obj = ll_incl0
-
+            ll .= llout
         #    println("check within update_initialstate! ", ll_incl0-sum(llout))
             boolacc = false
             accepted = 0
         end
     end
-    boolacc, obj, (kernel = updatekernel, acc = accepted), xᵒ, ∇xᵒ, llout
+    obj, (kernel = updatekernel, acc = accepted)
 end
 
 

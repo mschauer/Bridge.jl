@@ -14,6 +14,7 @@ using ForwardDiff
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
 using NPZ # for reading python datafiles
+using Random
 
 workdir = @__DIR__
 println(workdir)
@@ -36,10 +37,12 @@ include("generatedata.jl")
 include("plotting.jl")
 include("update_initialstate.jl")
 
+Random.seed!(3)
+
 ################################# start settings #################################
-n = 7  # nr of landmarks
+n = 4  # nr of landmarks
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 println("model: ",model)
 
 ITER = 50
@@ -72,13 +75,13 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 0.8#.8# 0.9# 1.0#0.9
+ρ = .7
 
 
 # proposal for θ = (a, c, γ)
-σ_a = 0.05  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
-σ_c = 0.05  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
-σ_γ = 0.05  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
+σ_a = 0.2  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
+σ_c = 0.2  # update c to cᵒ as cᵒ = c * exp(σ_c * rnorm())
+σ_γ = 0.2  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
 
 #------------------------------------------------------------------
 σobs = 0.05   # noise on observations
@@ -107,7 +110,7 @@ if model == :ms
     Ptrue = MarslandShardlow(a, c, γ, λ, n)
 else
     db = 4.0 # domainbound
-    nfstd = 1.25 # tau , width of noisefields
+    nfstd = 1.75 # tau , width of noisefields
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
     Ptrue = Landmarks(a, c, n, db, nfstd, nfs)
 end
@@ -120,9 +123,9 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 
 # step-size on initial state
 if obs_atzero
-    δ = [0.0, 0.25] # in this case first comp is not used
+    δ = [0.0, 0.5] # in this case first comp is not used
 else
-    δ = [0.0005, 0.02]
+    δ = [0.0005, 0.7]
 end
 
 
@@ -175,7 +178,9 @@ accdf = DataFrame(kernel = map(x->x.kernel, initstate_accinfo), acc = map(x->x.a
 R"""
 library(tidyverse)
 library(ggplot2)
+theme_set(theme_light())
 p <-    accdf %>% mutate(kernel=as.character(kernel)) %>%
-        ggplot(aes(x=iter, y=acc, shape=kernel, colour=kernel)) + geom_point()
+        ggplot(aes(x=iter, y=acc)) + geom_point() +
+        facet_wrap(~kernel)
 ggsave("acceptance.pdf",p)
 """
