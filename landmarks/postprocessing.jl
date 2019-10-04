@@ -4,6 +4,21 @@ fn = "_" * string(model) * "_" * string(sampler) *"_" * string(dataset)
 gif(anim, outdir*fn*".gif", fps = 50)
 mp4(anim, outdir*fn*".mp4", fps = 50)
 
+# make a fig for acceptance probs in parameter and initial state updating
+accdf = DataFrame(kernel = map(x->x.kernel, accinfo), acc = map(x->x.acc, accinfo), iter = 1:length(accinfo))
+@rput accdf
+@rput outdir
+R"""
+library(tidyverse)
+library(ggplot2)
+theme_set(theme_light())
+p <-    accdf %>% mutate(kernel=as.character(kernel)) %>%
+        ggplot(aes(x=iter, y=acc)) + geom_point() +
+        facet_wrap(~kernel)
+ggsave(paste0(outdir,"acceptance.pdf"),p)
+"""
+
+
 ######### write mcmc iterates of bridges to csv file
 nshapes = length(xobsTvec)
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n*nshapes, length(subsamples)) # each column contains samplepath of an iteration
@@ -41,7 +56,7 @@ write(f, "Noise Sigma: ",string(σobs),"\n")
 write(f, "rho (Crank-Nicholsen parameter: ",string(ρ),"\n")
 write(f, "MALA parameter (delta): ",string(δ),"\n")
 write(f, "skip in evaluation of loglikelihood: ",string(sk),"\n")
-write(f, "Average acceptance percentage (path - initial state): ",string(perc_acc),"\n\n")
+write(f, "Average acceptance percentage pCN update steps: ",string(perc_acc_pcn),"\n\n")
 #write(f, "Backward type parametrisation in terms of nu and H? ",string(Î½Hparam),"\n")
 close(f)
 

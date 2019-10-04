@@ -8,7 +8,7 @@
 
 """
 function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
-                sampler, Qvec, δ, acc,updatekernel,ptemp, iter)
+                sampler, Qvec, δ, updatekernel, ptemp)
     nshapes = length(Xvec)
     n = Qvec[1].target.n
     x0 = deepvec2state(x)
@@ -215,38 +215,24 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
             plotlandmarkpositions(Xtemp,Pdeterm,x0.q,xᵒState.q;db=2.0)
             # end test
         end
-        # compute acc prob
+
         if log(rand()) <= accinit
+            println("update initial state ", updatekernel, " accinit: ", round(accinit;digits=3), "  accepted")
             obj = ll_incl0ᵒ
-            boolacc = true
-            llout .= lloutᵒ
-#            println("check within update_initialstate! ", ll_incl0ᵒ-sum(lloutᵒ))
-            println("update initial state ", updatekernel, " accinit: ", accinit, "  accepted")
-            for k in 1:nshapes
-                for i in 1:length(Xvec[1].yy)
-                    Xvec[k].yy[i] .= Xvecᵒ[k].yy[i]
-                end
-            end
+            deepcopyto!(Xvec, Xvecᵒ)
             x .= xᵒ
             ∇x .= ∇xᵒ
             ll .= lloutᵒ
-            if updatekernel == :lmforward_pos
-                #ptemp .= ptempᵒ
-            end
             accepted = 1
-
         else
-            println("update initial state ", updatekernel, " accinit: ", accinit, "  rejected")
+            println("update initial state ", updatekernel, " accinit: ", round(accinit;digits=3), "  rejected")
             obj = ll_incl0
             ll .= llout
-        #    println("check within update_initialstate! ", ll_incl0-sum(llout))
-            boolacc = false
             accepted = 0
         end
     end
     obj, (kernel = updatekernel, acc = accepted)
 end
-
 
 logϕ(p) = -0.5 * norm(p)^2
 logϕ(qfix, p, P) = -hamiltonian(NState(qfix,p),P)

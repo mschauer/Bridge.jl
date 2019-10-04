@@ -372,3 +372,13 @@ function HMC(U, ∇U, ϵ, L, current_q)
         return current_q # reject
     end
 end
+
+
+function deepcopyto!(dest::AbstractArray{T1,N}, src::AbstractArray{T2,N}) where {T1,T2,N}
+    checkbounds(dest, axes(src)...)
+    src′ = Base.unalias(dest, src)
+    for I in eachindex(IndexStyle(src′,dest), src′)
+        @inbounds dest[I] = deepcopy(src′[I])
+    end
+    dest
+end

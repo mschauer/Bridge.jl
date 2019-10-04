@@ -9,8 +9,6 @@ using CSV
 # install.packages(ggforce)
 using Base.Iterators, SparseArrays, LowRankApprox, Trajectories
 using ForwardDiff
-#using DiffResults
-#using TimerOutputs #undeclared
 using Plots,  PyPlot #using Makie
 using RecursiveArrayTools
 using NPZ # for reading python datafiles
@@ -45,7 +43,7 @@ models = [:ms, :ahs]
 model = models[2]
 println("model: ",model)
 
-ITER = 50
+ITER = 5
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -75,7 +73,7 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = .7
+ρ = 1.0#.7
 
 
 # proposal for θ = (a, c, γ)
@@ -128,8 +126,6 @@ else
     δ = [0.0005, 0.7]
 end
 
-
-
 if startPtrue
     P = Ptrue
 else
@@ -161,26 +157,15 @@ else
     #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], randn(PointF,P.n))
 end
 
-anim, Xsave, parsave, objvals, perc_acc, initstate_accinfo = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
+anim, Xsave, parsave, objvals, perc_acc_pcn, accinfo = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
          sampler, dataset, obs_atzero,
          xinit, ITER, subsamples,
         (ρ, δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-        outdir, pb; updatepars = true, makefig=true, showmomenta=false)
+        outdir, pb; updatepars = true, makefig=false, showmomenta=false)
 
 elapsed = time() - start
 
 println("Elapsed    time: ",round(elapsed/60;digits=2), " minutes")
+println("Acceptance percentage pCN step: ",perc_acc_pcn)
 
 include("./postprocessing.jl")
-#
-accdf = DataFrame(kernel = map(x->x.kernel, initstate_accinfo), acc = map(x->x.acc, initstate_accinfo), iter = 1:length(initstate_accinfo))
-@rput accdf
-R"""
-library(tidyverse)
-library(ggplot2)
-theme_set(theme_light())
-p <-    accdf %>% mutate(kernel=as.character(kernel)) %>%
-        ggplot(aes(x=iter, y=acc)) + geom_point() +
-        facet_wrap(~kernel)
-ggsave("acceptance.pdf",p)
-"""
