@@ -306,7 +306,7 @@ function update_path!(Xvec,Xvecᵒ,Wvec,Wᵒ,Wnew,ll,x, Qvec, ρ, acc_pcn)
             println("update innovation. diff_ll: ",round(diff_ll;digits=3),"  rejected")
         end
     end
-    acc_pcn 
+    acc_pcn
 end
 
 """
@@ -488,7 +488,7 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         acc_pcn = update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, Qvec, ρ, acc_pcn)
 
         # update initial state
-        for updatekernel in [:mala_mom, :lmforward_pos, :mala_posandmom]
+        for updatekernel in [:mala_mom, :mala_pos]#[:mala_mom, :lmforward_pos, :mala_posandmom]
             obj, accinfo_ = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Qvec, δ, updatekernel, ptemp)
             push!(accinfo, accinfo_)
         end

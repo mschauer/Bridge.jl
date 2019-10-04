@@ -56,6 +56,9 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
             accinit = ll_incl0ᵒ - ll_incl0 -
                       logpdf(ndistr,(xᵒ - x - .5*stepsize .* mask.* ∇x)[mask_id]) +
                      logpdf(ndistr,(x - xᵒ - .5*stepsize .* mask.* ∇xᵒ)[mask_id])
+             # plotting
+             Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
+             plotlandmarkpositions(initSamplePath(0:0.01:0.1,x0),Pdeterm,x0.q,deepvec2state(xᵒ).q;db=2.0)
         elseif updatekernel==:mala_posandmom
             δvec = repeat([fill(δ[1],d);fill(δ[2],d)],n)
             cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
@@ -165,14 +168,18 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
 
         elseif updatekernel==:lmforward # simply forward simulate the deterministic system for a while, not using any gradient information
             Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
+            K = reshape([kernel(x0.q[i]- x0.q[j],Pdeterm) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+            lcholK = lchol(K)
+            ptemp = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n))  #zz = randn(PointF, P.n)
             nsteps = 1_00
             Δt = rand(Uniform(0.005, 0.01))
             hh = Δt/nsteps
             tsub = 0:hh:nsteps*hh                    #0:0.005:tsubend
             Wtemp = initSamplePath(tsub,  zeros(PointF, dimwiener(Pdeterm)))
             Xtemp = initSamplePath(tsub,x0)
-            solve!(EulerMaruyama!(), Xtemp, NState(x0.q,deepvec2state(∇x).q), Wtemp, Pdeterm)
-            xᵒState = NState(Xtemp.yy[end].q, x0.p)
+            #solve!(EulerMaruyama!(), Xtemp, NState(x0.q,deepvec2state(∇x).q), Wtemp, Pdeterm)
+            solve!(EulerMaruyama!(), Xtemp, NState(x0.q,ptemp), Wtemp, Pdeterm)
+            xᵒState = NState(Xtemp.yy[end].q, -Xtemp.yy[end].p)
             xᵒ .= deepvec(xᵒState)
             lloutᵒ = simguidedlm_llikelihood!(LeftRule(), Xvecᵒ, xᵒState, Wvec, Qvec; skip=sk)
             ll_incl0 = sum(llout)
@@ -227,7 +234,7 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
         else
             println("update initial state ", updatekernel, " accinit: ", round(accinit;digits=3), "  rejected")
             obj = ll_incl0
-            ll .= llout
+            #ll .= llout
             accepted = 0
         end
     end

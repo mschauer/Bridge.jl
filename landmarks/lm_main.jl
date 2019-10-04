@@ -38,12 +38,12 @@ include("update_initialstate.jl")
 Random.seed!(3)
 
 ################################# start settings #################################
-n = 4  # nr of landmarks
+n = 7  # nr of landmarks
 models = [:ms, :ahs]
 model = models[2]
 println("model: ",model)
 
-ITER = 5
+ITER = 25
 subsamples = 0:1:ITER
 
 startPtrue = false # start from true P?
@@ -73,7 +73,7 @@ println("dataset: ",dataset)
 #------------------------------------------------------------------
 ### MCMC tuning pars
 # pcN-step
-ρ = 1.0#.7
+ρ = 0.8#.7
 
 
 # proposal for θ = (a, c, γ)
@@ -123,7 +123,7 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 if obs_atzero
     δ = [0.0, 0.5] # in this case first comp is not used
 else
-    δ = [0.0005, 0.7]
+    δ = [0.001, 0.01]
 end
 
 if startPtrue
