@@ -146,19 +146,30 @@ function generatedata(dataset,P,t,σobs)
         obs_atzero = false
     end
     if dataset=="cardiac"
+        # see https://arxiv.org/pdf/1805.06038.pdf
+        # 14 cardiac images, 66 landmarks per image
+        # The epicardial and endocardial contours where annotated with 33 landmarks along each outline resulting in 66 landmarks per image
+        # Each of the 14 rows is a shape with 66 landmarks, x coordinates in
+        # cardiac[:,:,0], y coordinates in cardiac[:,:,1], i.e. in python, all
+        # shapes are plotted with
+        # for i in range(N_samples):
+        #      plt.plot(qs[i,:,0],qs[i,:,1])
+
         cardiac = npzread(joinpath(@__DIR__,"data-stefan","cardiac.npy"))  # heart data (left ventricles, the one we used in https://arxiv.org/abs/1705.10943
-        cardiac_shapes_left = cardiac[:,:,2]  # a guess; each row is a shape with 33 landmarks
-        nshapes = size(cardiac)[1]
-        xobsT = Vector{PointF}[]
-        n = div(size(cardiac)[2],2)
-        for k in 1:nshapes
-            push!(xobsT, [PointF(cardiac_shapes_left[k,2i-1],cardiac_shapes_left[k,2i]) for i in 1:n] )
+        cardiacx = cardiac[:,:,1]  # x-coordinates of landmarks
+        cardiacy = cardiac[:,:,2]  # y-coordinates of landmarks
+        nshapes = 14
+        landmarksset = 1:5:66
+        n = length(landmarksset)
+        xobsT = fill(zeros(PointF,66),nshapes)
+        for i in 1:nshapes # for each image
+            xobsT[i] = [PointF(cardiacx[i,j], cardiacy[i,j]) for j in landmarksset ]
         end
-        xobs0 = []
+        x0 = State(zeros(PointF,n), zeros(PointF,n))
         pb = Lmplotbounds(-2.0,2.0,-1.5,1.5) # need to check
         obs_atzero = false
-        x0 = "unknown"
-        Xf = 0
+        xobs0 = []
+         Xf = 0
         if model == :ms
             P = MarslandShardlow(P.a,P.c, P.γ, P.λ, n)
         elseif model== :ahs

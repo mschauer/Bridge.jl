@@ -46,7 +46,7 @@ models = [:ms, :ahs]
 model = models[1]
 println("model: ",model)
 
-ITER = 50
+ITER = 15
 subsamples = 0:1:ITER
 
 showplotσq = false # only for ahs model
@@ -61,9 +61,10 @@ prior_c = Exponential(5.0)
 prior_γ = Exponential(5.0)
 #------------------------------------------------------------------
 
-datasets =["forwardsimulated", "shifted","shiftedextreme","bear",
-            "heart","peach", "generatedstefan", "forwardsimulated_multiple", "cardiac"]
-dataset = datasets[8]
+datasets =["forwardsimulated", "shifted","shiftedextreme",
+            "bear","heart","peach",
+            "generatedstefan","forwardsimulated_multiple", "cardiac"]
+dataset = datasets[9]
 println("dataset: ",dataset)
 
 fixinitmomentato0 = true
@@ -122,7 +123,7 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 if obs_atzero
     δ = [0.0, 0.1] # in this case first comp is not used
 else
-    δ = [0.01, 0.01]
+    δ = [0.01, 0.001]
 end
 
 (ainit, cinit, γinit) = (0.1, 0.1, 0.1)
@@ -147,14 +148,16 @@ if obs_atzero     # only update mom
 elseif !obs_atzero & !fixinitmomentato0 # multiple shapes: update both pos and mom
     θ = π/6
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-    xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
+    xinit = 1.3*State([rot * xobsT[1][i] for i in 1:P.n], zeros(PointF,P.n))
     #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], randn(PointF,P.n))
+    xinit = State(xobsT[1], zeros(PointF, P.n))
     initstate_updatetypes = [:mala_mom, :rmmala_pos]
 elseif !obs_atzero & fixinitmomentato0   # multiple shapes only update pos, so initialised momenta (equal toz zero) are maintained throughout the iterations
     xinit = 1.2*State(xobsT[1], zeros(PointF,P.n))
     θ = π/6
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-    xinit = 1.3*State([rot * xobsT[1][i] for i in 1:n], zeros(PointF,P.n))
+    xinit = 1.3*State([rot * xobsT[1][i] for i in 1:P.n], zeros(PointF,P.n))
+    xinit = State(xobsT[1], zeros(PointF, P.n))
     initstate_updatetypes = [:rmmala_pos]
 end
 

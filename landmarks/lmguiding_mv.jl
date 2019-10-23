@@ -476,6 +476,7 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
 
     ptemp = zeros(PointF,P.n)
     accinfo = []
+    acc_pcn = 0
     obj = 0
 
     anim =    @animate for i in 1:ITER
@@ -488,7 +489,7 @@ function lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
         acc_pcn = update_path!(Xvec, Xvecᵒ, Wvec, Wᵒ, Wnew, ll, x, Qvec, ρ, acc_pcn)
 
         # update initial state
-        for updatekernel in [:mala_mom, :mala_pos]#[:mala_mom, :lmforward_pos, :mala_posandmom]
+        for updatekernel in [:mala_mom, :precondmala_posrev]#  :mala_pos]#[:mala_mom, :lmforward_pos, :mala_posandmom]
             obj, accinfo_ = update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Qvec, δ, updatekernel, ptemp)
             push!(accinfo, accinfo_)
         end
