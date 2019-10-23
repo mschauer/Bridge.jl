@@ -59,6 +59,64 @@ function update_initialstate!(Xvec,Xvecᵒ,Wvec,ll,x,xᵒ,∇x, ∇xᵒ,
              # plotting
              Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
              plotlandmarkpositions(initSamplePath(0:0.01:0.1,x0),Pdeterm,x0.q,deepvec2state(xᵒ).q;db=2.0)
+        elseif updatekernel == :precondmala_pos
+             cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+             ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
+             ll_incl0 = sum(llout)
+             mask = deepvec(State(1 .- 0*x0.q,  0*x0.p))
+             stepsize = δ[1]/10
+             mask_id = (mask .> 0.1) # get indices that correspond to positions or momenta
+             K = reshape([kernel(x0.q[i]- x0.q[j],P) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+             lcholK = lchol(K) # so K = lcholK * lcholK'
+             lvdiff = LinearAlgebra.naivesub!(lcholK',  randn(PointF, P.n)) # solve L' zz = rand(PointF, P.n) to draw zz ~ N(0,K^{-1})
+             lvdrift =  deepmat(K)\∇x[mask_id]
+             xᵒ = copy(x)
+             xᵒ[mask_id] = x[mask_id] .+ .5 * stepsize * lvdrift .+ sqrt(stepsize) .* deepvec(lvdiff)                             # should be ".=" or just "="?
+             #xᵒ .= x .+ .5 * stepsize * mask.* ∇x .+ sqrt(stepsize) .* mask .* deepvec(lvdiff)                             # should be ".=" or just "="?
+             cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+             ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
+             ll_incl0ᵒ = sum(lloutᵒ)
+             invK = inv(deepmat(K))
+             x0ᵒ = deepvec2state(xᵒ)
+             Kᵒ = reshape([kernel(x0ᵒ.q[i]- x0ᵒ.q[j],P) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+
+             invKᵒ = inv(deepmat(Kᵒ))
+             print(invKᵒ)
+             ndistr = MvNormal(stepsize*Matrix(Symmetric(invK)))
+             ndistrᵒ = MvNormal(stepsize*Matrix(Symmetric(invKᵒ)))
+             accinit = ll_incl0ᵒ - ll_incl0 -
+                       logpdf(ndistr,xᵒ[mask_id] - x[mask_id] - .5*stepsize * invK * ∇x[mask_id]) +
+                      logpdf(ndistrᵒ,x[mask_id] - xᵒ[mask_id] - .5*stepsize * invKᵒ * ∇xᵒ[mask_id])
+              # plotting
+              Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
+              plotlandmarkpositions(initSamplePath(0:0.01:0.1,x0),Pdeterm,x0.q,deepvec2state(xᵒ).q;db=2.0)
+          elseif updatekernel == :precondmala_posrev
+               cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+               ForwardDiff.gradient!(∇x, slogρ!(Qvec, Wvec, Xvec,llout),x,cfg) # X gets overwritten but does not change
+               ll_incl0 = sum(llout)
+               mask = deepvec(State(1 .- 0*x0.q,  0*x0.p))
+               stepsize = δ[1]
+               mask_id = (mask .> 0.1) # get indices that correspond to positions or momenta
+               K = reshape([kernel(x0.q[i]- x0.q[j],P) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+               lcholK = lchol(K) # so K = lcholK * lcholK'
+               lvdiff = deepvec(Matrix(lcholK) * randn(PointF, P.n))
+               lvdrift =  deepmat(K) * ∇x[mask_id]
+               xᵒ = copy(x)
+               xᵒ[mask_id] = x[mask_id] .+ .5 * stepsize * lvdrift .+ sqrt(stepsize) .* lvdiff                             # should be ".=" or just "="?
+               cfgᵒ = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ), xᵒ, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal
+               ForwardDiff.gradient!(∇xᵒ, slogρ!(Qvec, Wvec, Xvecᵒ,lloutᵒ),xᵒ,cfgᵒ) # Xvecᵒ gets overwritten but does not change
+               ll_incl0ᵒ = sum(lloutᵒ)
+
+               x0ᵒ = deepvec2state(xᵒ)
+               Kᵒ = reshape([kernel(x0ᵒ.q[i]- x0ᵒ.q[j],P) * one(UncF) for i in 1:P.n for j in 1:P.n], P.n, P.n)
+               ndistr = MvNormal(stepsize*Matrix(Symmetric(deepmat(K))))
+               ndistrᵒ = MvNormal(stepsize*Matrix(Symmetric(deepmat(Kᵒ))))
+               accinit = ll_incl0ᵒ - ll_incl0 -
+                         logpdf(ndistr,xᵒ[mask_id] - x[mask_id] - .5*stepsize * deepmat(K) * ∇x[mask_id]) +
+                        logpdf(ndistrᵒ,x[mask_id] - xᵒ[mask_id] - .5*stepsize * deepmat(Kᵒ) * ∇xᵒ[mask_id])
+                # plotting
+                Pdeterm = MarslandShardlow(0.1, 0.1, 0.0, 0.0, P.n)
+                plotlandmarkpositions(initSamplePath(0:0.01:0.1,x0),Pdeterm,x0.q,deepvec2state(xᵒ).q;db=2.0)
         elseif updatekernel==:mala_posandmom
             δvec = repeat([fill(δ[1],d);fill(δ[2],d)],n)
             cfg = ForwardDiff.GradientConfig(slogρ!(Qvec, Wvec, Xvec,llout), x, ForwardDiff.Chunk{2*d*n}()) # 2*d*P.n is maximal

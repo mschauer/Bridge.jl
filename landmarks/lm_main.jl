@@ -29,28 +29,29 @@ include("nstate.jl")
 include("state.jl")
 include("models.jl")
 include("patches.jl")
-include("lmguiding_mv.jl")
 include("plotlandmarks.jl")  # keep, but presently unused as all is transferred to plotting in R
 include("generatedata.jl")
 include("plotting.jl")
-include("update_initialstate.jl")
+#include("lmguiding_mv.jl")
+#include("update_initialstate.jl")
+include("lmguid.jl")  # replacing lmguiding_mv and update_initialstate
+
+
 
 Random.seed!(3)
 
 ################################# start settings #################################
-n = 7  # nr of landmarks
+n = 10  # nr of landmarks
 models = [:ms, :ahs]
-model = models[2]
+model = models[1]
 println("model: ",model)
 
-ITER = 25
+ITER = 50
 subsamples = 0:1:ITER
 
-startPtrue = false # start from true P?
 showplotσq = false # only for ahs model
 
-samplers =[:sgd, :sgld, :mcmc]
-sampler = samplers[3]
+sampler =[:sgd, :mcmc][2]
 println("sampler: ",sampler)
 
 #------------------------------------------------------------------
@@ -65,6 +66,7 @@ datasets =["forwardsimulated", "shifted","shiftedextreme","bear",
 dataset = datasets[8]
 println("dataset: ",dataset)
 
+fixinitmomentato0 = true
 #------------------------------------------------------------------
 # for sgd (FIX LATER)
 ϵ = 0.01  # sgd step size
@@ -72,9 +74,7 @@ println("dataset: ",dataset)
 
 #------------------------------------------------------------------
 ### MCMC tuning pars
-# pcN-step
-ρ = 0.8#.7
-
+ρ = 0.8              # pcN-step
 
 # proposal for θ = (a, c, γ)
 σ_a = 0.2  # update a to aᵒ as aᵒ = a * exp(σ_a * rnorm())
@@ -101,7 +101,6 @@ a = 2.0     # Hamiltonian kernel parameter (the larger, the stronger landmarks b
 c = 0.1     # multiplicative factor in kernel
 γ = 1.0     # Noise level
 
-
 if model == :ms
     λ = 0.0;    # Mean reversion par in MS-model = not the lambda of noise fields  =#
     nfs = 0 # needs to have value for plotting purposes
@@ -119,49 +118,52 @@ end
 
 x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σobs)
 
-# step-size on initial state
+# step-size on mala steps for initial state
 if obs_atzero
-    δ = [0.0, 0.5] # in this case first comp is not used
+    δ = [0.0, 0.1] # in this case first comp is not used
 else
-    δ = [0.001, 0.01]
+    δ = [0.01, 0.01]
 end
 
-if startPtrue
-    P = Ptrue
-else
-    ainit = 0.1
-    cinit = 0.1
-    γinit = 0.1
-    if model == :ms
-        P = MarslandShardlow(ainit, cinit, γinit, Ptrue.λ, Ptrue.n)
-    elseif model == :ahs
-        nfsinit = construct_nfs(Ptrue.db, Ptrue.nfstd, γinit)
-        P = Landmarks(ainit, cinit, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
-    end
+(ainit, cinit, γinit) = (0.1, 0.1, 0.1)
+if model == :ms
+    P = MarslandShardlow(ainit, cinit, γinit, Ptrue.λ, Ptrue.n)
+elseif model == :ahs
+    nfsinit = construct_nfs(Ptrue.db, Ptrue.nfstd, γinit)
+    P = Landmarks(ainit, cinit, Ptrue.n, Ptrue.db, Ptrue.nfstd, nfsinit)
 end
+
 
 mT = zeros(PointF,P.n)   # vector of momenta at time T used for constructing guiding term
 #mT = randn(PointF,P.n)
 
 start = time() # to compute elapsed time
-if obs_atzero
-    xobsTvec = [xobsT]
+
+
+if obs_atzero     # only update mom
+    xobsT = [xobsT]  # should be a vector
     xinit = State(xobs0, zeros(PointF,P.n))
-else
-    xobsTvec = xobsT
-    xinit = 1.2*State(xobsTvec[1], zeros(PointF,P.n))
+    initstate_updatetypes = [:mala_mom]
+elseif !obs_atzero & !fixinitmomentato0 # multiple shapes: update both pos and mom
     θ = π/6
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
-    #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
     xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], zeros(PointF,P.n))
     #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], randn(PointF,P.n))
+    initstate_updatetypes = [:mala_mom, :rmmala_pos]
+elseif !obs_atzero & fixinitmomentato0   # multiple shapes only update pos, so initialised momenta (equal toz zero) are maintained throughout the iterations
+    xinit = 1.2*State(xobsT[1], zeros(PointF,P.n))
+    θ = π/6
+    rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
+    xinit = 1.3*State([rot * xobsT[1][i] for i in 1:n], zeros(PointF,P.n))
+    initstate_updatetypes = [:rmmala_pos]
 end
 
-anim, Xsave, parsave, objvals, perc_acc_pcn, accinfo = lm_mcmc(tt_, (xobs0,xobsTvec), σobs, mT, P,
-         sampler, dataset, obs_atzero,
+
+anim, Xsave, parsave, objvals, perc_acc_pcn, accinfo = lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
+         sampler, obs_atzero, fixinitmomentato0,
          xinit, ITER, subsamples,
-        (ρ, δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ),
-        outdir, pb; updatepars = true, makefig=false, showmomenta=false)
+        (ρ, δ, prior_a, prior_c, prior_γ, σ_a, σ_c, σ_γ), initstate_updatetypes,
+        outdir,  pb; updatepars = true, makefig=true, showmomenta=false)
 
 elapsed = time() - start
 

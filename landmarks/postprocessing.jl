@@ -20,7 +20,7 @@ ggsave(paste0(outdir,"acceptance.pdf"),p)
 
 
 ######### write mcmc iterates of bridges to csv file
-nshapes = length(xobsTvec)
+nshapes = length(xobsT)
 iterates = reshape(vcat(Xsave...),2*d*length(tt_)*P.n*nshapes, length(subsamples)) # each column contains samplepath of an iteration
 # Ordering in each column is as follows:
 # 0) shape
@@ -67,7 +67,7 @@ close(f)
 #                 time=repeat(["0","T"], inner=P.n))
 #     CSV.write(outdir*"observations.csv", obsdf; delim=";")
 # else
-    valueT = vcat(map(x->deepvec(x), xobsTvec)...) # merge all observations at time T in one vector
+    valueT = vcat(map(x->deepvec(x), xobsT)...) # merge all observations at time T in one vector
     posT = repeat(["pos1","pos2"], P.n*nshapes)
     shT = repeat(1:nshapes, inner=d*P.n)
     obsTdf = DataFrame(pos=posT,shape=shT, value=valueT,landmark=repeat(1:P.n,inner=d,outer=nshapes))

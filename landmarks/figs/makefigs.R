@@ -31,8 +31,8 @@ d
 # select all data for shape 1
 d1 <- d %>% dplyr::filter(shapes==1)
   
-dsub <- d1 %>% dplyr::filter(iterate %in% c(0,5,100,400,600,700)) %>%
-    mutate(iteratenr = fct_relevel(iteratenr, c("0","5","100","400")))
+dsub <- d1 %>% dplyr::filter(iterate %in% c(0,5,10,25,600,700)) %>%
+    mutate(iteratenr = fct_relevel(iteratenr, c("0","5","10","25")))
 
 # v0 <- obsdf[1:n,] 
 dlabel0 <- obs0df; dlabel0$landmarkid <- unique(d$landmarkid)
@@ -73,7 +73,7 @@ pdf("bridges-faceted.pdf",width=7,height=4)
 dev.off()
 
 # plot overlaid landmark bridges
-p1 <- d1 %>% dplyr::filter(iterate %in% seq(0,max(d$iterate),by=50))  %>% ggplot() + 
+p1 <- d1 %>% dplyr::filter(iterate %in% seq(0,max(d$iterate),by=5))  %>% ggplot() + 
     geom_path(aes(pos1,y=pos2,group=interaction(landmarkid,iteratenr),colour=iterate)) +
     scale_colour_gradient(low="orange",high="darkblue")+ 
     geom_point(data=v0, aes(x=pos1,y=pos2), colour='black')+geom_point(data=vT, aes(x=pos1,y=pos2), colour='orange')+
@@ -101,7 +101,7 @@ dev.off()
   
   
 # plot paths of landmarks momenta
-pmom <-  d1 %>% dplyr::filter(time==0) %>% ggplot(aes(x=mom1,y=mom2,colour=iterate)) + geom_point() +
+pmom <-  d %>% dplyr::filter(time==0) %>% ggplot(aes(x=mom1,y=mom2,colour=iterate)) + geom_point() +
   #  geom_path(aes(group=interaction(landmarkid,iteratenr),colour=iterate)) +
     facet_wrap(~landmarkid)  +scale_colour_gradient(low="orange",high="darkblue")+theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
   geom_hline(yintercept=0, linetype="dashed")+geom_vline(xintercept=0, linetype="dashed")
