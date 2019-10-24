@@ -67,7 +67,7 @@ datasets =["forwardsimulated", "shifted","shiftedextreme",
 dataset = datasets[9]
 println("dataset: ",dataset)
 
-fixinitmomentato0 = true
+fixinitmomentato0 = false
 #------------------------------------------------------------------
 # for sgd (FIX LATER)
 ϵ = 0.01  # sgd step size
@@ -123,7 +123,7 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 if obs_atzero
     δ = [0.0, 0.1] # in this case first comp is not used
 else
-    δ = [0.01, 0.001]
+    δ = [0.001, 0.01]
 end
 
 (ainit, cinit, γinit) = (0.1, 0.1, 0.1)

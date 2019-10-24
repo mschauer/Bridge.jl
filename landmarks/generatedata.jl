@@ -183,7 +183,7 @@ function generatedata(dataset,P,t,σobs)
             library(ggplot2)
             xobsTdf %>% ggplot(aes(x=x,y=y)) + geom_point() + geom_path()
         """
-
+        pb = Lmplotbounds(-0.25,0.25,-0.25,0.25)
     end
     x0, xobs0, xobsT, Xf, P, pb, obs_atzero
 end
