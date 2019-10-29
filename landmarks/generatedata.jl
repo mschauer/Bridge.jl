@@ -45,7 +45,7 @@ function generatedata(dataset,P,t,σobs)
         end
         rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
         stretch = SMatrix{2,2}(1.0 + η, 0.0, 0.0, 1.0 - η)
-        shift =  PointF(0.1,-0.1)
+        shift =  0.0*PointF(0.1,-0.1)
         xobsT = [rot * stretch * xobs0[i] + shift  for i in 1:P.n ] + σobs * randn(PointF,n)
         obs_atzero = true
     end

@@ -41,12 +41,12 @@ include("lmguid.jl")  # replacing lmguiding_mv and update_initialstate
 Random.seed!(3)
 
 ################################# start settings #################################
-n = 10  # nr of landmarks
+n = 6  # nr of landmarks
 models = [:ms, :ahs]
-model = models[1]
+model = models[2]
 println("model: ",model)
 
-ITER = 15
+ITER = 250
 subsamples = 0:1:ITER
 
 showplotσq = false # only for ahs model
@@ -64,10 +64,10 @@ prior_γ = Exponential(5.0)
 datasets =["forwardsimulated", "shifted","shiftedextreme",
             "bear","heart","peach",
             "generatedstefan","forwardsimulated_multiple", "cardiac"]
-dataset = datasets[9]
+dataset = datasets[3]
 println("dataset: ",dataset)
 
-fixinitmomentato0 = false
+fixinitmomentato0 = true#false
 #------------------------------------------------------------------
 # for sgd (FIX LATER)
 ϵ = 0.01  # sgd step size
@@ -83,7 +83,7 @@ fixinitmomentato0 = false
 σ_γ = 0.2  # update γ to γᵒ as γᵒ = γ * exp(σ_γ * rnorm())
 
 #------------------------------------------------------------------
-σobs = 0.05   # noise on observations
+σobs = 0.01   # noise on observations
 
 #------------------------------------------------------------------
 # set time grids
@@ -107,8 +107,8 @@ if model == :ms
     nfs = 0 # needs to have value for plotting purposes
     Ptrue = MarslandShardlow(a, c, γ, λ, n)
 else
-    db = 4.0 # domainbound
-    nfstd = 1.75 # tau , width of noisefields
+    db = 2.0 # domainbound
+    nfstd = 1.0 # tau , width of noisefields
     nfs = construct_nfs(db, nfstd, γ) # 3rd argument gives average noise of positions (with superposition)
     Ptrue = Landmarks(a, c, n, db, nfstd, nfs)
 end
@@ -123,7 +123,7 @@ x0, xobs0, xobsT, Xf, Ptrue, pb, obs_atzero  = generatedata(dataset,Ptrue,t,σob
 if obs_atzero
     δ = [0.0, 0.1] # in this case first comp is not used
 else
-    δ = [0.001, 0.01]
+    δ = [0.0005, 0.005]
 end
 
 (ainit, cinit, γinit) = (0.1, 0.1, 0.1)
@@ -150,14 +150,14 @@ elseif !obs_atzero & !fixinitmomentato0 # multiple shapes: update both pos and m
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
     xinit = 1.3*State([rot * xobsT[1][i] for i in 1:P.n], zeros(PointF,P.n))
     #xinit = 1.3*State([rot * xobsTvec[1][i] for i in 1:n], randn(PointF,P.n))
-    xinit = State(xobsT[1], zeros(PointF, P.n))
+    #xinit = State(xobsT[1], zeros(PointF, P.n))
     initstate_updatetypes = [:mala_mom, :rmmala_pos]
 elseif !obs_atzero & fixinitmomentato0   # multiple shapes only update pos, so initialised momenta (equal toz zero) are maintained throughout the iterations
     xinit = 1.2*State(xobsT[1], zeros(PointF,P.n))
     θ = π/6
     rot =  SMatrix{2,2}(cos(θ), sin(θ), -sin(θ), cos(θ))
     xinit = 1.3*State([rot * xobsT[1][i] for i in 1:P.n], zeros(PointF,P.n))
-    xinit = State(xobsT[1], zeros(PointF, P.n))
+    #xinit = State(xobsT[1], zeros(PointF, P.n))
     initstate_updatetypes = [:rmmala_pos]
 end
 
