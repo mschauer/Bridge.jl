@@ -648,7 +648,7 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
             drawpath(i-1,P.n,x,X[1],objvals,parsave,(xobs0comp1,xobs0comp2,xobsTcomp1, xobsTcomp2),pb)
         end
         println();  println("iteration $i")
-
+#global acc_pcn
         # updates paths
         acc_pcn = update_path!(X, Xᵒ, W, Wᵒ, Wnew, ll, x, Q, ρ, acc_pcn)
 
@@ -657,10 +657,15 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
             obj, accinfo_ = update_initialstate!(X,Xᵒ,W,ll,x,xᵒ,∇x, ∇xᵒ,sampler, Q, δ, updatekernel)
                         push!(accinfo, accinfo_)
         end
+        println(δ[2])
+
+        δ[2] = adaptmalastep(i,accinfo,δ[2])
 
         # update parameters
         accinfo_ = update_pars!(obs_info,X, Xᵒ,W, Q, Qᵒ, x, ll, (prior_a, prior_c, prior_γ), (σ_a,σ_c,σ_γ))
         push!(accinfo, accinfo_)
+
+        (σ_a,σ_c,σ_γ) = adaptparstep(i,accinfo,(σ_a,σ_c,σ_γ))
 
         # save some of the results
         if i in subsamples
@@ -676,4 +681,46 @@ function lm_mcmc(tt_, (xobs0,xobsT), σobs, mT, P,
     end
     perc_acc_pcn = 100acc_pcn/(nshapes*ITER)
     anim, Xsave, parsave, objvals, perc_acc_pcn, accinfo
+end
+
+function adaptmalastep(n,accinfo,δ)
+    adaptskip = 3
+    if mod(n,adaptskip)==0
+        η(n) = min(0.1, 10/sqrt(n))
+
+        targetaccept = 0.5
+
+        ind1 =  findall(first.(accinfo).==:mala_mom)[end-adaptskip+1:end]
+        recent_mean = mean(last.(accinfo)[ind1])
+        if recent_mean > targetaccept
+            δ *= exp(η(n))
+        else
+            δ *= exp(-η(n))
+        end
+    end
+        #ind = findall(first.(accinfo).=="parameterupdate")[end-adaptskip:end]
+    δ
+end
+
+function adaptparstep(n,accinfo,(σ_a,σ_c,σ_γ))
+    adaptskip = 3
+    if mod(n,adaptskip)==0
+        η(n) = min(0.1, 10/sqrt(n))
+
+        targetaccept = 0.5
+
+        ind1 =  findall(first.(accinfo).=="parameterupdate")[end-adaptskip+1:end]
+        recent_mean = mean(last.(accinfo)[ind1])
+        if recent_mean > targetaccept
+            σ_a *= exp(η(n))
+            σ_c *= exp(η(n))
+            σ_γ *= exp(η(n))
+        else
+            σ_a *= exp(-η(n))
+            σ_c *= exp(-η(n))
+            σ_γ *= exp(-η(n))
+        end
+    end
+        #ind = findall(first.(accinfo).=="parameterupdate")[end-adaptskip:end]
+    (σ_a,σ_c,σ_γ)
 end
