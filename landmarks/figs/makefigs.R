@@ -88,10 +88,11 @@ pdf("bridges-overlaid.pdf",width=6,height=4)
 dev.off()
   
 # plot parameter updates
-ppar1 <- parsdf %>% gather(key=par, value=value, a, c, gamma) 
-ppar1$par <- factor(ppar1$par, levels=c('a', 'c', 'gamma'), labels=c("a","c",expression(gamma)))
-tracepars <- ppar1 %>% ggplot(aes(x=iterate, y=value)) + geom_path() + facet_wrap(~par, scales="free_y",labeller = label_parsed) + xlab("iterate") + ylab("")
-pdf("trace-pars.pdf",width=6,height=2)  
+ppar1 <- parsdf %>% mutate(cdivgamma2=c/gamma^2) %>% gather(key=par, value=value, a, c, gamma,cdivgamma2) 
+ppar1$par <- factor(ppar1$par, levels=c('a', 'c', 'gamma','cdivgamma2'), labels=c("a","c",expression(gamma),expression(c/gamma^2)))
+tracepars <- ppar1 %>% ggplot(aes(x=iterate, y=value)) + geom_path() + facet_wrap(~par, scales="free_y",labeller = label_parsed) +
+ xlab("iterate") + ylab("") +  theme(strip.text.x = element_text(size = 12))
+pdf("trace-pars.pdf",width=6,height=4)  
   show(tracepars)
 dev.off()
   
