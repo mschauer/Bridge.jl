@@ -23,7 +23,15 @@ Euler-Maruyama scheme. `Euler` is defined as alias.
 Euler, EulerMaruyama
 
 
+"""
+    StratonovichEuler() <: SDESolver
+Euler scheme for solving SDE's in Stratonovich form
+"""
+struct StratonovichEuler <: SDESolver
+end
 
+struct StratonovichEuler! <:SDESolver
+end
 
 
 """
