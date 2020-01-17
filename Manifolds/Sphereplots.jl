@@ -93,43 +93,13 @@ function SphereScatterPlot(X::T, Y::T, Z::T, target::T, 𝕊::Sphere) where {T<:
     if Plots.backend() !== Plots.PlotlyBackend()
         error("Plotly() is not enabled")
     end
-    R = 𝕊.R
-    du = 2π/100
-    dv = π/100
-
-    u = 0.0:du:(2π+du)
-    v = 0.0:dv:(π+dv)
-
-    lenu = length(u);
-    lenv = length(v);
-    x = zeros(lenu, lenv); y = zeros(lenu,lenv); z = zeros(lenu,lenv)
-    for i in 1:lenu
-        for j in 1:lenv
-            x[i,j] = R*cos(u[i]) * sin(v[j]);
-            y[i,j] = R*sin(u[i]) * sin(v[j]);
-            z[i,j] = R*cos(v[j]);
-        end
-    end
-    Plots.plot(X,Y,Z,
-                axis = true,
-                seriestype = :scatter,
-                color= palette(:default)[1],
-                markersize = 1,
-                legend = false,
-                label = false,
-                xlabel = "x",
-                ylabel = "y",
-                zlabel = "z")
+    SphereScatterPlot(X, Y, Z, 𝕊)
     Target = Array{Float64}[]
     push!(Target, target)
     Plots.plot!(extractcomp(Target,1), extractcomp(Target,2), extractcomp(Target,3),
                 seriestype = :scatter,
                 color= :red,
                 markersize = 2)
-    Plots.surface!( x,y,z,
-                axis=true,
-                alpha=0.8,
-                color = fill(RGBA(1.,1.,1.,0.8),lenu,lenv))
 end
 
 """
@@ -148,16 +118,16 @@ function SphereFullPlot(θ, data, target, 𝕊::Sphere; PlotUpdates = true)
                     seriestype = :scatter,
                     color = palette(:default)[1],
                     markersize = 2,
-                    label = "updates")
+                    label = "Updates")
     end
     Plots.plot!(extractcomp(data,1), extractcomp(data,2), extractcomp(data,3),
                 seriestype = :scatter,
                 color= :black,
                 markersize = 1.5,
-                label = "data")
+                label = "Data")
     Plots.plot!(extractcomp(Target,1), extractcomp(Target,2), extractcomp(Target,3),
                 seriestype = :scatter,
                 color= :red,
                 markersize = 2.5,
-                label = "(0,0,1)")
+                label = "Target")
 end

@@ -2,6 +2,7 @@ using ForwardDiff
 using LinearAlgebra
 
 abstract type Manifold end
+const ℝ{N} = SVector{N, Float64}
 
 """
     EmbeddedManifold creates a manifold ``M = f^{-1}({0})`` where
@@ -52,8 +53,8 @@ struct Torus{T<:Real} <: EmbeddedManifold
 end
 
 function f(x::T, 𝕋::Torus) where {T<:AbstractArray}
-    (x[1]^2 + x[2]^2 + x[3]^2 + 𝕋.R^2 - 𝕋.r^2)^2 -
-    4.0 * 𝕋.R^2 * (x[1]^2 + x[2]^2)
+    R, r, x, y, z = 𝕋.R, 𝕋.r, x[1], x[2], x[3]
+    (x^2 + y^2 + z^2 + R^2 - r^2)^2 - 4.0*R^2*(x^2 + y^2)
 end
 
 # Projection matrix
