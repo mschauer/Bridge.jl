@@ -20,36 +20,35 @@ end
       dμ(t)  = -L(t)β(t)dt,        μ(T)  = 0
 """
 
-struct GuidedProposal{T} <: ContinuousTimeProcess{ℝ{3}}
+struct GuidedProposal{TT,TA} <: ContinuousTimeProcess{ℝ{3}}
     ξ
-    Target::T
-    Auxiliary::T
+    Target::TT
+    Auxiliary::TA
     tt::Vector{Float64}
     L
     M
     μ
 
-    function GuidedProposal(ξ, Target::T, Auxiliary::T, t, Σ, L) where {T<:ContinuousTimeProcess{ℝ{3}}}
+    function GuidedProposal(ξ, Target::TT, Auxiliary::TA, t, Σ, L) where {TT,TA<:ContinuousTimeProcess{ℝ{3}}}
         tt = collect(t)
         Lt = zeros(typeof(L), length(tt))
         Lt[end] = L
-        Mt⁺ = zeros(typeof(Σ), length(tt))
-        Mt⁺[end] = Σ
-        Mt = zeros(typeof(Σ) length(tt))
+        M⁺ = Σ
+        Mt = zeros(typeof(Σ), length(tt))
         Mt[end] = inv(Σ)
         μt = zeros(typeof(ξ), length(tt))
-
+        μ = μt[end]
         for i in length(tt)-1:-1:1
             dt = tt[i] - tt[i+1]
-            L = kernelr3((t, y, ℙt) -> -y*Bridge.B(t, ℙt), tt[i+1], L, dt, ℙt)
-            M⁺ = kernelr3((t, y, (L,ℙt)) -> -outer(L*Bridge.σ(t, ℙt)), tt[i+1], M⁺, dt, (L,ℙt))
-            μ = kernelr3((t, y, (L,ℙt)) -> -L*Bridge.β(t, ℙt), tt[i+1], μ, dt, (L,ℙt))
+            L = kernelr3((t, y, ℙt) -> -y*Bridge.B(t, ℙt), tt[i+1], L, dt, Auxiliary)
+            M⁺ = kernelr3((t, y, (L,ℙt)) -> -outer(L*Bridge.σ(t, ℙt)), tt[i+1], M⁺, dt, (L,Auxiliary))
+            μ = kernelr3((t, y, (L,ℙt)) -> -L*Bridge.β(t, ℙt), tt[i+1], μ, dt, (L,Auxiliary))
 
             Lt[i] = L
             Mt[i] = inv(M⁺)
             μt[i] = μ
         end
-        new(ξ, Target, Auxiliary, tt, Lt, Mt, μt)
+        new{TT, TA}(ξ, Target, Auxiliary, tt, Lt, Mt, μt)
     end
 end
 
@@ -58,15 +57,15 @@ end
         dXtᵒ = b(t, Xtᵒ)dt + a(t, Xtᵒ)r(t, Xtᵒ)dt + σ(t, Xtᵒ)dWt
 """
 
-H((i, t)::IndexedTime, x, ℙᵒ::GuidedProposal) = ℙᵒL[i]'*ℙᵒ.M[i]*ℙᵒ.L[i]
-r((i, t)::IndexedTime, x, ℙᵒ::GuidedProposal) = ℙᵒ.L[i]'*ℙᵒ.M[i]*(ℙᵒ.ξ .- ℙᵒ.μ[i] .- ℙᵒ.L[i]*x)
+Htilde((i, t)::IndexedTime, x, ℙᵒ::GuidedProposal) = ℙᵒ.L[i]'*ℙᵒ.M[i]*ℙᵒ.L[i]
+rtilde((i, t)::IndexedTime, x, ℙᵒ::GuidedProposal) = ℙᵒ.L[i]'*ℙᵒ.M[i]*(ℙᵒ.ξ .- ℙᵒ.μ[i] .- ℙᵒ.L[i]*x)
 
 function Bridge.b(t, x, ℙᵒ::GuidedProposal)
-    k = findmin(abs.(ℙᵒtt.-t))[2]
+    k = findmin(abs.(ℙᵒ.tt.-t))[2]
     ℙ = ℙᵒ.Target
     ℙt = ℙᵒ.Auxiliary
     a = Bridge.σ(t, x, ℙ)*Bridge.σ(t, x, ℙ)'
-    return Bridge.b(t, x, ℙ) + a*r((k, ℙᵒ.tt[k]), x, ℙᵒ)
+    return Bridge.b(t, x, ℙ) + a*rtilde((k, ℙᵒ.tt[k]), x, ℙᵒ)
 end
 
 Bridge.σ(t, x, ℙᵒ::GuidedProposal) = Bridge.σ(t, x, ℙᵒ.Target)
@@ -78,7 +77,7 @@ Bridge.constdiff(::GuidedProposal) = false
 """
 
 # Calculate ψ(Xᵒ) where Xᵒ is a guided proposal (sample from ℙᵒ)
-function logψ(::LeftRule, Xᵒ::T, ℙᵒ::GuidedProposal)
+function logψ(::LeftRule, Xᵒ::T, ℙᵒ::GuidedProposal) where {T<:SamplePath{ℝ{3}}}
     tt = Xᵒ.tt
     yy = Xᵒ.yy
 
@@ -90,11 +89,11 @@ function logψ(::LeftRule, Xᵒ::T, ℙᵒ::GuidedProposal)
         dt = tt[i+1]-tt[i]
         s = tt[i]
         y = yy[i]
-        r = r((i,s), y, ℙᵒ)
+        r = rtilde((i,s), y, ℙᵒ)
 
         out += dot(Bridge.b(s, y, ℙ) - Bridge.b(s, y, ℙt) , r)*dt
-        if !constdiff(ℙᵒ)
-            out -= .5*tr( (a(s, y, ℙ) - a(s, ℙt))*(H((i,s), y, ℙᵒ) - r*r') )*dt
+        if !Bridge.constdiff(ℙᵒ)
+            out -= .5*tr( (Bridge.a(s, y, ℙ) - Bridge.a(s, ℙt))*(Htilde((i,s), y, ℙᵒ) - r*r') )*dt
         end
     end
     return out
@@ -102,7 +101,7 @@ end
 
 # Transform a wiener process W into a sample Xᵒ from ℙᵒ starting at x₀
 # while simultaneously calculating logψ(Xᵒ) of the resulting sample.
-function logψ!(::LeftRule, W, x₀, ℙᵒ::GuidedProposal)
+function logψ!(::LeftRule, ::Ito, W, x₀, ℙᵒ::GuidedProposal)
     tt = W.tt
     ww = W.yy
     Xᵒ = deepcopy(W)
@@ -118,17 +117,50 @@ function logψ!(::LeftRule, W, x₀, ℙᵒ::GuidedProposal)
         dw = ww[i+1] - ww[i]
         s = tt[i]
         y = yy[i]
-        r = r((i,s), y, ℙᵒ)
+        r = rtilde((i,s), y, ℙᵒ)
 
         # terms for logψ
         out += dot(Bridge.b(s, y, ℙ) - Bridge.b(s, y, ℙt) , r)*dt
-        if !constdiff(ℙᵒ)
-            out -= .5*tr( (a(s, y, ℙ) - a(s, ℙt))*(H((i,s), y, ℙᵒ) - r*r') )*dt
+        if !Bridge.constdiff(ℙᵒ)
+            out -= .5*tr( (Bridge.a(s, y, ℙ) - Bridge.a(s, ℙt))*(Htilde((i,s), y, ℙᵒ) - r*r') )*dt
         end
 
         # Simulating the next step of Xᵒ
-        x .= x + b(s, y, ℙᵒ)*dt + σ(s, y, ℙᵒ)*dw
-        Xᵒ.yy[i+1] = x
+        y .= y + Bridge.b(s, y, ℙᵒ)*dt + Bridge.σ(s, y, ℙᵒ)*dw
+        Xᵒ.yy[i+1] = y
+    end
+    W = Xᵒ
+    out
+end
+
+function logψ!(::LeftRule, ::Stratonovich, W, x₀, ℙᵒ::GuidedProposal)
+    tt = W.tt
+    ww = W.yy
+    Xᵒ = deepcopy(W)
+    Xᵒ.yy[1] = x₀
+    y = x₀
+
+    ℙ = ℙᵒ.Target
+    ℙt = ℙᵒ.Auxiliary
+
+    x = copy(x₀)
+    out::eltype(x₀) = 0.
+    for i in 1:(length(tt)-1)
+        dt = tt[i+1] - tt[i]
+        dw = ww[i+1] - ww[i]
+        s = tt[i]
+        r = rtilde((i,s), y, ℙᵒ)
+
+        # terms for logψ
+        out += dot(Bridge.b(s, y, ℙ) - Bridge.b(s, y, ℙt) , r)*dt
+        if !Bridge.constdiff(ℙᵒ)
+            out -= .5*tr( (Bridge.a(s, y, ℙ) - Bridge.a(s, ℙt))*(Htilde((i,s), y, ℙᵒ) - r*r') )*dt
+        end
+
+        # Simulating the next step of Xᵒ
+        yᴱ = y + Bridge.b(s, y, ℙᵒ)*dt + Bridge.σ(s, y, ℙᵒ)*dw
+        y = y + Bridge.b(s, y, ℙᵒ)*dt + .5*(Bridge.σ(s+dt, yᴱ,ℙᵒ) + Bridge.σ(s, y, ℙᵒ))*dw
+        Xᵒ.yy[i+1] = y
     end
     W = Xᵒ
     out
@@ -139,14 +171,22 @@ function lptilde((i,t)::IndexedTime, x, ℙᵒ::GuidedProposal)
     μ = ℙᵒ.μ[i]
     L = ℙᵒ.L[i]
     M = ℙᵒ.M[i]
-    return logpdf(MvNormalCanon(μ+L*x , M*(μ+L*x) , M) , ℙᵒ.ξ)
+    return logpdf(MvNormalCanon(M*(μ+L*x) , Matrix(Hermitian(M))) , ℙᵒ.ξ)
 end
 
 # log(p) = log(ptilde) + ∫ ψ(Xᵒ) dℙᵒ(Xᵒ) can be approximated using a sample Xᵒ from ℙᵒ
-function lp(::LeftRule, Xᵒ::T, x₀, ℙᵒ::GuidedProposal) where {T<:ContinuousTimeProcess{ℝ{3}}}
+function logp(::LeftRule, Xᵒ::T, x₀, ℙᵒ::GuidedProposal) where {T<:SamplePath{ℝ{3}}}
     lptilde((1,0.), x₀ , ℙᵒ) + logψ(LeftRule(), Xᵒ, ℙᵒ)
 end
 
-function lp!(::LeftRule, W::T, x₀, ℙᵒ::GuidedProposal) where {T<:ContinuousTimeProcess{ℝ{3}}}
-    lptilde((1,0.), x₀, ℙᵒ) + logψ!(LeftRule(), W, x₀, ℙᵒ)
+function logp(::LeftRule, Xᵒ::T, x₀, ℙᵒ::GuidedProposal) where {T<:SamplePath{ℝ{3}}}
+    lptilde((1,0.), x₀ , ℙᵒ) + logψ(LeftRule(), Xᵒ, ℙᵒ)
+end
+
+function logp!(::LeftRule, ::Ito, W::T, x₀, ℙᵒ::GuidedProposal) where {T<:SamplePath{ℝ{3}}}
+    lptilde((1,0.), x₀, ℙᵒ) + logψ!(LeftRule(), Ito(), W, x₀, ℙᵒ)
+end
+
+function logp!(::LeftRule, ::Stratonovich, W::T, x₀, ℙᵒ::GuidedProposal) where {T<:SamplePath{ℝ{3}}}
+    lptilde((1,0.), x₀, ℙᵒ) + logψ!(LeftRule(), Stratonovich(), W, x₀, ℙᵒ)
 end

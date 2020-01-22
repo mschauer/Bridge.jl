@@ -2,6 +2,11 @@ using ForwardDiff
 using LinearAlgebra
 
 abstract type Manifold end
+abstract type SDEForm end
+
+struct Ito <: SDEForm end
+struct Stratonovich <: SDEForm end
+
 const ℝ{N} = SVector{N, Float64}
 const IndexedTime = Tuple{Int64,Float64}
 outer(x) = x*x'
