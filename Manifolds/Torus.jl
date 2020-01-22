@@ -4,8 +4,9 @@ using StaticArrays, Distributions
 using Plots
 using Bridge
 
-include("TorusPlots.jl")
 include("Definitions.jl")
+include("TorusPlots.jl")
+include("GuidedProposals.jl")
 
 T = 1.0
 dt = 1/1000
@@ -21,8 +22,8 @@ extractcomp(v, i) = map(x->x[i], v)
 """
     The object TorusDiffusion(σ, 𝕋) can be used to generate a diffusion
     on the Torus 𝕋. We will focus on the diffusion equation
-        `` dX_t = σ P(X_t)∘dW_t ``
-    where σ ∈ ℝ
+        `` dX_t = Σ P(X_t)∘dW_t ``
+    where Σ ∈ ℝ
 """
 
 struct TorusDiffusion{T} <: ContinuousTimeProcess{ℝ{3}}
@@ -51,88 +52,75 @@ Bridge.constdiff(::TorusDiffusion{T}) where {T} = false
 
 x₀ = [2.,0.,0.5]
 W = sample(0:dt:T, Wiener{ℝ{3}}())
-X = solve(StratonovichEuler(), x₀, W, ℙ)
-
-plotly()
-TorusPlot(X, 𝕋)
+# X = solve(StratonovichEuler(), x₀, W, ℙ)
+#
+# plotly()
+# TorusPlot(X, 𝕋)
 
 """
     Insert the settings for the auxiliary process tildeX
         and set partial bridges for each data point
+
+    Now let us create a proposal diffusion bridge that hits ξ at time T
+    we use the transition density of tildeX in the guided proposal
+
 """
+ξ = [0.,2.,-.5]
+f(ξ, 𝕋)
+
+bT = zeros(eltype(ξ),3) # = b(t, X_T), i.e. the drift in the Ito form of the equation dX_t = P(X_t)∘dW_t
+for i = 1:3
+    for k = 1:3
+        Pr = (z) -> P(z, 𝕋)[i, k]
+        grad = ForwardDiff.gradient(Pr, ξ)
+        for j = 1:3
+            bT[i] += 0.5 * P(ξ, 𝕋)[j, k] * grad[j]
+        end
+    end
+end
+
+
 
 struct TorusDiffusionAux <: ContinuousTimeProcess{ℝ{3}}
-    xT
+    ξ
     σ
     B
 end
 
 Bridge.B(t, ℙt::TorusDiffusionAux) = ℙt.B
-Bridge.β(t, ℙt::TorusDiffusionAux) = zeros(3)
+Bridge.β(t, ℙt::TorusDiffusionAux) = bT .- ℙt.B*ℙt.ξ
 Bridge.σ(t, ℙt::TorusDiffusionAux) = ℙt.σ
 Bridge.b(t, x, ℙt::TorusDiffusionAux) = Bridge.B(t, ℙt)*x + Bridge.β(t,ℙt)
 Bridge.a(t, ℙt::TorusDiffusionAux) = Bridge.σ(t, ℙt)*Bridge.σ(t, ℙt)'
-Bridge.constdiff(::TorusDiffusionAux) = true
-
-"""
-    Now let us create a proposal diffusion bridge that hits ξ at time T
-    we use the transition density of tildeX in the guided proposal
-
-"""
-ξ = [0., 2., 0.5]
-f(ξ, 𝕋) # This should be zero
+Bridge.constdiff(::TorusDiffusionAux) = true # This should be zero
 
 ℙt = TorusDiffusionAux(ξ, P(ξ, 𝕋), [rand() rand() rand() ; rand() rand() rand() ; rand() rand() rand()])
 
 """
     Settings for the Guided proposal
 """
-Φ(t, ℙt::TorusDiffusionAux) = exp(ℙt.B*t)
-Φ(t, s, ℙt::TorusDiffusionAux) = exp(ℙt.B*(t-s)) # = Φ(t)Φ(s)⁻¹
+# Φ(t, ℙt::TorusDiffusionAux) = exp(ℙt.B*t)
+# Φ(t, s, ℙt::TorusDiffusionAux) = exp(ℙt.B*(t-s)) # = Φ(t)Φ(s)⁻¹
 Υ = Σ
 
-Lt(t, ℙt::TorusDiffusionAux) = L*Φ(T, t, ℙt)
-μt(t, ℙt::TorusDiffusionAux) = 0.
+# Lt(t, ℙt::TorusDiffusionAux) = L*Φ(T, t, ℙt)
 
 
-M⁺ = zeros(typeof(Σ), length(tt))
-M = copy(M⁺)
-M⁺[end] = Υ
-M[end] = inv(Υ)
-for i in length(tt)-1:-1:1
-    dt = tt[i+1] - tt[i]
-    M⁺[i] = M⁺[i+1] + Lt(tt[i+1], ℙt)*Bridge.a(tt[i+1], ℙt)*Lt(tt[i+1], ℙt)'*dt + Υ
-    M[i] = inv(M⁺[i])
+function kernelr3(f, t, y, dt, P)
+    k1 = f(t, y, P)
+    k2 = f(t + 1/2*dt, y + 1/2*dt*k1, P)
+    k3 = f(t + 3/4*dt, y + 3/4*dt*k2, P)
+    y + dt*(2/9*k1 + 1/3*k2 + 4/9*k3)
 end
 
-const IndexedTime = Tuple{Int64,Float64}
-H((i, t)::IndexedTime, x, ℙt::TorusDiffusionAux) = Lt(t, ℙt)'*M[i]*Lt(t, ℙt)
-r((i, t)::IndexedTime, x, ℙt::TorusDiffusionAux) = Lt(t, ℙt)'*M[i]*(ℙt.ξ .-μt(t, ℙt).-Lt(t, ℙt)*x)
 
-struct GuidedProposal <: ContinuousTimeProcess{ℝ{3}}
-    ξ
-    Target::TorusDiffusion
-    Auxiliary::TorusDiffusionAux
-end
-
-function Bridge.b(t, x, ℙᵒ::GuidedProposal)
-    k = findmin(abs.(tt.-t))[2]
-    ℙ = ℙᵒ.Target
-    ℙt = ℙᵒ.Auxiliary
-    a = Bridge.σ(t, x, ℙ)*Bridge.σ(t, x, ℙ)'
-    return Bridge.b(t, x, ℙ) + a*r((k, tt[k]), x, ℙt)
-end
-
-Bridge.σ(t, x, ℙᵒ::GuidedProposal) = Bridge.σ(t, x, ℙᵒ.Target)
-Bridge.constdiff(::GuidedProposal) = false
 
 ℙᵒ = GuidedProposal(ξ, ℙ, ℙt)
-r
 W = sample(0:dt:T, Wiener{ℝ{3}}())
 Xᵒ = solve(StratonovichEuler(), x₀, W, ℙᵒ)
 
-plot([extractcomp(Xᵒ.yy[1:1000], 1), extractcomp(Xᵒ.yy[1:1000], 2), extractcomp(Xᵒ.yy[1:1000], 3)])
-
+plotly()
+plot([extractcomp(Xᵒ.yy, 1), extractcomp(Xᵒ.yy, 2), extractcomp(Xᵒ.yy, 3)])
 TorusPlot(Xᵒ, 𝕋)
 plot!([2.], [0.], [.5],
         legend = true,

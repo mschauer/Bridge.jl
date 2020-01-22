@@ -3,6 +3,9 @@ using LinearAlgebra
 
 abstract type Manifold end
 const ℝ{N} = SVector{N, Float64}
+const IndexedTime = Tuple{Int64,Float64}
+outer(x) = x*x'
+outer(x,y) = x*y'
 
 """
     EmbeddedManifold creates a manifold ``M = f^{-1}({0})`` where

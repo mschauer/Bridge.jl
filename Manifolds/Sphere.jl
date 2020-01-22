@@ -60,11 +60,84 @@ SpherePlot(X, 𝕊)
         and set partial bridges for each data point
 """
 struct SphereDiffusionAux <: ContinuousTimeProcess{ℝ{3}}
-    xT
+    ξ
     σ
     B
 end
 
-Bridge.B(T, ℙ::SphereDiffusionAux) = ℙ.B
-Bridge.β(t, ℙ::SphereDiffusionAux) = zeros(3)
-Bridge.σ(t, ℙ::SphereDiffusionAux) = ℙ.σ
+Bridge.B(t, ℙt::SphereDiffusionAux) = ℙt.B
+Bridge.β(t, ℙt::SphereDiffusionAux) = zeros(3)
+Bridge.σ(t, ℙt::SphereDiffusionAux) = ℙt.σ
+Bridge.b(t, x, ℙt::SphereDiffusionAux) = Bridge.B(t, ℙt)*x + Bridge.β(t,ℙt)
+Bridge.a(t, ℙt::SphereDiffusionAux) = Bridge.σ(t, ℙt)*Bridge.σ(t, ℙt)'
+Bridge.constdiff(::SphereDiffusionAux) = true
+
+"""
+    Now let us create a proposal diffusion bridge that hits ξ at time T
+    we use the transition density of tildeX in the guided proposal
+
+"""
+ξ = [0.,1.,0.]
+f(ξ, 𝕊) # This should be zero
+
+ℙt = SphereDiffusionAux(ξ, P(ξ, 𝕋), [rand() rand() rand() ; rand() rand() rand() ; rand() rand() rand()])
+
+"""
+    Settings for the Guided proposal
+"""
+Φ(t, ℙt::SphereDiffusionAux) = exp(ℙt.B*t)
+Φ(t, s, ℙt::SphereDiffusionAux) = exp(ℙt.B*(t-s)) # = Φ(t)Φ(s)⁻¹
+Υ = Σ
+
+Lt(t, ℙt::SphereDiffusionAux) = L*Φ(T, t, ℙt)
+μt(t, ℙt::SphereDiffusionAux) = zeros(3)
+
+
+M⁺ = zeros(typeof(Σ), length(tt))
+M = copy(M⁺)
+M⁺[end] = Υ
+M[end] = inv(Υ)
+for i in length(tt)-1:-1:1
+    dt = tt[i+1] - tt[i]
+    M⁺[i] = M⁺[i+1] + Lt(tt[i+1], ℙt)*Bridge.a(tt[i+1], ℙt)*Lt(tt[i+1], ℙt)'*dt + Υ
+    M[i] = inv(M⁺[i])
+end
+
+H((i, t)::IndexedTime, x, ℙt::SphereDiffusionAux) = Lt(t, ℙt)'*M[i]*Lt(t, ℙt)
+r((i, t)::IndexedTime, x, ℙt::SphereDiffusionAux) = Lt(t, ℙt)'*M[i]*(ℙt.ξ .- μt(t, ℙt) .- Lt(t, ℙt)*x)
+
+struct GuidedProposalSphere <: ContinuousTimeProcess{ℝ{3}}
+    ξ
+    Target::SphereDiffusion
+    Auxiliary::SphereDiffusionAux
+end
+
+function Bridge.b(t, x, ℙᵒ::GuidedProposalSphere)
+    k = findmin(abs.(tt.-t))[2]
+    ℙ = ℙᵒ.Target
+    ℙt = ℙᵒ.Auxiliary
+    a = Bridge.σ(t, x, ℙ)*Bridge.σ(t, x, ℙ)'
+    return Bridge.b(t, x, ℙ) + a*r((k, tt[k]), x, ℙt)
+end
+
+Bridge.σ(t, x, ℙᵒ::GuidedProposalSphere) = Bridge.σ(t, x, ℙᵒ.Target)
+Bridge.constdiff(::GuidedProposalSphere) = false
+
+ℙᵒ = GuidedProposalSphere(ξ, ℙ, ℙt)
+W = sample(0:dt:T, Wiener{ℝ{3}}())
+Xᵒ = solve(StratonovichEuler(), [0.,0.,1.], W, ℙᵒ)
+
+plotly()
+plot([extractcomp(Xᵒ.yy, 1), extractcomp(Xᵒ.yy, 2), extractcomp(Xᵒ.yy, 3)])
+SpherePlot(Xᵒ, 𝕊)
+plot!([0.], [0.], [1.],
+        legend = true,
+        color = :red,
+        seriestype = :scatter,
+        markersize = 1.5,
+        label = "start")
+plot!([ξ[1]],  [ξ[2]],  [ξ[3]],
+        color = :yellow,
+        seriestype = :scatter,
+        markersize = 1.5,
+        label = "end")
