@@ -23,7 +23,15 @@ Euler-Maruyama scheme. `Euler` is defined as alias.
 Euler, EulerMaruyama
 
 
+"""
+    StratonovichEuler() <: SDESolver
+Euler scheme for solving SDE's in Stratonovich form
+"""
+struct StratonovichEuler <: SDESolver
+end
 
+struct StratonovichEuler! <:SDESolver
+end
 
 
 """
@@ -163,7 +171,52 @@ function solve!(::EulerMaruyama, Y, u::T, W::AbstractPath, P::ProcessOrCoefficie
     Y
 end
 
+"""
+    Euler method for solving the Stratonovich SDE ``dX_t = b(t, X_t)dt + σ(t, X_t)∘dW_t``
+"""
 
+function solve!(::StratonovichEuler, Y, u::T, W::SamplePath, P::ProcessOrCoefficients) where {T}
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = W.tt
+
+    y = u
+
+    for i in 1:N-1
+        dt = tt[i+1] - tt[i]
+        dw = ww[i+1] - ww[i]
+        yy[.., i] = y
+        yᴱ = y + _b((i,tt[i]), y, P)*dt + _scale(dw, σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*dt + _scale(dw, .5*(σ(tt[i+1], yᴱ,P) + σ(tt[i], y, P)))
+    end
+    yy[..,N] = endpoint(y, P)
+    Y
+end
+
+# fallback method
+function solve(::StratonovichEuler, Y, u::T, W::AbstractPath, P::ProcessOrCoefficients) where {T}
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[i] = W.tt
+
+    y::T = u
+
+    for (i, t, dt, dw) in increments(W)
+        yy[.., i] = y
+        yᴱ = y + _b((i,tt[i]), y, P)*dt + _scale(dw, σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*dt + _scale(dw, .5*(σ(tt[i+1], yᴱ,P) + σ(tt[i], y, P)))
+    end
+    yy[.., N] = endpoint(y, P)
+    Y
+end
 
 """
     solve(method, W, P) -> Y
@@ -214,6 +267,32 @@ function solve!(::Euler, Y, u, W::SamplePath, P::Union{GuidedBridge,PartialBridg
     yy[.., N]
 end
 
+solve(::StratonovichEuler, u, W::SamplePath, P::Union{GuidedBridge,PartialBridge,PartialBridgeνH}) = let X = samplepath(W.tt, zero(u)); solve!(Euler(), X, u, W, P); X end
+function solve!(::StratonovichEuler, Y, u, W::SamplePath, P::Union{GuidedBridge,PartialBridge,PartialBridgeνH})
+    W.tt === P.tt && error("Time axis mismatch between bridge P and driving W.") # not strictly an error
+
+    N = length(W)
+    N != length(Y) && error("Y and W differ in length.")
+
+    ww = W.yy
+    tt = Y.tt
+    yy = Y.yy
+    tt[:] = P.tt
+
+    y::typeof(u) = u
+    if typeof(u) != valtype(P)
+    #    @warn "Starting point not of valtype." maxlog=10
+    end
+    for i in 1:N-1
+        dt = tt[i+1] - tt[i]
+        dw = ww[i+1] - ww[i]
+        yy[.., i] = y
+        yᴱ = y + _b((i,tt[i]), y, P)*dt + _scale(dw, σ(tt[i], y, P))
+        y = y + _b((i,tt[i]), y, P)*dt + _scale(dw, .5*(σ(tt[i+1], yᴱ,P) + σ(tt[i], y, P)))
+    end
+    yy[.., N] = endpoint(y, P)
+    Y
+end
 
 ####
 
