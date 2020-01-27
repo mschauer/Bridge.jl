@@ -1,4 +1,3 @@
-
 function partialbridgeode!(::R3, t, L, Σ, Lt, Mt, μt, P)
     m, d = size(L)
     Lt[end] = L
@@ -25,14 +24,10 @@ function partialbridgeode!(::R3, t, L, Σ, Lt, Mt, μt, P)
 
 """
     PartialBridge
-
 Guided proposal process for diffusion bridge using backward recursion.
-
     PartialBridge(tt, P, Pt,  L, v, Σ)
-
 Guided proposal process for a partial diffusion bridge of `P` to `v` on
 the time grid `tt` using guiding term derived from linear process `Pt`.
-
 Simulate with `bridge!`.
 """
 struct PartialBridge{T,R,R2,Tv,TL,TM} <: ContinuousTimeProcess{T}
@@ -82,9 +77,10 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge; skip = 0)
         som += dot( _b((i,s), x, target(Po)) - _b((i,s), x, auxiliary(Po)), r ) * (tt[i+1]-tt[i])
 
         if !constdiff(Po)
-            H = H((i,s), x, Po)
-            som -= 0.5*tr( (a((i,s), x, target(Po)) - aitilde((i,s), x, Po))*(H) ) * (tt[i+1]-tt[i])
-            som += 0.5*( r'*(a((i,s), x, target(Po)) - aitilde((i,s), x, Po))*r ) * (tt[i+1]-tt[i])
+            H = Bridge.H((i,s), x, Po)
+            A = Bridge.a((i,s), x, target(Po)) - Bridge.a((i,s),  auxiliary(Po))
+            som -= 0.5*tr(A *H ) * (tt[i+1]-tt[i])
+            som += 0.5*( r'*A*r ) * (tt[i+1]-tt[i])
         end
     end
     som

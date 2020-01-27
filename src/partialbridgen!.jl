@@ -69,6 +69,10 @@ function rti!((t,i), x, out, P::PartialBridge!)
     out
 end
 
+function Hi((t,i), P::PartialBridge!)
+    P.H[i]
+end
+
 btitilde!((t,i), x, out, P) = _b!((t,i), x, out, P.Pt)
 
 constdiff(P::PartialBridge!) = constdiff(P.Target) && constdiff(P.Pt)
@@ -92,9 +96,26 @@ function llikelihood(::LeftRule, Xcirc::SamplePath, Po::PartialBridge!; skip = 0
         som += dot(bout, rout) * (tt[i+1]-tt[i])
         som -= dot(btout, rout) * (tt[i+1]-tt[i])
 
-        if !constdiff(Po)
-            error("not implemented")
+        if !constdiff(Po) # todo: write test
+            H = Bridge.Hi((i,s), Po)
+            A = Bridge.a((i,s), x, target(Po))
+            At = Bridge.a((i,s), x, auxiliary(Po))
+            som -= 0.5*hadamtrace(A, H) * (tt[i+1]-tt[i])
+            som += 0.5*hadamtrace(At, H) * (tt[i+1]-tt[i])
+            som += 0.5*( r'*(A-At)*r ) * (tt[i+1]-tt[i])
         end
+    end
+    som
+end
+
+function hadamtrace(A, H)
+    @assert eachindex(A) == eachindex(H)
+    @unroll1 for i in eachindex(A)
+            if $first
+                som = A[i]*H[i]
+            else
+                som += A[i]*H[i]
+            end
     end
     som
 end

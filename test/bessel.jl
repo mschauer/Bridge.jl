@@ -25,10 +25,10 @@ function hit(u, v, dt, tmax, P::ContinuousTimeProcess{T}) where T
 
     t = 0.
     rdt = sqrt(dt)
-  
+
     y::T = u
-    
-    
+
+
     while sign(v-y) == sign(v-u) && t < tmax
         t += dt
         y += Bridge.b(t, y, P)*dt + Bridge.σ(t, y, P)*rdt*randn(T)
@@ -40,13 +40,13 @@ struct Target <: ContinuousTimeProcess{Float64}
     mu
 end
 
- 
+
 
 Bridge.b(t, x, P::Target) = -P.mu*x
 Bridge.σ(t, x, P::Target) = sqrt(2.)
 Bridge.a(t, x, P::Target) = 2.
 Bridge.Γ(t, x, P::Target) = 0.5
- 
+
 Bridge.constdiff(P::Target) = true
 
 x0 = 0.5
@@ -106,14 +106,14 @@ VERBOSE && println("X")
 X = solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
 while any(X.yy .< 0) || X.yy[end] > 0.1
     global X = solve(Euler(), x0, Bridge.sample(tt,Bridge.Wiener{Float64}()), P)
-end    
+end
 VERBOSE && println("Xo")
 
 
 
 @test abs(p - 0.1788) < 0.015
 @test abs(pt - pt_) < 0.015
-@test abs(phat - 0.1788)<0.015
-@test abs(phat3 - 0.1788)<0.015
+@test abs(phat - 0.1788) < 0.015
+@test abs(phat3 - 0.1788) < 0.015
 @test abs(ahat(B3) - 2) < 0.175
 @test abs(ahat(Xo) - 2) < 0.15;
