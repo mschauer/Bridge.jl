@@ -24,7 +24,8 @@ export ThinningAlg, InhomogPoisson
 export mcstart, mcnext, mcbandmean, mcband
 
 # euler
-export SDESolver, Euler, BridgePre, EulerMaruyama, EulerMaruyama!, StochasticHeun,
+export SDESolver, Euler, BridgePre, EulerMaruyama, EulerMaruyama!,
+    StratonovichEuler, StratonovichEuler!, StochasticHeun,
     StochasticRungeKutta, bridge!, bridge, solve, solve!
 
 # ode
