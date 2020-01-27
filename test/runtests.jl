@@ -22,4 +22,6 @@ include("bessel.jl")
 
 include("onlinestat.jl")
 
+include("expint.jl")
+
 include("with_srand.jl") # run last
