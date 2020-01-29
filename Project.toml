@@ -18,8 +18,8 @@ SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 Trajectories = "2c80a279-213e-54d7-a557-e9a14725db56"
 
 [compat]
+Colors = "0.11"
 julia = "≥ 1.0"
-
 
 [extras]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
