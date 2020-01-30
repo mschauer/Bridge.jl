@@ -8,7 +8,7 @@ function r(t, x, T, v, P)
     H(t, T, P, V(t, T, v, P) - x)
 end
 
-tau(s, t, T) = t + (s.-t).*(2-(s-t)/(T-t))
+tau(s, t, T) = @. t + (s - t)*(2 - (s-t)/(T-t))
 tau(ss::Vector) = tau(ss, ss[1], ss[end])
 
 

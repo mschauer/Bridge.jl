@@ -54,7 +54,7 @@ Bridge.bderiv(t, x, P::Lorenz) = @SMatrix Float64[
 
 Bridge.F(t, x, P::Lorenz) = Bridge.b(t, x, P)
 
-Bridge.σ(t, x, P::Lorenz) = SDiagonal(P.σ)
+Bridge.σ(t, x, P::Lorenz) = P.σ
 Bridge.constdiff(::Lorenz) = true
 
 x0(P::Lorenz) = ℝ{3}(1.508870, -1.531271, 25.46091)

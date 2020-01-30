@@ -83,6 +83,7 @@ samplepath(tt, v, ::Val{true}) = SamplePath(tt, [copy(v) for t in tt])
 
 copy(X::SamplePath{T}) where {T} = SamplePath{T}(copy(X.tt), copy(X.yy))
 length(X::SamplePath) = length(X.tt)
+Base.lastindex(S::SamplePath) = lastindex(S.tt)
 
 getindex(V::SamplePath, I::AbstractArray) = SamplePath(V.tt[I], V.yy[I])
 getindex(V::SamplePath, i::Integer) = V.tt[i] => V.yy[i]
