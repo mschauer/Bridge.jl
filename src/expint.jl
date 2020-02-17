@@ -104,6 +104,7 @@ function expint(n::Integer, z)
         # forwards recurrence from E₁
         e⁻ᶻ = exp(-z)
         Eᵢ = expint(z)
+        Eᵢ *= !isinf(Eᵢ)
         for i in 2:n
             Eᵢ = (e⁻ᶻ - z*Eᵢ) / (i - 1)
         end
