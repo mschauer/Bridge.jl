@@ -5,6 +5,7 @@ os:
 julia:
   - 1.0
   - 1.1
+  - 1.2
   - nightly
 notifications:
   email: false
@@ -13,5 +14,14 @@ matrix:
     - julia: nightly
 after_success:
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
-#  - julia -e 'ps=Pkg.PackageSpec(name="Documenter", version="0.19"); Pkg.add(ps); Pkg.pin(ps)'
-#  - julia -e 'cd(Pkg.dir("Bridge")); include(joinpath("docs", "make.jl"))'
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 1.2
+      os:
+        - linux
+      script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+                                    Pkg.develop(PackageSpec(path=pwd()))'
+        - julia --project=docs/ docs/make.jl
+      after_success: skip
