@@ -1,4 +1,3 @@
-include(joinpath("..", "docs", "make.jl")) # this may change rng state
 using Random
 Random.seed!(12)
 
