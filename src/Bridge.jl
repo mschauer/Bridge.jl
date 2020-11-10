@@ -40,7 +40,7 @@ using Statistics
 
 include("chol.jl")
 
-
+using SpecialFunctions
 using StaticArrays
 using Distributions
 using Colors
@@ -88,8 +88,9 @@ Pt(Po) = Po.Pt
 target(Po) = Po.Target
 auxiliary(Po) = Po.Pt
 
-
-include("expint.jl")
+if !@isdefined expint
+    include("expint.jl")
+end
 #include("setcol.jl")
 
 include("fsa.jl")
