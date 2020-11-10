@@ -54,17 +54,24 @@ end
 
 function Bridge.solve!(solver::EulerMaruyama!, Y::SamplePath, u, W::SamplePath, P::Bridge.ProcessOrCoefficients)
     N = length(W)
-    N != length(Y) && error("Y and W differ in length.")
 
-    tt = Y.tt
-    tt[:] = W.tt
+    tt = W.tt
     yy = Y.yy
-    y = copy(u)
+    copyto!(yy[1], u)
 
-    tmp1 = copy(y)
-    tmp2 = copy(y)
-    dw = copy(W.yy[1])
-    for i in 1:N-1
+    i = 1
+    dw = W.yy[i+1] - W.yy[i]
+    t¯ = tt[i]
+    dt = tt[i+1] - t¯
+
+    tmp1 = Bridge._b!((i,t¯), u, 0*u, P)
+    tmp2 = Bridge.σ(t¯, u, dw, P)
+
+    y = u + tmp1*dt + tmp2
+
+
+
+    for i in 2:N-1
         t¯ = tt[i]
         dt = tt[i+1] - t¯
         copyto!(yy[i], y)
@@ -76,13 +83,13 @@ function Bridge.solve!(solver::EulerMaruyama!, Y::SamplePath, u, W::SamplePath, 
             end
         end
 
-        _b!((i,t¯), y, tmp1, P)
-        σ!(t¯, y, dw, tmp2, P)
+        Bridge._b!((i,t¯), y, tmp1, P)
+        Bridge.σ!(t¯, y, dw, tmp2, P)
 
         for k in eachindex(y)
             y[k] = y[k] + tmp1[k]*dt + tmp2[k]
         end
     end
-    copyto!(yy[end], endpoint(y, P))
-    Y
+    copyto!(yy[end], Bridge.endpoint(y, P))
+    SamplePath(tt, yy)
 end
